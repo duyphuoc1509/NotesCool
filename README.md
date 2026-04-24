@@ -69,6 +69,7 @@ Priority paths:
 - `README.md`
 - `docs/`
 - `docs/architecture/`
+- `docs/delivery/` (Phase 1 Delivery Plan: `docs/delivery/delivery-plan.phase-1.md`)
 - `docs/product/`
 - `src/backend/`
 - `src/frontend/`
@@ -77,6 +78,7 @@ Priority paths:
 
 Target update areas in foundation phase:
 - `docs/architecture/`
+- `docs/delivery/` (Phase 1 Delivery Plan: `docs/delivery/delivery-plan.phase-1.md`)
 - `docs/conventions/`
 - `docs/backlog/`
 - `src/backend/`
