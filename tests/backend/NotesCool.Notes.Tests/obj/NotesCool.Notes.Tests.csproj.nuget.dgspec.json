@@ -1,0 +1,221 @@
+{
+  "format": 1,
+  "restore": {
+    "/root/multica_workspaces/dbd8254a-fe10-47a1-92f9-a57cb9210526/4e56a263/workdir/NotesCool/tests/backend/NotesCool.Notes.Tests/NotesCool.Notes.Tests.csproj": {}
+  },
+  "projects": {
+    "/root/multica_workspaces/dbd8254a-fe10-47a1-92f9-a57cb9210526/4e56a263/workdir/NotesCool/src/backend/NotesCool.Notes/NotesCool.Notes.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "/root/multica_workspaces/dbd8254a-fe10-47a1-92f9-a57cb9210526/4e56a263/workdir/NotesCool/src/backend/NotesCool.Notes/NotesCool.Notes.csproj",
+        "projectName": "NotesCool.Notes",
+        "projectPath": "/root/multica_workspaces/dbd8254a-fe10-47a1-92f9-a57cb9210526/4e56a263/workdir/NotesCool/src/backend/NotesCool.Notes/NotesCool.Notes.csproj",
+        "packagesPath": "/root/.nuget/packages/",
+        "outputPath": "/root/multica_workspaces/dbd8254a-fe10-47a1-92f9-a57cb9210526/4e56a263/workdir/NotesCool/src/backend/NotesCool.Notes/obj/",
+        "projectStyle": "PackageReference",
+        "configFilePaths": [
+          "/root/.nuget/NuGet/NuGet.Config"
+        ],
+        "originalTargetFrameworks": [
+          "net8.0"
+        ],
+        "sources": {
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "net8.0": {
+            "targetAlias": "net8.0",
+            "projectReferences": {
+              "/root/multica_workspaces/dbd8254a-fe10-47a1-92f9-a57cb9210526/4e56a263/workdir/NotesCool/src/backend/NotesCool.Shared/NotesCool.Shared.csproj": {
+                "projectPath": "/root/multica_workspaces/dbd8254a-fe10-47a1-92f9-a57cb9210526/4e56a263/workdir/NotesCool/src/backend/NotesCool.Shared/NotesCool.Shared.csproj"
+              }
+            }
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        }
+      },
+      "frameworks": {
+        "net8.0": {
+          "targetAlias": "net8.0",
+          "dependencies": {
+            "Microsoft.EntityFrameworkCore": {
+              "target": "Package",
+              "version": "[8.0.*, )"
+            },
+            "Microsoft.EntityFrameworkCore.Relational": {
+              "target": "Package",
+              "version": "[8.0.*, )"
+            }
+          },
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "/usr/lib64/dotnet/sdk/8.0.124/PortableRuntimeIdentifierGraph.json"
+        }
+      }
+    },
+    "/root/multica_workspaces/dbd8254a-fe10-47a1-92f9-a57cb9210526/4e56a263/workdir/NotesCool/src/backend/NotesCool.Shared/NotesCool.Shared.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "/root/multica_workspaces/dbd8254a-fe10-47a1-92f9-a57cb9210526/4e56a263/workdir/NotesCool/src/backend/NotesCool.Shared/NotesCool.Shared.csproj",
+        "projectName": "NotesCool.Shared",
+        "projectPath": "/root/multica_workspaces/dbd8254a-fe10-47a1-92f9-a57cb9210526/4e56a263/workdir/NotesCool/src/backend/NotesCool.Shared/NotesCool.Shared.csproj",
+        "packagesPath": "/root/.nuget/packages/",
+        "outputPath": "/root/multica_workspaces/dbd8254a-fe10-47a1-92f9-a57cb9210526/4e56a263/workdir/NotesCool/src/backend/NotesCool.Shared/obj/",
+        "projectStyle": "PackageReference",
+        "configFilePaths": [
+          "/root/.nuget/NuGet/NuGet.Config"
+        ],
+        "originalTargetFrameworks": [
+          "net8.0"
+        ],
+        "sources": {
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "net8.0": {
+            "targetAlias": "net8.0",
+            "projectReferences": {}
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        }
+      },
+      "frameworks": {
+        "net8.0": {
+          "targetAlias": "net8.0",
+          "dependencies": {
+            "Microsoft.AspNetCore.Authentication.JwtBearer": {
+              "target": "Package",
+              "version": "[8.0.*, )"
+            },
+            "Microsoft.EntityFrameworkCore": {
+              "target": "Package",
+              "version": "[8.0.*, )"
+            },
+            "Microsoft.EntityFrameworkCore.Relational": {
+              "target": "Package",
+              "version": "[8.0.*, )"
+            }
+          },
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "/usr/lib64/dotnet/sdk/8.0.124/PortableRuntimeIdentifierGraph.json"
+        }
+      }
+    },
+    "/root/multica_workspaces/dbd8254a-fe10-47a1-92f9-a57cb9210526/4e56a263/workdir/NotesCool/tests/backend/NotesCool.Notes.Tests/NotesCool.Notes.Tests.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "/root/multica_workspaces/dbd8254a-fe10-47a1-92f9-a57cb9210526/4e56a263/workdir/NotesCool/tests/backend/NotesCool.Notes.Tests/NotesCool.Notes.Tests.csproj",
+        "projectName": "NotesCool.Notes.Tests",
+        "projectPath": "/root/multica_workspaces/dbd8254a-fe10-47a1-92f9-a57cb9210526/4e56a263/workdir/NotesCool/tests/backend/NotesCool.Notes.Tests/NotesCool.Notes.Tests.csproj",
+        "packagesPath": "/root/.nuget/packages/",
+        "outputPath": "/root/multica_workspaces/dbd8254a-fe10-47a1-92f9-a57cb9210526/4e56a263/workdir/NotesCool/tests/backend/NotesCool.Notes.Tests/obj/",
+        "projectStyle": "PackageReference",
+        "configFilePaths": [
+          "/root/.nuget/NuGet/NuGet.Config"
+        ],
+        "originalTargetFrameworks": [
+          "net8.0"
+        ],
+        "sources": {
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "net8.0": {
+            "targetAlias": "net8.0",
+            "projectReferences": {
+              "/root/multica_workspaces/dbd8254a-fe10-47a1-92f9-a57cb9210526/4e56a263/workdir/NotesCool/src/backend/NotesCool.Notes/NotesCool.Notes.csproj": {
+                "projectPath": "/root/multica_workspaces/dbd8254a-fe10-47a1-92f9-a57cb9210526/4e56a263/workdir/NotesCool/src/backend/NotesCool.Notes/NotesCool.Notes.csproj"
+              }
+            }
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        }
+      },
+      "frameworks": {
+        "net8.0": {
+          "targetAlias": "net8.0",
+          "dependencies": {
+            "Microsoft.NET.Test.Sdk": {
+              "target": "Package",
+              "version": "[17.3.2, )"
+            },
+            "coverlet.collector": {
+              "include": "Runtime, Build, Native, ContentFiles, Analyzers, BuildTransitive",
+              "suppressParent": "All",
+              "target": "Package",
+              "version": "[3.1.2, )"
+            },
+            "xunit": {
+              "target": "Package",
+              "version": "[2.4.2, )"
+            },
+            "xunit.runner.visualstudio": {
+              "include": "Runtime, Build, Native, ContentFiles, Analyzers, BuildTransitive",
+              "suppressParent": "All",
+              "target": "Package",
+              "version": "[2.4.5, )"
+            }
+          },
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "/usr/lib64/dotnet/sdk/8.0.124/PortableRuntimeIdentifierGraph.json"
+        }
+      }
+    }
+  }
+}
