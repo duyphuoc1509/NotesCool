@@ -1,0 +1,30 @@
+{
+  "version": 2,
+  "dgSpecHash": "jSOwu2PWBDt0Z/d7GXpLLJHUzr4nbFVr7Xtt2t8/oJwmizKPnDQxVAbPJaSIyP40ZcRKyB86MOjBlAFwqXEJxw==",
+  "success": true,
+  "projectFilePath": "/root/multica_workspaces/dbd8254a-fe10-47a1-92f9-a57cb9210526/4e56a263/workdir/NotesCool/src/backend/NotesCool.Tasks/NotesCool.Tasks.csproj",
+  "expectedPackageFiles": [
+    "/root/.nuget/packages/microsoft.aspnetcore.authentication.jwtbearer/8.0.26/microsoft.aspnetcore.authentication.jwtbearer.8.0.26.nupkg.sha512",
+    "/root/.nuget/packages/microsoft.entityframeworkcore/8.0.26/microsoft.entityframeworkcore.8.0.26.nupkg.sha512",
+    "/root/.nuget/packages/microsoft.entityframeworkcore.abstractions/8.0.26/microsoft.entityframeworkcore.abstractions.8.0.26.nupkg.sha512",
+    "/root/.nuget/packages/microsoft.entityframeworkcore.analyzers/8.0.26/microsoft.entityframeworkcore.analyzers.8.0.26.nupkg.sha512",
+    "/root/.nuget/packages/microsoft.entityframeworkcore.relational/8.0.26/microsoft.entityframeworkcore.relational.8.0.26.nupkg.sha512",
+    "/root/.nuget/packages/microsoft.extensions.caching.abstractions/8.0.0/microsoft.extensions.caching.abstractions.8.0.0.nupkg.sha512",
+    "/root/.nuget/packages/microsoft.extensions.caching.memory/8.0.1/microsoft.extensions.caching.memory.8.0.1.nupkg.sha512",
+    "/root/.nuget/packages/microsoft.extensions.configuration.abstractions/8.0.0/microsoft.extensions.configuration.abstractions.8.0.0.nupkg.sha512",
+    "/root/.nuget/packages/microsoft.extensions.dependencyinjection/8.0.1/microsoft.extensions.dependencyinjection.8.0.1.nupkg.sha512",
+    "/root/.nuget/packages/microsoft.extensions.dependencyinjection.abstractions/8.0.2/microsoft.extensions.dependencyinjection.abstractions.8.0.2.nupkg.sha512",
+    "/root/.nuget/packages/microsoft.extensions.logging/8.0.1/microsoft.extensions.logging.8.0.1.nupkg.sha512",
+    "/root/.nuget/packages/microsoft.extensions.logging.abstractions/8.0.2/microsoft.extensions.logging.abstractions.8.0.2.nupkg.sha512",
+    "/root/.nuget/packages/microsoft.extensions.options/8.0.2/microsoft.extensions.options.8.0.2.nupkg.sha512",
+    "/root/.nuget/packages/microsoft.extensions.primitives/8.0.0/microsoft.extensions.primitives.8.0.0.nupkg.sha512",
+    "/root/.nuget/packages/microsoft.identitymodel.abstractions/7.1.2/microsoft.identitymodel.abstractions.7.1.2.nupkg.sha512",
+    "/root/.nuget/packages/microsoft.identitymodel.jsonwebtokens/7.1.2/microsoft.identitymodel.jsonwebtokens.7.1.2.nupkg.sha512",
+    "/root/.nuget/packages/microsoft.identitymodel.logging/7.1.2/microsoft.identitymodel.logging.7.1.2.nupkg.sha512",
+    "/root/.nuget/packages/microsoft.identitymodel.protocols/7.1.2/microsoft.identitymodel.protocols.7.1.2.nupkg.sha512",
+    "/root/.nuget/packages/microsoft.identitymodel.protocols.openidconnect/7.1.2/microsoft.identitymodel.protocols.openidconnect.7.1.2.nupkg.sha512",
+    "/root/.nuget/packages/microsoft.identitymodel.tokens/7.1.2/microsoft.identitymodel.tokens.7.1.2.nupkg.sha512",
+    "/root/.nuget/packages/system.identitymodel.tokens.jwt/7.1.2/system.identitymodel.tokens.jwt.7.1.2.nupkg.sha512"
+  ],
+  "logs": []
+}
