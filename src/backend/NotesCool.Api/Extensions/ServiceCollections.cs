@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.OpenApi.Models;
 using NotesCool.Notes.Application;
 using NotesCool.Notes.Infrastructure;
 using NotesCool.Shared.Auth;
@@ -18,6 +19,43 @@ public static class ServiceCollections
         services.AddProblemDetails();
         services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer();
         services.AddAuthorization();
+
+        services.AddEndpointsApiExplorer();
+        services.AddSwaggerGen(options =>
+        {
+            options.SwaggerDoc("v1", new OpenApiInfo
+            {
+                Title = "NotesCool API",
+                Version = "v1",
+                Description = "API documentation for NotesCool system."
+            });
+
+            options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+            {
+                In = ParameterLocation.Header,
+                Description = "Please enter JWT with Bearer into field. Example: \"Authorization: Bearer {token}\"",
+                Name = "Authorization",
+                Type = SecuritySchemeType.ApiKey,
+                Scheme = "Bearer",
+                BearerFormat = "JWT"
+            });
+
+            options.AddSecurityRequirement(new OpenApiSecurityRequirement
+            {
+                {
+                    new OpenApiSecurityScheme
+                    {
+                        Reference = new OpenApiReference
+                        {
+                            Type = ReferenceType.SecurityScheme,
+                            Id = "Bearer"
+                        }
+                    },
+                    Array.Empty<string>()
+                }
+            });
+        });
+
         return services;
     }
 

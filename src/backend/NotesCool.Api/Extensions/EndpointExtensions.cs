@@ -1,32 +1,41 @@
+using Microsoft.AspNetCore.Http;
 using NotesCool.Notes.Application;
 using NotesCool.Notes.Contracts;
 using NotesCool.Shared.Auth;
 using NotesCool.Shared.Common;
-using NotesCool.Tasks.Application;
-using NotesCool.Tasks.Contracts;
-using NotesCool.Tasks.Domain;
 
 namespace NotesCool.Api.Extensions;
 
 public static class EndpointExtensions
 {
-    public static void MapNotesEndpoints(this IEndpointRouteBuilder app)
+    public static IEndpointRouteBuilder MapApiEndpoints(this IEndpointRouteBuilder builder)
     {
-        var g = app.MapGroup("/api/notes").RequireAuthorization();
-        g.MapGet("/", async (ICurrentUser user, NotesService s, string? query, int page = 1, int pageSize = 20, CancellationToken ct = default) => Results.Ok(await s.SearchAsync(user.UserId, query, new(page, pageSize), ct)));
-        g.MapGet("/{id:guid}", async (ICurrentUser user, NotesService s, Guid id, CancellationToken ct) => Results.Ok(await s.GetAsync(user.UserId, id, ct)));
-        g.MapPost("/", async (ICurrentUser user, NotesService s, CreateNoteRequest r, CancellationToken ct) => Results.Ok(await s.CreateAsync(user.UserId, r, ct)));
-        g.MapPut("/{id:guid}", async (ICurrentUser user, NotesService s, Guid id, UpdateNoteRequest r, CancellationToken ct) => Results.Ok(await s.UpdateAsync(user.UserId, id, r, ct)));
-        g.MapDelete("/{id:guid}", async (ICurrentUser user, NotesService s, Guid id, CancellationToken ct) => { await s.ArchiveAsync(user.UserId, id, ct); return Results.NoContent(); });
-    }
-    public static void MapTasksEndpoints(this IEndpointRouteBuilder app)
-    {
-        var g = app.MapGroup("/api/tasks").RequireAuthorization();
-        g.MapGet("/", async (ICurrentUser user, TasksService s, TaskItemStatus? status, string? sort, int page = 1, int pageSize = 20, CancellationToken ct = default) => Results.Ok(await s.ListAsync(user.UserId, status, sort, new(page, pageSize), ct)));
-        g.MapGet("/{id:guid}", async (ICurrentUser user, TasksService s, Guid id, CancellationToken ct) => Results.Ok(await s.GetAsync(user.UserId, id, ct)));
-        g.MapPost("/", async (ICurrentUser user, TasksService s, CreateTaskRequest r, CancellationToken ct) => Results.Ok(await s.CreateAsync(user.UserId, r, ct)));
-        g.MapPut("/{id:guid}", async (ICurrentUser user, TasksService s, Guid id, UpdateTaskRequest r, CancellationToken ct) => Results.Ok(await s.UpdateAsync(user.UserId, id, r, ct)));
-        g.MapPatch("/{id:guid}/status", async (ICurrentUser user, TasksService s, Guid id, ChangeTaskStatusRequest r, CancellationToken ct) => Results.Ok(await s.ChangeStatusAsync(user.UserId, id, r, ct)));
-        g.MapDelete("/{id:guid}", async (ICurrentUser user, TasksService s, Guid id, CancellationToken ct) => { await s.ArchiveAsync(user.UserId, id, ct); return Results.NoContent(); });
+        var notesGroup = builder.MapGroup("api/notes").WithTags("Notes").RequireAuthorization();
+        notesGroup.MapGet("", async (string? query, int page, int pageSize, NotesService service, ICurrentUser u, CancellationToken ct) => Results.Ok(await service.SearchAsync(u.UserId, query, new PageRequest(page, pageSize), ct)))
+            .WithSummary("Search notes")
+            .WithDescription("Returns the current user's notes with optional text search and pagination.")
+            .Produces<PagedResult<NoteResponse>>();
+
+        notesGroup.MapGet("{id:guid}", async (Guid id, NotesService service, ICurrentUser u, CancellationToken ct) => Results.Ok(await service.GetAsync(u.UserId, id, ct)))
+            .WithSummary("Get note by ID")
+            .WithDescription("Returns a single note owned by the current user.")
+            .Produces<NoteResponse>();
+
+        notesGroup.MapPost("", async (CreateNoteRequest req, NotesService service, ICurrentUser u, CancellationToken ct) => { var r = await service.CreateAsync(u.UserId, req, ct); return Results.Created($"api/notes/{r.Id}", r); })
+            .WithSummary("Create note")
+            .WithDescription("Creates a new note for the current user.")
+            .Produces<NoteResponse>(StatusCodes.Status201Created);
+
+        notesGroup.MapPut("{id:guid}", async (Guid id, UpdateNoteRequest req, NotesService service, ICurrentUser u, CancellationToken ct) => Results.Ok(await service.UpdateAsync(u.UserId, id, req, ct)))
+            .WithSummary("Update note")
+            .WithDescription("Updates title and content for a note owned by the current user.")
+            .Produces<NoteResponse>();
+
+        notesGroup.MapDelete("{id:guid}", async (Guid id, NotesService service, ICurrentUser u, CancellationToken ct) => { await service.ArchiveAsync(u.UserId, id, ct); return Results.NoContent(); })
+            .WithSummary("Archive note")
+            .WithDescription("Archives a note owned by the current user.")
+            .Produces(StatusCodes.Status204NoContent);
+
+        return builder;
     }
 }

@@ -3,17 +3,39 @@ using NotesCool.Tasks.Domain;
 
 namespace NotesCool.Tasks.Infrastructure;
 
-public sealed class TasksDbContext(DbContextOptions<TasksDbContext> options) : DbContext(options)
+public class TasksDbContext : DbContext
 {
-    public DbSet<TaskItem> Tasks => Set<TaskItem>();
-    protected override void OnModelCreating(ModelBuilder builder)
+    public TasksDbContext(DbContextOptions<TasksDbContext> options) : base(options)
     {
-        builder.Entity<TaskItem>(b =>
+    }
+
+    public DbSet<TaskItem> Tasks => Set<TaskItem>();
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        base.OnModelCreating(modelBuilder);
+
+        modelBuilder.Entity<TaskItem>(entity =>
         {
-            b.ToTable("tasks"); b.HasKey(x => x.Id);
-            b.Property(x => x.OwnerId).HasMaxLength(128).IsRequired();
-            b.Property(x => x.Title).HasMaxLength(200).IsRequired();
-            b.HasIndex(x => new { x.OwnerId, x.Status, x.ArchivedAt });
+            entity.ToTable("Tasks");
+            entity.HasKey(e => e.Id);
+            
+            entity.Property(e => e.Title)
+                .IsRequired()
+                .HasMaxLength(200);
+                
+            entity.Property(e => e.OwnerId)
+                .IsRequired()
+                .HasMaxLength(100);
+                
+            // Apply soft delete query filter globally
+            entity.HasQueryFilter(e => e.ArchivedAt == null);
+            
+            // Indexes for performance on frequently filtered fields
+            entity.HasIndex(e => e.OwnerId);
+            entity.HasIndex(e => e.Status);
+            entity.HasIndex(e => e.DueDate);
+            entity.HasIndex(e => e.CreatedAt);
         });
     }
 }

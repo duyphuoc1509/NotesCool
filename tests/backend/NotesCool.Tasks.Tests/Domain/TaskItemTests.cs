@@ -3,6 +3,8 @@ using NotesCool.Shared.Errors;
 using NotesCool.Tasks.Domain;
 using System;
 using Xunit;
+using TaskStatus = NotesCool.Tasks.Domain.TaskStatus;
+using System;
 
 namespace NotesCool.Tasks.Tests.Domain;
 
@@ -11,6 +13,11 @@ public class TaskItemTests
     [Fact]
     public void Constructor_ShouldCreateTask_WhenValidArguments()
     {
+<<<<<<< HEAD
+        var t = new TaskItem("T", null, null, "o1");
+        t.ChangeStatus(TaskStatus.Done);
+        Assert.Equal(TaskStatus.Done, t.Status);
+=======
         var task = new TaskItem("owner1", "Test Task", "Description");
 
         task.OwnerId.Should().Be("owner1");
@@ -74,5 +81,6 @@ public class TaskItemTests
         var action = () => task.Update(longTitle, "Desc");
 
         action.Should().Throw<ApiException>().WithMessage("Task title must be 200 characters or fewer.");
+>>>>>>> dev
     }
 }
