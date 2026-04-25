@@ -8,7 +8,8 @@ builder.Services.AddTasksModule(builder.Configuration);
 
 var app = builder.Build();
 
-app.UseExceptionHandling();
+app.UseExceptionHandler();
+app.UseStatusCodePages();
 app.UseAuthentication();
 app.UseAuthorization();
 

@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "/root/multica_workspaces/dbd8254a-fe10-47a1-92f9-a57cb9210526/bfb60fe6/workdir/NotesCool/src/backend/NotesCool.Api/NotesCool.Api.csproj": {}
+    "/root/multica_workspaces/dbd8254a-fe10-47a1-92f9-a57cb9210526/5780fe5e/workdir/NotesCool/src/backend/NotesCool.Api/NotesCool.Api.csproj": {}
   },
   "projects": {
-    "/root/multica_workspaces/dbd8254a-fe10-47a1-92f9-a57cb9210526/bfb60fe6/workdir/NotesCool/src/backend/NotesCool.Api/NotesCool.Api.csproj": {
+    "/root/multica_workspaces/dbd8254a-fe10-47a1-92f9-a57cb9210526/5780fe5e/workdir/NotesCool/src/backend/NotesCool.Api/NotesCool.Api.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "/root/multica_workspaces/dbd8254a-fe10-47a1-92f9-a57cb9210526/bfb60fe6/workdir/NotesCool/src/backend/NotesCool.Api/NotesCool.Api.csproj",
+        "projectUniqueName": "/root/multica_workspaces/dbd8254a-fe10-47a1-92f9-a57cb9210526/5780fe5e/workdir/NotesCool/src/backend/NotesCool.Api/NotesCool.Api.csproj",
         "projectName": "NotesCool.Api",
-        "projectPath": "/root/multica_workspaces/dbd8254a-fe10-47a1-92f9-a57cb9210526/bfb60fe6/workdir/NotesCool/src/backend/NotesCool.Api/NotesCool.Api.csproj",
+        "projectPath": "/root/multica_workspaces/dbd8254a-fe10-47a1-92f9-a57cb9210526/5780fe5e/workdir/NotesCool/src/backend/NotesCool.Api/NotesCool.Api.csproj",
         "packagesPath": "/root/.nuget/packages/",
-        "outputPath": "/root/multica_workspaces/dbd8254a-fe10-47a1-92f9-a57cb9210526/bfb60fe6/workdir/NotesCool/src/backend/NotesCool.Api/obj/",
+        "outputPath": "/root/multica_workspaces/dbd8254a-fe10-47a1-92f9-a57cb9210526/5780fe5e/workdir/NotesCool/src/backend/NotesCool.Api/obj/",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "/root/.nuget/NuGet/NuGet.Config"
@@ -26,11 +26,11 @@
           "net8.0": {
             "targetAlias": "net8.0",
             "projectReferences": {
-              "/root/multica_workspaces/dbd8254a-fe10-47a1-92f9-a57cb9210526/bfb60fe6/workdir/NotesCool/src/backend/NotesCool.Notes/NotesCool.Notes.csproj": {
-                "projectPath": "/root/multica_workspaces/dbd8254a-fe10-47a1-92f9-a57cb9210526/bfb60fe6/workdir/NotesCool/src/backend/NotesCool.Notes/NotesCool.Notes.csproj"
+              "/root/multica_workspaces/dbd8254a-fe10-47a1-92f9-a57cb9210526/5780fe5e/workdir/NotesCool/src/backend/NotesCool.Notes/NotesCool.Notes.csproj": {
+                "projectPath": "/root/multica_workspaces/dbd8254a-fe10-47a1-92f9-a57cb9210526/5780fe5e/workdir/NotesCool/src/backend/NotesCool.Notes/NotesCool.Notes.csproj"
               },
-              "/root/multica_workspaces/dbd8254a-fe10-47a1-92f9-a57cb9210526/bfb60fe6/workdir/NotesCool/src/backend/NotesCool.Tasks/NotesCool.Tasks.csproj": {
-                "projectPath": "/root/multica_workspaces/dbd8254a-fe10-47a1-92f9-a57cb9210526/bfb60fe6/workdir/NotesCool/src/backend/NotesCool.Tasks/NotesCool.Tasks.csproj"
+              "/root/multica_workspaces/dbd8254a-fe10-47a1-92f9-a57cb9210526/5780fe5e/workdir/NotesCool/src/backend/NotesCool.Tasks/NotesCool.Tasks.csproj": {
+                "projectPath": "/root/multica_workspaces/dbd8254a-fe10-47a1-92f9-a57cb9210526/5780fe5e/workdir/NotesCool/src/backend/NotesCool.Tasks/NotesCool.Tasks.csproj"
               }
             }
           }
@@ -93,14 +93,14 @@
         }
       }
     },
-    "/root/multica_workspaces/dbd8254a-fe10-47a1-92f9-a57cb9210526/bfb60fe6/workdir/NotesCool/src/backend/NotesCool.Notes/NotesCool.Notes.csproj": {
+    "/root/multica_workspaces/dbd8254a-fe10-47a1-92f9-a57cb9210526/5780fe5e/workdir/NotesCool/src/backend/NotesCool.Notes/NotesCool.Notes.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "/root/multica_workspaces/dbd8254a-fe10-47a1-92f9-a57cb9210526/bfb60fe6/workdir/NotesCool/src/backend/NotesCool.Notes/NotesCool.Notes.csproj",
+        "projectUniqueName": "/root/multica_workspaces/dbd8254a-fe10-47a1-92f9-a57cb9210526/5780fe5e/workdir/NotesCool/src/backend/NotesCool.Notes/NotesCool.Notes.csproj",
         "projectName": "NotesCool.Notes",
-        "projectPath": "/root/multica_workspaces/dbd8254a-fe10-47a1-92f9-a57cb9210526/bfb60fe6/workdir/NotesCool/src/backend/NotesCool.Notes/NotesCool.Notes.csproj",
+        "projectPath": "/root/multica_workspaces/dbd8254a-fe10-47a1-92f9-a57cb9210526/5780fe5e/workdir/NotesCool/src/backend/NotesCool.Notes/NotesCool.Notes.csproj",
         "packagesPath": "/root/.nuget/packages/",
-        "outputPath": "/root/multica_workspaces/dbd8254a-fe10-47a1-92f9-a57cb9210526/bfb60fe6/workdir/NotesCool/src/backend/NotesCool.Notes/obj/",
+        "outputPath": "/root/multica_workspaces/dbd8254a-fe10-47a1-92f9-a57cb9210526/5780fe5e/workdir/NotesCool/src/backend/NotesCool.Notes/obj/",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "/root/.nuget/NuGet/NuGet.Config"
@@ -115,8 +115,8 @@
           "net8.0": {
             "targetAlias": "net8.0",
             "projectReferences": {
-              "/root/multica_workspaces/dbd8254a-fe10-47a1-92f9-a57cb9210526/bfb60fe6/workdir/NotesCool/src/backend/NotesCool.Shared/NotesCool.Shared.csproj": {
-                "projectPath": "/root/multica_workspaces/dbd8254a-fe10-47a1-92f9-a57cb9210526/bfb60fe6/workdir/NotesCool/src/backend/NotesCool.Shared/NotesCool.Shared.csproj"
+              "/root/multica_workspaces/dbd8254a-fe10-47a1-92f9-a57cb9210526/5780fe5e/workdir/NotesCool/src/backend/NotesCool.Shared/NotesCool.Shared.csproj": {
+                "projectPath": "/root/multica_workspaces/dbd8254a-fe10-47a1-92f9-a57cb9210526/5780fe5e/workdir/NotesCool/src/backend/NotesCool.Shared/NotesCool.Shared.csproj"
               }
             }
           }
@@ -160,14 +160,14 @@
         }
       }
     },
-    "/root/multica_workspaces/dbd8254a-fe10-47a1-92f9-a57cb9210526/bfb60fe6/workdir/NotesCool/src/backend/NotesCool.Shared/NotesCool.Shared.csproj": {
+    "/root/multica_workspaces/dbd8254a-fe10-47a1-92f9-a57cb9210526/5780fe5e/workdir/NotesCool/src/backend/NotesCool.Shared/NotesCool.Shared.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "/root/multica_workspaces/dbd8254a-fe10-47a1-92f9-a57cb9210526/bfb60fe6/workdir/NotesCool/src/backend/NotesCool.Shared/NotesCool.Shared.csproj",
+        "projectUniqueName": "/root/multica_workspaces/dbd8254a-fe10-47a1-92f9-a57cb9210526/5780fe5e/workdir/NotesCool/src/backend/NotesCool.Shared/NotesCool.Shared.csproj",
         "projectName": "NotesCool.Shared",
-        "projectPath": "/root/multica_workspaces/dbd8254a-fe10-47a1-92f9-a57cb9210526/bfb60fe6/workdir/NotesCool/src/backend/NotesCool.Shared/NotesCool.Shared.csproj",
+        "projectPath": "/root/multica_workspaces/dbd8254a-fe10-47a1-92f9-a57cb9210526/5780fe5e/workdir/NotesCool/src/backend/NotesCool.Shared/NotesCool.Shared.csproj",
         "packagesPath": "/root/.nuget/packages/",
-        "outputPath": "/root/multica_workspaces/dbd8254a-fe10-47a1-92f9-a57cb9210526/bfb60fe6/workdir/NotesCool/src/backend/NotesCool.Shared/obj/",
+        "outputPath": "/root/multica_workspaces/dbd8254a-fe10-47a1-92f9-a57cb9210526/5780fe5e/workdir/NotesCool/src/backend/NotesCool.Shared/obj/",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "/root/.nuget/NuGet/NuGet.Config"
@@ -227,14 +227,14 @@
         }
       }
     },
-    "/root/multica_workspaces/dbd8254a-fe10-47a1-92f9-a57cb9210526/bfb60fe6/workdir/NotesCool/src/backend/NotesCool.Tasks/NotesCool.Tasks.csproj": {
+    "/root/multica_workspaces/dbd8254a-fe10-47a1-92f9-a57cb9210526/5780fe5e/workdir/NotesCool/src/backend/NotesCool.Tasks/NotesCool.Tasks.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "/root/multica_workspaces/dbd8254a-fe10-47a1-92f9-a57cb9210526/bfb60fe6/workdir/NotesCool/src/backend/NotesCool.Tasks/NotesCool.Tasks.csproj",
+        "projectUniqueName": "/root/multica_workspaces/dbd8254a-fe10-47a1-92f9-a57cb9210526/5780fe5e/workdir/NotesCool/src/backend/NotesCool.Tasks/NotesCool.Tasks.csproj",
         "projectName": "NotesCool.Tasks",
-        "projectPath": "/root/multica_workspaces/dbd8254a-fe10-47a1-92f9-a57cb9210526/bfb60fe6/workdir/NotesCool/src/backend/NotesCool.Tasks/NotesCool.Tasks.csproj",
+        "projectPath": "/root/multica_workspaces/dbd8254a-fe10-47a1-92f9-a57cb9210526/5780fe5e/workdir/NotesCool/src/backend/NotesCool.Tasks/NotesCool.Tasks.csproj",
         "packagesPath": "/root/.nuget/packages/",
-        "outputPath": "/root/multica_workspaces/dbd8254a-fe10-47a1-92f9-a57cb9210526/bfb60fe6/workdir/NotesCool/src/backend/NotesCool.Tasks/obj/",
+        "outputPath": "/root/multica_workspaces/dbd8254a-fe10-47a1-92f9-a57cb9210526/5780fe5e/workdir/NotesCool/src/backend/NotesCool.Tasks/obj/",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "/root/.nuget/NuGet/NuGet.Config"
@@ -249,8 +249,8 @@
           "net8.0": {
             "targetAlias": "net8.0",
             "projectReferences": {
-              "/root/multica_workspaces/dbd8254a-fe10-47a1-92f9-a57cb9210526/bfb60fe6/workdir/NotesCool/src/backend/NotesCool.Shared/NotesCool.Shared.csproj": {
-                "projectPath": "/root/multica_workspaces/dbd8254a-fe10-47a1-92f9-a57cb9210526/bfb60fe6/workdir/NotesCool/src/backend/NotesCool.Shared/NotesCool.Shared.csproj"
+              "/root/multica_workspaces/dbd8254a-fe10-47a1-92f9-a57cb9210526/5780fe5e/workdir/NotesCool/src/backend/NotesCool.Shared/NotesCool.Shared.csproj": {
+                "projectPath": "/root/multica_workspaces/dbd8254a-fe10-47a1-92f9-a57cb9210526/5780fe5e/workdir/NotesCool/src/backend/NotesCool.Shared/NotesCool.Shared.csproj"
               }
             }
           }

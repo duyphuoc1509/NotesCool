@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "uBhkyFwtZG6KiryD7AN5BY1FMm6MaMw3mm3kdjDLaLmbITSWEz9Nf2B8qIwAAgSIJk97EbbG4xwwppvGie+QjQ==",
+  "dgSpecHash": "bEKN54urCDHTPrt2ABlyI7KraXGt0+Uw8DIoz9iy355BA1o6d1bwzFOCYANyNiRWMF9Q9gEhIRINovYSdszt/A==",
   "success": true,
-  "projectFilePath": "/root/multica_workspaces/dbd8254a-fe10-47a1-92f9-a57cb9210526/bfb60fe6/workdir/NotesCool/src/backend/NotesCool.Shared/NotesCool.Shared.csproj",
+  "projectFilePath": "/root/multica_workspaces/dbd8254a-fe10-47a1-92f9-a57cb9210526/5780fe5e/workdir/NotesCool/src/backend/NotesCool.Shared/NotesCool.Shared.csproj",
   "expectedPackageFiles": [
     "/root/.nuget/packages/microsoft.aspnetcore.authentication.jwtbearer/8.0.26/microsoft.aspnetcore.authentication.jwtbearer.8.0.26.nupkg.sha512",
     "/root/.nuget/packages/microsoft.entityframeworkcore/8.0.26/microsoft.entityframeworkcore.8.0.26.nupkg.sha512",
