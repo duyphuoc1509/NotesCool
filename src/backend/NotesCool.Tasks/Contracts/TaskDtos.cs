@@ -1,8 +1,36 @@
+using System.ComponentModel.DataAnnotations;
 using NotesCool.Tasks.Domain;
+using TaskStatus = NotesCool.Tasks.Domain.TaskStatus;
 
 namespace NotesCool.Tasks.Contracts;
 
-public sealed record CreateTaskRequest(string Title, string? Description, TaskItemPriority Priority = TaskItemPriority.Medium, DateTimeOffset? DueAt = null);
-public sealed record UpdateTaskRequest(string Title, string? Description, TaskItemPriority Priority = TaskItemPriority.Medium, DateTimeOffset? DueAt = null);
-public sealed record ChangeTaskStatusRequest(TaskItemStatus Status);
-public sealed record TaskResponse(Guid Id, string Title, string Description, TaskItemStatus Status, TaskItemPriority Priority, DateTimeOffset? DueAt, DateTimeOffset CreatedAt, DateTimeOffset? UpdatedAt);
+public record TaskDto(
+    Guid Id,
+    string Title,
+    string? Description,
+    TaskStatus Status,
+    DateTimeOffset? DueDate,
+    DateTimeOffset CreatedAt,
+    DateTimeOffset? UpdatedAt
+);
+
+public record CreateTaskRequest(
+    [Required(ErrorMessage = "Title is required")]
+    [StringLength(200, ErrorMessage = "Title must not exceed 200 characters")]
+    string Title,
+    string? Description,
+    DateTimeOffset? DueDate
+);
+
+public record UpdateTaskRequest(
+    [Required(ErrorMessage = "Title is required")]
+    [StringLength(200, ErrorMessage = "Title must not exceed 200 characters")]
+    string Title,
+    string? Description,
+    DateTimeOffset? DueDate
+);
+
+public record ChangeTaskStatusRequest(
+    [Required(ErrorMessage = "Status is required")]
+    TaskStatus Status
+);

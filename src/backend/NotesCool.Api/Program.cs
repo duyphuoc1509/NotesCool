@@ -1,4 +1,5 @@
 using NotesCool.Api.Extensions;
+using NotesCool.Tasks.Contracts;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -12,7 +13,7 @@ app.UseExceptionHandling();
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.MapNotesEndpoints();
+app.MapApiEndpoints();
 app.MapTasksEndpoints();
 
 app.Run();

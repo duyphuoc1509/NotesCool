@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "gFMjGy89aHBHIg7HLrPeL44XRvDjFr+O3o/xo9ksv5yKfetnvoa7Vqp+bc8cWiNInCzG38d6lw7Rx2FbY0yL9g==",
+  "dgSpecHash": "tFNEaiBIepJD8bOh68iruaJ0Sj2uu6sW4yGz76b1xBRDWhrnCRwx3FO8hGRbe6hhdMiHZMnLAK/49hB4hXG9Ig==",
   "success": true,
-  "projectFilePath": "/root/multica_workspaces/dbd8254a-fe10-47a1-92f9-a57cb9210526/4e56a263/workdir/NotesCool/tests/backend/NotesCool.Tasks.Tests/NotesCool.Tasks.Tests.csproj",
+  "projectFilePath": "/root/multica_workspaces/dbd8254a-fe10-47a1-92f9-a57cb9210526/03bf5c1d/workdir/NotesCool/tests/backend/NotesCool.Tasks.Tests/NotesCool.Tasks.Tests.csproj",
   "expectedPackageFiles": [
     "/root/.nuget/packages/coverlet.collector/3.1.2/coverlet.collector.3.1.2.nupkg.sha512",
     "/root/.nuget/packages/microsoft.aspnetcore.authentication.jwtbearer/8.0.26/microsoft.aspnetcore.authentication.jwtbearer.8.0.26.nupkg.sha512",
