@@ -1,9 +1,10 @@
+using NotesCool.Api.Auth;
 using NotesCool.Api.Extensions;
 using NotesCool.Tasks.Contracts;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddShared();
+builder.Services.AddShared(builder.Configuration);
 builder.Services.AddNotesModule(builder.Configuration);
 builder.Services.AddTasksModule(builder.Configuration);
 
@@ -21,6 +22,7 @@ app.UseStatusCodePages();
 app.UseAuthentication();
 app.UseAuthorization();
 
+app.MapAuthEndpoints();
 app.MapApiEndpoints();
 app.MapTasksEndpoints();
 
