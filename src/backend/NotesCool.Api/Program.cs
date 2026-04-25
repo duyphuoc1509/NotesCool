@@ -17,6 +17,15 @@ app.UseAuthorization();
 app.MapApiEndpoints();
 app.MapTasksEndpoints();
 
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "NotesCool API V1");
+    });
+}
+
 app.Run();
 
 public partial class Program { } // For integration tests
