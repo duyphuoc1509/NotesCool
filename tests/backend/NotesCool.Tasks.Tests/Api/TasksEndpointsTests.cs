@@ -55,11 +55,11 @@ public class TasksEndpointsTests : IClassFixture<WebApplicationFactory<Program>>
     [Fact]
     public async Task CreateTask_ReturnsOk()
     {
-        var request = new CreateTaskRequest("Test Task", "Desc", TaskItemPriority.Medium, null);
+        var request = new CreateTaskRequest("Test Task", "Desc", null);
         var response = await _client.PostAsJsonAsync("/api/tasks", request);
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
         
-        var task = await response.Content.ReadFromJsonAsync<TaskResponse>();
+        var task = await response.Content.ReadFromJsonAsync<TaskDto>();
         task.Should().NotBeNull();
         task!.Title.Should().Be("Test Task");
     }
