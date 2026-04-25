@@ -1,0 +1,8 @@
+{
+  "name": "notescool-frontend",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "build": "mkdir -p dist && echo '<h1>NotesCool Frontend Skeleton</h1>' > dist/index.html"
+  }
+}
