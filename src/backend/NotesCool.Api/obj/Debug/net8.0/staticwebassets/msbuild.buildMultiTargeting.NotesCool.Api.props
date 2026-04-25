@@ -1,3 +1,0 @@
-﻿<Project>
-  <Import Project="../build/NotesCool.Api.props" />
-</Project>
