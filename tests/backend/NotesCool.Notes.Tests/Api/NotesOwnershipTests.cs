@@ -33,7 +33,7 @@ public class NotesOwnershipTests : IClassFixture<WebApplicationFactory<Program>>
                 if (descriptor != null) services.Remove(descriptor);
                 services.AddDbContext<NotesDbContext>(options => options.UseInMemoryDatabase("InMemoryNotesOwnershipDb"));
                 services.AddAuthentication("Test").AddScheme<AuthenticationSchemeOptions, DynamicTestAuthHandler>("Test", options => { });
-                services.AddScoped<ICurrentUser, CurrentUser>(sp => new CurrentUser(sp.GetRequiredService<IHttpContextAccessor>().HttpContext!.User));
+                services.AddScoped<ICurrentUser, CurrentUser>();
             });
         });
     }
