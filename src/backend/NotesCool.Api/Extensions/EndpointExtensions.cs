@@ -11,7 +11,7 @@ public static class EndpointExtensions
     public static IEndpointRouteBuilder MapApiEndpoints(this IEndpointRouteBuilder builder)
     {
         var notesGroup = builder.MapGroup("api/notes").WithTags("Notes").RequireAuthorization();
-        notesGroup.MapGet("", async (string? query, int page, int pageSize, NotesService service, ICurrentUser u, CancellationToken ct) => Results.Ok(await service.SearchAsync(u.UserId, query, new PageRequest(page, pageSize), ct)))
+        notesGroup.MapGet("", async (string? query, int? page, int? pageSize, NotesService service, ICurrentUser u, CancellationToken ct) => Results.Ok(await service.SearchAsync(u.UserId, query, new PageRequest(page ?? 1, pageSize ?? 20), ct)))
             .WithSummary("Search notes")
             .WithDescription("Returns the current user's notes with optional text search and pagination.")
             .Produces<PagedResult<NoteResponse>>();
