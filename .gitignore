@@ -487,3 +487,8 @@ launchSettings.json
 /.vscode
 /.github
 .cursor/
+**/obj/Debug/**
+**/bin/Debug/**
+**/[Bb]in/**
+**/[Oo]bj/**
+**/TestResults/**
