@@ -56,7 +56,7 @@ public class NotesEndpointsTests : IClassFixture<WebApplicationFactory<Program>>
     {
         var request = new CreateNoteRequest("Test Note", "Content");
         var response = await _client.PostAsJsonAsync("/api/notes", request);
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
         
         var note = await response.Content.ReadFromJsonAsync<NoteResponse>();
         note.Should().NotBeNull();
