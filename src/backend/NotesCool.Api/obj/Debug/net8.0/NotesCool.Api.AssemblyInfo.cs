@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("NotesCool.Api")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+07b0b07a4425ed2330289b578d99dd8aa9bed7b4")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+e54cae252c43ba112faf9e64a909f6eca4fe1c18")]
 [assembly: System.Reflection.AssemblyProductAttribute("NotesCool.Api")]
 [assembly: System.Reflection.AssemblyTitleAttribute("NotesCool.Api")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
