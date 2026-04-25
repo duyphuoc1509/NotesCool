@@ -4,25 +4,121 @@ using NotesCool.Shared.Errors;
 using NotesCool.Tasks.Contracts;
 using NotesCool.Tasks.Domain;
 using NotesCool.Tasks.Infrastructure;
+using TaskStatus = NotesCool.Tasks.Domain.TaskStatus;
 
 namespace NotesCool.Tasks.Application;
 
-public sealed class TasksService(TasksDbContext db)
+public class TasksService
 {
-    public async Task<PagedResult<TaskResponse>> ListAsync(string ownerId, TaskItemStatus? status, string? sort, PageRequest page, CancellationToken ct)
+    private readonly TasksDbContext _dbContext;
+
+    public TasksService(TasksDbContext dbContext)
     {
-        var q = db.Tasks.AsNoTracking().Where(t => t.OwnerId == ownerId && t.ArchivedAt == null);
-        if (status.HasValue) q = q.Where(t => t.Status == status.Value);
-        q = sort == "dueAt" ? q.OrderBy(t => t.DueAt) : q.OrderByDescending(t => t.UpdatedAt ?? t.CreatedAt);
-        var total = await q.CountAsync(ct);
-        var items = await q.Skip(page.Skip).Take(page.Take).Select(t => ToResponse(t)).ToListAsync(ct);
-        return new(items, page.Page, page.Take, total);
+        _dbContext = dbContext;
     }
-    public async Task<TaskResponse> GetAsync(string ownerId, Guid id, CancellationToken ct) => ToResponse(await Owned(ownerId, id, ct));
-    public async Task<TaskResponse> CreateAsync(string ownerId, CreateTaskRequest request, CancellationToken ct) { var t = new TaskItem(ownerId, request.Title, request.Description, request.Priority); t.Update(request.Title, request.Description, request.DueAt, request.Priority); db.Tasks.Add(t); await db.SaveChangesAsync(ct); return ToResponse(t); }
-    public async Task<TaskResponse> UpdateAsync(string ownerId, Guid id, UpdateTaskRequest request, CancellationToken ct) { var t = await Owned(ownerId, id, ct); t.Update(request.Title, request.Description, request.DueAt, request.Priority); await db.SaveChangesAsync(ct); return ToResponse(t); }
-    public async Task<TaskResponse> ChangeStatusAsync(string ownerId, Guid id, ChangeTaskStatusRequest request, CancellationToken ct) { var t = await Owned(ownerId, id, ct); t.ChangeStatus(request.Status); await db.SaveChangesAsync(ct); return ToResponse(t); }
-    public async Task ArchiveAsync(string ownerId, Guid id, CancellationToken ct) { var t = await Owned(ownerId, id, ct); t.Archive(); await db.SaveChangesAsync(ct); }
-    private async Task<TaskItem> Owned(string ownerId, Guid id, CancellationToken ct) => await db.Tasks.FirstOrDefaultAsync(t => t.Id == id && t.OwnerId == ownerId && t.ArchivedAt == null, ct) ?? throw new ApiException("task_not_found", "Task was not found.", 404);
-    private static TaskResponse ToResponse(TaskItem t) => new(t.Id, t.Title, t.Description, t.Status, t.Priority, t.DueAt, t.CreatedAt, t.UpdatedAt);
+
+    public async Task<PagedResult<TaskDto>> GetTasksAsync(
+        string ownerId,
+        TaskStatus? status,
+        int page,
+        int pageSize,
+        CancellationToken cancellationToken = default)
+    {
+        var query = _dbContext.Tasks
+            .AsNoTracking()
+            .Where(t => t.OwnerId == ownerId);
+
+        if (status.HasValue)
+        {
+            query = query.Where(t => t.Status == status.Value);
+        }
+
+        var totalItems = await query.CountAsync(cancellationToken);
+
+        var tasks = await query
+            .OrderByDescending(t => t.CreatedAt)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .Select(t => new TaskDto(
+                t.Id,
+                t.Title,
+                t.Description,
+                t.Status,
+                t.DueDate,
+                t.CreatedAt,
+                t.UpdatedAt))
+            .ToListAsync(cancellationToken);
+
+        return new PagedResult<TaskDto>(tasks, page, pageSize, totalItems);
+    }
+
+    public async Task<TaskDto> GetTaskAsync(Guid id, string ownerId, CancellationToken cancellationToken = default)
+    {
+        var task = await GetTaskEntityAsync(id, ownerId, cancellationToken);
+        return MapToDto(task);
+    }
+
+    public async Task<TaskDto> CreateTaskAsync(CreateTaskRequest request, string ownerId, CancellationToken cancellationToken = default)
+    {
+        var task = new TaskItem(request.Title, request.Description, request.DueDate, ownerId);
+        
+        _dbContext.Tasks.Add(task);
+        await _dbContext.SaveChangesAsync(cancellationToken);
+        
+        return MapToDto(task);
+    }
+
+    public async Task<TaskDto> UpdateTaskAsync(Guid id, UpdateTaskRequest request, string ownerId, CancellationToken cancellationToken = default)
+    {
+        var task = await GetTaskEntityAsync(id, ownerId, cancellationToken);
+        
+        task.Update(request.Title, request.Description, request.DueDate);
+        
+        await _dbContext.SaveChangesAsync(cancellationToken);
+        
+        return MapToDto(task);
+    }
+
+    public async Task<TaskDto> ChangeTaskStatusAsync(Guid id, ChangeTaskStatusRequest request, string ownerId, CancellationToken cancellationToken = default)
+    {
+        var task = await GetTaskEntityAsync(id, ownerId, cancellationToken);
+        
+        task.ChangeStatus(request.Status);
+        
+        await _dbContext.SaveChangesAsync(cancellationToken);
+        
+        return MapToDto(task);
+    }
+
+    public async Task DeleteTaskAsync(Guid id, string ownerId, CancellationToken cancellationToken = default)
+    {
+        var task = await GetTaskEntityAsync(id, ownerId, cancellationToken);
+        
+        task.Archive();
+        
+        await _dbContext.SaveChangesAsync(cancellationToken);
+    }
+
+    private async Task<TaskItem> GetTaskEntityAsync(Guid id, string ownerId, CancellationToken cancellationToken)
+    {
+        var task = await _dbContext.Tasks
+            .FirstOrDefaultAsync(t => t.Id == id && t.OwnerId == ownerId, cancellationToken);
+            
+        if (task == null)
+            throw new ApiException("task_not_found", "Task not found", 404);
+            
+        return task;
+    }
+
+    private static TaskDto MapToDto(TaskItem task)
+    {
+        return new TaskDto(
+            task.Id,
+            task.Title,
+            task.Description,
+            task.Status,
+            task.DueDate,
+            task.CreatedAt,
+            task.UpdatedAt);
+    }
 }
