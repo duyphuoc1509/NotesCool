@@ -5,30 +5,32 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.Extensions.Options;
 using Microsoft.OpenApi.Models;
+using NotesCool.Api.Identity;
 using NotesCool.Api.Configuration;
+using NotesCool.Api.Auth;
 using NotesCool.Notes.Application;
 using NotesCool.Notes.Infrastructure;
 using NotesCool.Shared.Auth;
 using NotesCool.Tasks.Application;
 using NotesCool.Tasks.Infrastructure;
-using NotesCool.Api.Identity;
+using NotesCool.Identity.Infrastructure;
 
 namespace NotesCool.Api.Extensions;
 
 public static class ServiceCollections
 {
-    public static IServiceCollection AddShared(this IServiceCollection services, IConfiguration configuration)
     public static IServiceCollection AddShared(this IServiceCollection services, IConfiguration config, IHostEnvironment environment)
     {
         services.AddHttpContextAccessor();
         services.AddScoped<ICurrentUser, CurrentUser>();
+        services.AddSingleton<SsoStore>();
+        services.AddSingleton<IRefreshTokenStore, InMemoryRefreshTokenStore>();
         services.AddExceptionHandler<GlobalExceptionHandler>();
         services.AddProblemDetails();
-        services.AddSingleton<SsoStore>();
 
-        var jwtKey = configuration["Jwt:Key"] ?? "development-only-notescool-sso-signing-key";
-        var jwtIssuer = configuration["Jwt:Issuer"] ?? "NotesCool";
-        var jwtAudience = configuration["Jwt:Audience"] ?? "NotesCool";
+        var jwtKey = config["Jwt:Key"] ?? "development-only-notescool-sso-signing-key";
+        var jwtIssuer = config["Jwt:Issuer"] ?? "NotesCool";
+        var jwtAudience = config["Jwt:Audience"] ?? "NotesCool";
 
         services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             .AddJwtBearer(options =>
@@ -42,7 +44,8 @@ public static class ServiceCollections
                     ValidIssuer = jwtIssuer,
                     ValidAudience = jwtAudience,
                     IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey.PadRight(32, '0'))),
-                    RoleClaimType = ClaimTypes.Role
+                    RoleClaimType = ClaimTypes.Role,
+                    ClockSkew = TimeSpan.Zero
                 };
             });
 
@@ -51,12 +54,13 @@ public static class ServiceCollections
             options.AddPolicy("AdminOnly", policy => policy.RequireRole(SystemRoles.Admin));
         });
 
-       services.AddOptions<SsoOptions>()
+        services.AddOptions<SsoOptions>()
             .Bind(config.GetSection(SsoOptions.SectionName))
             .ValidateOnStart();
         services.AddSingleton<IValidateOptions<SsoOptions>>(_ => new SsoOptionsValidator(environment));
-        services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer();
-        services.AddAuthorization();
+        
+        services.AddScoped<RegistrationService>();
+
         services.AddEndpointsApiExplorer();
         services.AddSwaggerGen(options =>
         {
@@ -70,7 +74,7 @@ public static class ServiceCollections
             options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
             {
                 In = ParameterLocation.Header,
-                Description = "Please enter JWT with Bearer into field. Example: \"Authorization: Bearer ***
+                Description = "Please enter JWT with Bearer into field. Example: \"Authorization: Bearer ***\"",
                 Name = "Authorization",
                 Type = SecuritySchemeType.ApiKey,
                 Scheme = "Bearer",

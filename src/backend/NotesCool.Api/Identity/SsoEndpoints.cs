@@ -56,7 +56,6 @@ public static class SsoEndpoints
             return TypedResults.NoContent();
         }).RequireAuthorization();
 
-
         return app;
     }
 
@@ -90,6 +89,7 @@ public static class SsoEndpoints
         var providers = user.LinkedProviders.Values
             .Select(link => new LinkedSsoProviderResponse(link.Provider, link.ProviderUserId, link.Email, link.LinkedAt))
             .ToArray();
+
         return new SsoUserResponse(user.UserId, user.Email, user.DisplayName, user.Role, providers);
     }
 }
