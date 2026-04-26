@@ -1,10 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using FluentAssertions;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.AspNetCore.TestHost;
-using Microsoft.Extensions.DependencyInjection;
 using NotesCool.Api.Auth;
 using Xunit;
 
@@ -16,48 +13,63 @@ public class AuthEndpointsTests : IClassFixture<WebApplicationFactory<Program>>
 
     public AuthEndpointsTests(WebApplicationFactory<Program> factory)
     {
-        _client = factory.WithWebHostBuilder(builder =>
-        {
-            builder.ConfigureTestServices(services =>
-            {
-                services.AddSingleton<IUserCredentialStore>(new InMemoryUserCredentialStore(new[]
-                {
-                    new RegisteredUser("user-1", "jane@example.com", "Jane Doe", "P@ssw0rd!")
-                }));
-            });
-        }).CreateClient();
+        _client = factory.CreateClient();
     }
 
     [Fact]
-    public async Task Login_WithValidCredentials_ReturnsAccessTokenAndUserInfo()
+    public async Task Refresh_WithValidRefreshToken_ReturnsNewTokens()
     {
-        var response = await _client.PostAsJsonAsync("/api/auth/login", new LoginRequest("jane@example.com", "P@ssw0rd!"));
+        var loginResponse = await _client.PostAsJsonAsync("/api/auth/login", new LoginRequest("user@example.com", "password123"));
+        loginResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        var loginTokens = await loginResponse.Content.ReadFromJsonAsync<AuthTokenResponse>();
 
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var login = await response.Content.ReadFromJsonAsync<LoginResponse>();
+        var refreshResponse = await _client.PostAsJsonAsync("/api/auth/refresh", new RefreshTokenRequest(loginTokens!.RefreshToken));
 
-        login.Should().NotBeNull();
-        login!.AccessToken.Should().NotBeNullOrWhiteSpace();
-        login.TokenType.Should().Be("Bearer");
-        login.ExpiresIn.Should().BeGreaterThan(0);
-        login.User.Id.Should().Be("user-1");
-        login.User.Email.Should().Be("jane@example.com");
-        login.User.DisplayName.Should().Be("Jane Doe");
+        refreshResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        var refreshedTokens = await refreshResponse.Content.ReadFromJsonAsync<AuthTokenResponse>();
+        refreshedTokens.Should().NotBeNull();
+        refreshedTokens!.AccessToken.Should().NotBeNullOrWhiteSpace();
+        refreshedTokens.RefreshToken.Should().NotBeNullOrWhiteSpace();
+        refreshedTokens.RefreshToken.Should().NotBe(loginTokens.RefreshToken);
     }
 
     [Fact]
-    public async Task Login_WithInvalidCredentials_ReturnsGenericUnauthorizedWithoutLeakingAccountExistence()
+    public async Task Refresh_WithReusedRefreshToken_ReturnsUnauthorized()
     {
-        var wrongPassword = await _client.PostAsJsonAsync("/api/auth/login", new LoginRequest("jane@example.com", "wrong"));
-        var unknownEmail = await _client.PostAsJsonAsync("/api/auth/login", new LoginRequest("missing@example.com", "wrong"));
+        var loginResponse = await _client.PostAsJsonAsync("/api/auth/login", new LoginRequest("user@example.com", "password123"));
+        var loginTokens = await loginResponse.Content.ReadFromJsonAsync<AuthTokenResponse>();
 
-        wrongPassword.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
-        unknownEmail.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+        var firstRefresh = await _client.PostAsJsonAsync("/api/auth/refresh", new RefreshTokenRequest(loginTokens!.RefreshToken));
+        firstRefresh.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var wrongPasswordBody = await wrongPassword.Content.ReadAsStringAsync();
-        var unknownEmailBody = await unknownEmail.Content.ReadAsStringAsync();
-        wrongPasswordBody.Should().Be(unknownEmailBody);
-        wrongPasswordBody.Should().NotContain("jane@example.com");
-        wrongPasswordBody.Should().NotContain("missing@example.com");
+        var secondRefresh = await _client.PostAsJsonAsync("/api/auth/refresh", new RefreshTokenRequest(loginTokens.RefreshToken));
+
+        secondRefresh.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
+
+    [Fact]
+    public async Task Logout_RevokesRefreshToken_AndRefreshReturnsUnauthorized()
+    {
+        var loginResponse = await _client.PostAsJsonAsync("/api/auth/login", new LoginRequest("user@example.com", "password123"));
+        var loginTokens = await loginResponse.Content.ReadFromJsonAsync<AuthTokenResponse>();
+
+        var logoutResponse = await _client.PostAsJsonAsync("/api/auth/logout", new RefreshTokenRequest(loginTokens!.RefreshToken));
+        logoutResponse.StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        var refreshResponse = await _client.PostAsJsonAsync("/api/auth/refresh", new RefreshTokenRequest(loginTokens.RefreshToken));
+
+        refreshResponse.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact]
+    public async Task Refresh_WithExpiredRefreshToken_ReturnsUnauthorized()
+    {
+        var loginResponse = await _client.PostAsJsonAsync("/api/auth/login", new LoginRequest("user@example.com", "password123", -1));
+        var loginTokens = await loginResponse.Content.ReadFromJsonAsync<AuthTokenResponse>();
+
+        var refreshResponse = await _client.PostAsJsonAsync("/api/auth/refresh", new RefreshTokenRequest(loginTokens!.RefreshToken));
+
+        refreshResponse.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
 }

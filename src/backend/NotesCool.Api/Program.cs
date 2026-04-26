@@ -1,3 +1,5 @@
+lusing NotesCool.Api.Auth;
+using NotesCool.Api.Extensions;
 using NotesCool.Api.Auth;
 using NotesCool.Api.Extensions;
 using NotesCool.Notes.Infrastructure;
@@ -28,6 +30,7 @@ app.MapAuthEndpoints();
 app.MapIdentityEndpoints();
 app.MapApiEndpoints();
 app.MapTasksEndpoints();
+app.MapAuthEndpoints();
 
 app.Run();
 
