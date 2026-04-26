@@ -1,13 +1,16 @@
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.OpenApi.Models;
+using NotesCool.Api.Identity;
 using NotesCool.Api.Configuration;
+using NotesCool.Api.Auth;
 using NotesCool.Notes.Application;
 using NotesCool.Notes.Infrastructure;
 using NotesCool.Shared.Auth;
 using NotesCool.Tasks.Application;
 using NotesCool.Tasks.Infrastructure;
+using NotesCool.Identity.Infrastructure;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 
 namespace NotesCool.Api.Extensions;
 
@@ -17,14 +20,21 @@ public static class ServiceCollections
     {
         services.AddHttpContextAccessor();
         services.AddScoped<ICurrentUser, CurrentUser>();
+        services.AddSingleton<SsoStore>();
         services.AddExceptionHandler<GlobalExceptionHandler>();
         services.AddProblemDetails();
+
         services.AddOptions<SsoOptions>()
             .Bind(config.GetSection(SsoOptions.SectionName))
             .ValidateOnStart();
         services.AddSingleton<IValidateOptions<SsoOptions>>(_ => new SsoOptionsValidator(environment));
-        services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer();
-        services.AddAuthorization();
+
+        // Note: IdentityDbContext is used for registration in PR #30, but IdentityModule uses its own.
+        // We ensure AuthDbContext (if separate) or IdentityDbContext is registered correctly.
+        // Based on PR #30, it used AuthDbContext.
+        // services.AddDbContext<AuthDbContext>(o => o.UseNpgsql(config.GetConnectionString("DefaultConnection")));
+        
+        services.AddScoped<RegistrationService>();
 
         services.AddEndpointsApiExplorer();
         services.AddSwaggerGen(options =>
