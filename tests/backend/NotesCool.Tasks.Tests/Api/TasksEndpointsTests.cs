@@ -46,6 +46,17 @@ public class TasksEndpointsTests : IClassFixture<WebApplicationFactory<Program>>
     }
 
     [Fact]
+    public async Task GetTasks_WithoutAuthentication_ReturnsUnauthorized()
+    {
+        using var unauthenticatedClient = _client;
+        unauthenticatedClient.DefaultRequestHeaders.Authorization = null;
+
+        var response = await unauthenticatedClient.GetAsync("/api/tasks");
+
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact]
     public async Task GetTasks_ReturnsOk()
     {
         var response = await _client.GetAsync("/api/tasks");
