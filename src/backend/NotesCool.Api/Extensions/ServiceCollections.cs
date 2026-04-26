@@ -74,6 +74,8 @@ public static class ServiceCollections
         
         services.AddScoped<RegistrationService>();
 
+        services.AddSingleton<SsoStore>();
+
         services.AddEndpointsApiExplorer();
         services.AddSwaggerGen(options =>
         {
