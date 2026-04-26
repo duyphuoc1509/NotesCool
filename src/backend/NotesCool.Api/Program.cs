@@ -1,4 +1,4 @@
-lusing NotesCool.Api.Auth;
+using NotesCool.Api.Contracts;
 using NotesCool.Api.Extensions;
 using NotesCool.Api.Auth;
 using NotesCool.Api.Extensions;
@@ -18,7 +18,11 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "NotesCool API v1");
+        c.RoutePrefix = "swagger";
+    });
 }
 
 app.UseHttpsRedirection();
@@ -34,4 +38,4 @@ app.MapAuthEndpoints();
 
 app.Run();
 
-public partial class Program { } // For integration tests
+public partial class Program { }
