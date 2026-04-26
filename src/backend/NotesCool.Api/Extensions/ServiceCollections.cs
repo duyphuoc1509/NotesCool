@@ -3,7 +3,9 @@ using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.Extensions.Options;
 using Microsoft.OpenApi.Models;
+using NotesCool.Api.Configuration;
 using NotesCool.Notes.Application;
 using NotesCool.Notes.Infrastructure;
 using NotesCool.Shared.Auth;
@@ -16,6 +18,7 @@ namespace NotesCool.Api.Extensions;
 public static class ServiceCollections
 {
     public static IServiceCollection AddShared(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection AddShared(this IServiceCollection services, IConfiguration config, IHostEnvironment environment)
     {
         services.AddHttpContextAccessor();
         services.AddScoped<ICurrentUser, CurrentUser>();
@@ -48,6 +51,12 @@ public static class ServiceCollections
         {
             options.AddPolicy("AdminOnly", policy => policy.RequireRole(SystemRoles.Admin));
         });
+        services.AddOptions<SsoOptions>()
+            .Bind(config.GetSection(SsoOptions.SectionName))
+            .ValidateOnStart();
+        services.AddSingleton<IValidateOptions<SsoOptions>>(_ => new SsoOptionsValidator(environment));
+        services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer();
+        services.AddAuthorization();
 
         services.AddEndpointsApiExplorer();
         services.AddSwaggerGen(options =>
@@ -62,7 +71,7 @@ public static class ServiceCollections
             options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
             {
                 In = ParameterLocation.Header,
-                Description = "Please enter JWT with Bearer into field. Example: \"Authorization: Bearer ***\"",
+                Description = "Please enter JWT with Bearer into field. Example: \"Authorization: Bearer ***
                 Name = "Authorization",
                 Type = SecuritySchemeType.ApiKey,
                 Scheme = "Bearer",
