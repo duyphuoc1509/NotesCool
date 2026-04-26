@@ -5,9 +5,13 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.Extensions.Options;
 using Microsoft.OpenApi.Models;
+using NotesCool.Api.Contracts;
+using Microsoft.Extensions.Options;
 using NotesCool.Api.Identity;
 using NotesCool.Api.Configuration;
 using NotesCool.Api.Auth;
+using NotesCool.Api.Configuration;
+using NotesCool.Api.Identity;
 using NotesCool.Notes.Application;
 using NotesCool.Notes.Infrastructure;
 using NotesCool.Shared.Auth;
@@ -19,14 +23,50 @@ namespace NotesCool.Api.Extensions;
 
 public static class ServiceCollections
 {
-    public static IServiceCollection AddShared(this IServiceCollection services, IConfiguration config, IHostEnvironment environment)
+    public static IServiceCollection AddShared(this IServiceCollection services, IConfiguration configuration, IHostEnvironment environment)
     {
         services.AddHttpContextAccessor();
         services.AddScoped<ICurrentUser, CurrentUser>();
+        services.AddSingleton<IUserCredentialStore, InMemoryUserCredentialStore>();
+        services.AddSingleton<IAccessTokenService, JwtAccessTokenService>();
         services.AddSingleton<SsoStore>();
         services.AddSingleton<IRefreshTokenStore, InMemoryRefreshTokenStore>();
         services.AddExceptionHandler<GlobalExceptionHandler>();
         services.AddProblemDetails();
+        
+        services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+            .AddJwtBearer(options =>
+            {
+                options.TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuer = true,
+                    ValidateAudience = true,
+                    ValidateIssuerSigningKey = true,
+                    ValidateLifetime = true,
+                    ValidIssuer = configuration["Jwt:Issuer"] ?? "NotesCool",
+                    ValidAudience = configuration["Jwt:Audience"] ?? "NotesCool",
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(
+                        configuration["Jwt:SigningKey"] ?? "NotesCool development signing key with at least 32 chars")),
+                    ClockSkew = TimeSpan.Zero
+                };
+            });
+
+        services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+            .AddJwtBearer(options =>
+            {
+                options.TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuer = true,
+                    ValidateAudience = true,
+                    ValidateIssuerSigningKey = true,
+                    ValidateLifetime = true,
+                    ValidIssuer = config["Jwt:Issuer"] ?? "NotesCool",
+                    ValidAudience = config["Jwt:Audience"] ?? "NotesCool",
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(config["Jwt:SigningKey"] ?? "NotesCool development signing key must be at least 32 bytes"))
+                };
+            });
+
+        services.AddAuthorization();
 
         var jwtKey = config["Jwt:Key"] ?? "development-only-notescool-sso-signing-key";
         var jwtIssuer = config["Jwt:Issuer"] ?? "NotesCool";
@@ -55,11 +95,13 @@ public static class ServiceCollections
         });
 
         services.AddOptions<SsoOptions>()
-            .Bind(config.GetSection(SsoOptions.SectionName))
+            .Bind(configuration.GetSection(SsoOptions.SectionName))
             .ValidateOnStart();
         services.AddSingleton<IValidateOptions<SsoOptions>>(_ => new SsoOptionsValidator(environment));
         
         services.AddScoped<RegistrationService>();
+
+        services.AddSingleton<SsoStore>();
 
         services.AddEndpointsApiExplorer();
         services.AddSwaggerGen(options =>
