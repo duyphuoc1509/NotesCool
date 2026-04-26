@@ -6,6 +6,7 @@ using NotesCool.Tasks.Contracts;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddShared(builder.Configuration);
+builder.Services.AddShared(builder.Configuration, builder.Environment);
 builder.Services.AddNotesModule(builder.Configuration);
 builder.Services.AddTasksModule(builder.Configuration);
 
