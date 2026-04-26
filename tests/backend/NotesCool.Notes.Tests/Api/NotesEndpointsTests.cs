@@ -45,6 +45,17 @@ public class NotesEndpointsTests : IClassFixture<WebApplicationFactory<Program>>
     }
 
     [Fact]
+    public async Task GetNotes_WithoutAuthentication_ReturnsUnauthorized()
+    {
+        using var unauthenticatedClient = _client;
+        unauthenticatedClient.DefaultRequestHeaders.Authorization = null;
+
+        var response = await unauthenticatedClient.GetAsync("/api/notes");
+
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact]
     public async Task GetNotes_ReturnsOk()
     {
         var response = await _client.GetAsync("/api/notes");
@@ -67,6 +78,6 @@ public class NotesEndpointsTests : IClassFixture<WebApplicationFactory<Program>>
 public class TestCurrentUser : ICurrentUser
 {
     public string UserId => "test-user-id";
-    public string Email => "test@example.com";
-    public string Role => "User";
+    public string Role => SystemRoles.User;
+    public bool IsInRole(string role) => role == Role;
 }

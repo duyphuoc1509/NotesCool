@@ -1,3 +1,6 @@
+using System.Security.Claims;
+using System.Text;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using System.Text;
 using Microsoft.IdentityModel.Tokens;
@@ -7,6 +10,8 @@ using Microsoft.Extensions.Options;
 using NotesCool.Api.Identity;
 using NotesCool.Api.Configuration;
 using NotesCool.Api.Auth;
+using NotesCool.Api.Configuration;
+using NotesCool.Api.Identity;
 using NotesCool.Notes.Application;
 using NotesCool.Notes.Infrastructure;
 using NotesCool.Shared.Auth;
@@ -14,7 +19,6 @@ using NotesCool.Shared.Security;
 using NotesCool.Tasks.Application;
 using NotesCool.Tasks.Infrastructure;
 using NotesCool.Identity.Infrastructure;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 
 namespace NotesCool.Api.Extensions;
 
@@ -24,6 +28,8 @@ public static class ServiceCollections
     {
         services.AddHttpContextAccessor();
         services.AddScoped<ICurrentUser, CurrentUser>();
+        services.AddSingleton<IUserCredentialStore, InMemoryUserCredentialStore>();
+        services.AddSingleton<IAccessTokenService, JwtAccessTokenService>();
         services.AddSingleton<SsoStore>();
         services.AddSingleton<IRefreshTokenStore, InMemoryRefreshTokenStore>();
         services.AddScoped<ISecurityAuditService, SecurityAuditService>();
@@ -53,6 +59,8 @@ public static class ServiceCollections
         services.AddSingleton<IValidateOptions<SsoOptions>>(_ => new SsoOptionsValidator(environment));
         
         services.AddScoped<RegistrationService>();
+
+        services.AddSingleton<SsoStore>();
 
         services.AddEndpointsApiExplorer();
         services.AddSwaggerGen(options =>

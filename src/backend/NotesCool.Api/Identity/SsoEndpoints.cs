@@ -65,6 +65,7 @@ public static class SsoEndpoints
             return TypedResults.NoContent();
         }).RequireAuthorization();
 
+
         return app;
     }
 
@@ -84,7 +85,8 @@ public static class SsoEndpoints
             {
                 new Claim(JwtRegisteredClaimNames.Sub, user.UserId),
                 new Claim(ClaimTypes.NameIdentifier, user.UserId),
-                new Claim(ClaimTypes.Email, user.Email ?? string.Empty)
+                new Claim(ClaimTypes.Email, user.Email ?? string.Empty),
+                new Claim(ClaimTypes.Role, user.Role)
             },
             expires: expires,
             signingCredentials: credentials);
@@ -98,6 +100,6 @@ public static class SsoEndpoints
             .Select(link => new LinkedSsoProviderResponse(link.Provider, link.ProviderUserId, link.Email, link.LinkedAt))
             .ToArray();
 
-        return new SsoUserResponse(user.UserId, user.Email, user.DisplayName, providers);
+        return new SsoUserResponse(user.UserId, user.Email, user.DisplayName, user.Role, providers);
     }
 }

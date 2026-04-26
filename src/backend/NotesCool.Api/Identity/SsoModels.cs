@@ -6,7 +6,7 @@ public sealed record LinkSsoProviderRequest(string Provider, string Code, string
 
 public sealed record SsoTokenResponse(string AccessToken, string TokenType, int ExpiresIn, SsoUserResponse User);
 
-public sealed record SsoUserResponse(string UserId, string? Email, string? DisplayName, IReadOnlyCollection<LinkedSsoProviderResponse> LinkedProviders);
+public sealed record SsoUserResponse(string UserId, string? Email, string? DisplayName, string Role, IReadOnlyCollection<LinkedSsoProviderResponse> LinkedProviders);
 
 public sealed record LinkedSsoProviderResponse(string Provider, string ProviderUserId, string? Email, DateTimeOffset LinkedAt);
 
