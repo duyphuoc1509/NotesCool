@@ -4,6 +4,7 @@ using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
 using Microsoft.IdentityModel.Tokens;
+using NotesCool.Shared.Security;
 
 namespace NotesCool.Api.Contracts;
 
@@ -15,30 +16,44 @@ public static class AuthEndpoints
     {
         var group = app.MapGroup("/api/auth").WithTags("Auth");
 
-        group.MapPost("/login", (LoginRequest request, IRefreshTokenStore refreshTokens, IConfiguration configuration) =>
+        group.MapPost("/login", (LoginRequest request, IRefreshTokenStore refreshTokens, IConfiguration configuration, ISecurityAuditService audit, HttpContext http) =>
         {
             if (string.IsNullOrWhiteSpace(request.Email) || string.IsNullOrWhiteSpace(request.Password))
             {
+                audit.LogAuthEvent(SecurityAuditEvents.LoginFailed, "unknown", request.Email, http.Connection.RemoteIpAddress?.ToString(), http.Request.Headers.UserAgent, new { reason = "missing_credentials" });
                 return Results.BadRequest(new { message = "Email and password are required." });
             }
 
             var userId = request.Email.Trim().ToLowerInvariant();
-            return Results.Ok(CreateTokenResponse(userId, request.Email.Trim(), refreshTokens, configuration));
+            var response = CreateTokenResponse(userId, request.Email.Trim(), refreshTokens, configuration);
+            
+            audit.LogAuthEvent(SecurityAuditEvents.LoginSuccess, userId, request.Email.Trim(), http.Connection.RemoteIpAddress?.ToString(), http.Request.Headers.UserAgent);
+            
+            return Results.Ok(response);
         });
 
-        group.MapPost("/refresh", (RefreshTokenRequest request, IRefreshTokenStore refreshTokens, IConfiguration configuration) =>
+        group.MapPost("/refresh", (RefreshTokenRequest request, IRefreshTokenStore refreshTokens, IConfiguration configuration, ISecurityAuditService audit, HttpContext http) =>
         {
             if (!refreshTokens.TryRevoke(request.RefreshToken, out var session))
             {
+                audit.LogAuthEvent(SecurityAuditEvents.RefreshToken, "unknown", null, http.Connection.RemoteIpAddress?.ToString(), http.Request.Headers.UserAgent, new { status = "failed", reason = "invalid_token" });
                 return Results.Unauthorized();
             }
 
-            return Results.Ok(CreateTokenResponse(session.UserId, session.Email, refreshTokens, configuration));
+            var response = CreateTokenResponse(session.UserId, session.Email, refreshTokens, configuration);
+            
+            audit.LogAuthEvent(SecurityAuditEvents.RefreshToken, session.UserId, session.Email, http.Connection.RemoteIpAddress?.ToString(), http.Request.Headers.UserAgent, new { status = "success" });
+            
+            return Results.Ok(response);
         });
 
-        group.MapPost("/logout", (RefreshTokenRequest request, IRefreshTokenStore refreshTokens) =>
+        group.MapPost("/logout", (RefreshTokenRequest request, IRefreshTokenStore refreshTokens, ISecurityAuditService audit, HttpContext http) =>
         {
-            refreshTokens.TryRevoke(request.RefreshToken, out _);
+            if (refreshTokens.TryRevoke(request.RefreshToken, out var session))
+            {
+                audit.LogAuthEvent(SecurityAuditEvents.Logout, session.UserId, session.Email, http.Connection.RemoteIpAddress?.ToString(), http.Request.Headers.UserAgent);
+            }
+            
             return Results.NoContent();
         });
 
