@@ -1,4 +1,3 @@
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using System.Text;
 using Microsoft.IdentityModel.Tokens;
@@ -44,7 +43,8 @@ public static class ServiceCollections
                     ClockSkew = TimeSpan.Zero
                 };
             });
-        services.AddOptions<SsoOptions>()
+
+       services.AddOptions<SsoOptions>()
             .Bind(config.GetSection(SsoOptions.SectionName))
             .ValidateOnStart();
         services.AddSingleton<IValidateOptions<SsoOptions>>(_ => new SsoOptionsValidator(environment));
