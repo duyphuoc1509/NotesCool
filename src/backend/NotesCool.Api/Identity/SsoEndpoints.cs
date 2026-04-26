@@ -65,7 +65,6 @@ public static class SsoEndpoints
             return TypedResults.NoContent();
         }).RequireAuthorization();
 
-
         return app;
     }
 

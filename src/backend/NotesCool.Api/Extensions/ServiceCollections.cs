@@ -3,30 +3,33 @@ using System.Text;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using NotesCool.Api.Contracts;
-using NotesCool.Api.Identity;
 using Microsoft.Extensions.Options;
-using Microsoft.OpenApi.Models;
+using NotesCool.Api.Identity;
 using NotesCool.Api.Configuration;
+using NotesCool.Api.Auth;
 using NotesCool.Notes.Application;
 using NotesCool.Notes.Infrastructure;
 using NotesCool.Shared.Auth;
 using NotesCool.Shared.Security;
 using NotesCool.Tasks.Application;
 using NotesCool.Tasks.Infrastructure;
+using NotesCool.Identity.Infrastructure;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 
 namespace NotesCool.Api.Extensions;
 
 public static class ServiceCollections
 {
-    public static IServiceCollection AddShared(this IServiceCollection services, IConfiguration configuration)
-    public static IServiceCollection AddShared(this IServiceCollection services, IConfiguration config, IHostEnvironment environment)
+    public static IServiceCollection AddShared(this IServiceCollection services, IConfiguration configuration, IHostEnvironment environment)
     {
         services.AddHttpContextAccessor();
         services.AddScoped<ICurrentUser, CurrentUser>();
+        services.AddSingleton<SsoStore>();
         services.AddSingleton<IRefreshTokenStore, InMemoryRefreshTokenStore>();
         services.AddScoped<ISecurityAuditService, SecurityAuditService>();
         services.AddExceptionHandler<GlobalExceptionHandler>();
         services.AddProblemDetails();
+        
         services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             .AddJwtBearer(options =>
             {
@@ -44,13 +47,12 @@ public static class ServiceCollections
                 };
             });
 
-       services.AddOptions<SsoOptions>()
-            .Bind(config.GetSection(SsoOptions.SectionName))
+        services.AddOptions<SsoOptions>()
+            .Bind(configuration.GetSection(SsoOptions.SectionName))
             .ValidateOnStart();
         services.AddSingleton<IValidateOptions<SsoOptions>>(_ => new SsoOptionsValidator(environment));
-        services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer();
-        services.AddAuthorization();
-        services.AddSingleton<SsoStore>();
+        
+        services.AddScoped<RegistrationService>();
 
         services.AddEndpointsApiExplorer();
         services.AddSwaggerGen(options =>
@@ -65,7 +67,7 @@ public static class ServiceCollections
             options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
             {
                 In = ParameterLocation.Header,
-                Description = "Please enter JWT with Bearer into field. Example: \"Authorization: Bearer ***
+                Description = "Please enter JWT with Bearer into field. Example: \"Authorization: Bearer ***\"",
                 Name = "Authorization",
                 Type = SecuritySchemeType.ApiKey,
                 Scheme = "Bearer",
