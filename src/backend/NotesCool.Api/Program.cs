@@ -1,3 +1,4 @@
+using NotesCool.Api.Auth;
 using NotesCool.Api.Extensions;
 using NotesCool.Tasks.Contracts;
 
@@ -23,6 +24,7 @@ app.UseAuthorization();
 
 app.MapApiEndpoints();
 app.MapTasksEndpoints();
+app.MapAuthEndpoints();
 
 app.Run();
 
