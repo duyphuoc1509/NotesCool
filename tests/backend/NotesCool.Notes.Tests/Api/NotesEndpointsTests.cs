@@ -67,6 +67,6 @@ public class NotesEndpointsTests : IClassFixture<WebApplicationFactory<Program>>
 public class TestCurrentUser : ICurrentUser
 {
     public string UserId => "test-user-id";
-    public string Email => "test@example.com";
-    public string Role => "User";
+    public string Role => SystemRoles.User;
+    public bool IsInRole(string role) => role == Role;
 }
