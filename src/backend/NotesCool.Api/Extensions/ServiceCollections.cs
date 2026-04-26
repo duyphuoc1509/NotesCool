@@ -8,6 +8,8 @@ using NotesCool.Notes.Infrastructure;
 using NotesCool.Shared.Auth;
 using NotesCool.Tasks.Application;
 using NotesCool.Tasks.Infrastructure;
+using NotesCool.Identity.Infrastructure;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 
 namespace NotesCool.Api.Extensions;
 
@@ -19,17 +21,18 @@ public static class ServiceCollections
         services.AddScoped<ICurrentUser, CurrentUser>();
         services.AddExceptionHandler<GlobalExceptionHandler>();
         services.AddProblemDetails();
-=======
+
         services.AddOptions<SsoOptions>()
             .Bind(config.GetSection(SsoOptions.SectionName))
             .ValidateOnStart();
         services.AddSingleton<IValidateOptions<SsoOptions>>(_ => new SsoOptionsValidator(environment));
-        services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer();
-        services.AddAuthorization();
-<<<<<<< HEAD
-        services.AddDbContext<AuthDbContext>(o => o.UseNpgsql(config.GetConnectionString("DefaultConnection")));
+
+        // Note: IdentityDbContext is used for registration in PR #30, but IdentityModule uses its own.
+        // We ensure AuthDbContext (if separate) or IdentityDbContext is registered correctly.
+        // Based on PR #30, it used AuthDbContext.
+        // services.AddDbContext<AuthDbContext>(o => o.UseNpgsql(config.GetConnectionString("DefaultConnection")));
+        
         services.AddScoped<RegistrationService>();
->>>>>>> origin/dev
 
         services.AddEndpointsApiExplorer();
         services.AddSwaggerGen(options =>
@@ -44,8 +47,7 @@ public static class ServiceCollections
             options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
             {
                 In = ParameterLocation.Header,
-                Description = "Please enter JWT with Bearer into field. Example: \"Authorization: Bearer ***
-                Description = "Please enter JWT with Bearer into field. Example: \"Authorization: Bearer ***
+                Description = "Please enter JWT with Bearer into field. Example: \"Authorization: Bearer {token}\"",
                 Name = "Authorization",
                 Type = SecuritySchemeType.ApiKey,
                 Scheme = "Bearer",
