@@ -8,14 +8,14 @@ namespace NotesCool.Api.Auth;
 
 public static class AuthEndpoints
 {
-    public static IEndpointRouteBuilder MapAuthEndpoints(this IEndpointRouteBuilder app)
+    public static IEndpointRouteBuilder MapDevAuthEndpoints(this IEndpointRouteBuilder app)
     {
         var group = app.MapGroup("/api/auth").WithTags("Auth");
 
         group.MapPost("/login", (LoginRequest request, AuthStore store, IConfiguration config) =>
         {
             // For now, any email/password is valid for testing purposes
-            var session = store.CreateSession(request.Email, request.RefreshTokenLifetimeSeconds);
+            var session = store.CreateSession(request.Email);
             return TypedResults.Ok(CreateTokenResponse(session, config));
         });
 

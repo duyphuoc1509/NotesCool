@@ -79,6 +79,6 @@ public class TasksEndpointsTests : IClassFixture<WebApplicationFactory<Program>>
 public class TestCurrentUser : ICurrentUser
 {
     public string UserId => "test-user-id";
-    public string Email => "test@example.com";
     public string Role => "User";
+    public bool IsInRole(string role) => Role == role;
 }
