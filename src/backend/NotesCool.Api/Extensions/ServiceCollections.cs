@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.OpenApi.Models;
+using NotesCool.Api.Identity;
 using NotesCool.Api.Configuration;
 using NotesCool.Api.Auth;
 using NotesCool.Notes.Application;
@@ -19,6 +20,7 @@ public static class ServiceCollections
     {
         services.AddHttpContextAccessor();
         services.AddScoped<ICurrentUser, CurrentUser>();
+        services.AddSingleton<SsoStore>();
         services.AddExceptionHandler<GlobalExceptionHandler>();
         services.AddProblemDetails();
 
