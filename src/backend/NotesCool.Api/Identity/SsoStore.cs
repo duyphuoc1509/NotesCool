@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using NotesCool.Shared.Auth;
 
 namespace NotesCool.Api.Identity;
 
@@ -84,15 +85,17 @@ public sealed record SsoProviderLink(string Provider, string ProviderUserId, str
 
 public sealed class SsoUserRecord
 {
-    public SsoUserRecord(string userId, string? email, string? displayName)
+    public SsoUserRecord(string userId, string? email, string? displayName, string role = SystemRoles.User)
     {
         UserId = userId;
         Email = email;
         DisplayName = displayName;
+        Role = role;
     }
 
     public string UserId { get; }
     public string? Email { get; }
     public string? DisplayName { get; }
+    public string Role { get; }
     public ConcurrentDictionary<string, SsoProviderLink> LinkedProviders { get; } = new(StringComparer.OrdinalIgnoreCase);
 }

@@ -1,8 +1,9 @@
+using System.Security.Claims;
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
-using System.Text;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.Extensions.Options;
 using Microsoft.OpenApi.Models;
 using NotesCool.Api.Contracts;
 using Microsoft.Extensions.Options;
@@ -66,6 +67,32 @@ public static class ServiceCollections
             });
 
         services.AddAuthorization();
+
+        var jwtKey = config["Jwt:Key"] ?? "development-only-notescool-sso-signing-key";
+        var jwtIssuer = config["Jwt:Issuer"] ?? "NotesCool";
+        var jwtAudience = config["Jwt:Audience"] ?? "NotesCool";
+
+        services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+            .AddJwtBearer(options =>
+            {
+                options.TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuer = true,
+                    ValidateAudience = true,
+                    ValidateLifetime = true,
+                    ValidateIssuerSigningKey = true,
+                    ValidIssuer = jwtIssuer,
+                    ValidAudience = jwtAudience,
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey.PadRight(32, '0'))),
+                    RoleClaimType = ClaimTypes.Role,
+                    ClockSkew = TimeSpan.Zero
+                };
+            });
+
+        services.AddAuthorization(options =>
+        {
+            options.AddPolicy("AdminOnly", policy => policy.RequireRole(SystemRoles.Admin));
+        });
 
         services.AddOptions<SsoOptions>()
             .Bind(configuration.GetSection(SsoOptions.SectionName))

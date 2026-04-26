@@ -5,6 +5,7 @@ using NotesCool.Api.Extensions;
 using NotesCool.Notes.Infrastructure;
 using NotesCool.Identity.Extensions;
 using NotesCool.Tasks.Contracts;
+using NotesCool.Api.Identity;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -34,7 +35,7 @@ app.MapAuthEndpoints();
 app.MapIdentityEndpoints();
 app.MapApiEndpoints();
 app.MapTasksEndpoints();
-app.MapAuthEndpoints();
+app.MapSsoEndpoints();
 
 app.Run();
 
