@@ -1,10 +1,13 @@
 using NotesCool.Api.Extensions;
 using NotesCool.Api.Auth;
 using NotesCool.Notes.Infrastructure;
+using NotesCool.Identity.Extensions;
 using NotesCool.Tasks.Contracts;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Services.AddShared();
+builder.Services.AddIdentityModule(builder.Configuration);
 builder.Services.AddShared(builder.Configuration, builder.Environment);
 builder.Services.AddNotesModule(builder.Configuration);
 builder.Services.AddTasksModule(builder.Configuration);
@@ -27,3 +30,10 @@ app.MapNotesEndpoints();
 app.MapTasksEndpoints();
 
 app.Run();
+app.MapIdentityEndpoints();
+app.MapApiEndpoints();
+app.MapTasksEndpoints();
+
+app.Run();
+
+public partial class Program { } // For integration tests

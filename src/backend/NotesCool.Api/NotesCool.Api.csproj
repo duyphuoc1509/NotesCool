@@ -24,6 +24,7 @@
   <ItemGroup>
     <ProjectReference Include="..\NotesCool.Notes\NotesCool.Notes.csproj" />
     <ProjectReference Include="..\NotesCool.Tasks\NotesCool.Tasks.csproj" />
+    <ProjectReference Include="..\NotesCool.Identity\NotesCool.Identity.csproj" />
   </ItemGroup>
 
 </Project>

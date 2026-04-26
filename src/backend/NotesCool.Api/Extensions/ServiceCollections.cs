@@ -1,4 +1,3 @@
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.OpenApi.Models;
@@ -20,14 +19,17 @@ public static class ServiceCollections
         services.AddScoped<ICurrentUser, CurrentUser>();
         services.AddExceptionHandler<GlobalExceptionHandler>();
         services.AddProblemDetails();
+=======
         services.AddOptions<SsoOptions>()
             .Bind(config.GetSection(SsoOptions.SectionName))
             .ValidateOnStart();
         services.AddSingleton<IValidateOptions<SsoOptions>>(_ => new SsoOptionsValidator(environment));
         services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer();
         services.AddAuthorization();
+<<<<<<< HEAD
         services.AddDbContext<AuthDbContext>(o => o.UseNpgsql(config.GetConnectionString("DefaultConnection")));
         services.AddScoped<RegistrationService>();
+>>>>>>> origin/dev
 
         services.AddEndpointsApiExplorer();
         services.AddSwaggerGen(options =>
@@ -42,7 +44,8 @@ public static class ServiceCollections
             options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
             {
                 In = ParameterLocation.Header,
-                Description = "Please enter JWT with Bearer into field. Example: \"Authorization: Bearer ***\"",
+                Description = "Please enter JWT with Bearer into field. Example: \"Authorization: Bearer ***
+                Description = "Please enter JWT with Bearer into field. Example: \"Authorization: Bearer ***
                 Name = "Authorization",
                 Type = SecuritySchemeType.ApiKey,
                 Scheme = "Bearer",
