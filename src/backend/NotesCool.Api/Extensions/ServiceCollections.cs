@@ -3,18 +3,21 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using Microsoft.Extensions.Options;
 using NotesCool.Api.Auth;
+using NotesCool.Api.Configuration;
 using NotesCool.Notes.Application;
 using NotesCool.Notes.Infrastructure;
 using NotesCool.Shared.Auth;
 using NotesCool.Tasks.Application;
 using NotesCool.Tasks.Infrastructure;
+using NotesCool.Identity.Infrastructure;
 
 namespace NotesCool.Api.Extensions;
 
 public static class ServiceCollections
 {
-    public static IServiceCollection AddShared(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection AddShared(this IServiceCollection services, IConfiguration config, IHostEnvironment environment)
     {
         services.AddHttpContextAccessor();
         services.AddScoped<ICurrentUser, CurrentUser>();
@@ -22,20 +25,28 @@ public static class ServiceCollections
         services.AddSingleton<IAccessTokenService, JwtAccessTokenService>();
         services.AddExceptionHandler<GlobalExceptionHandler>();
         services.AddProblemDetails();
-        services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(options =>
-        {
-            options.TokenValidationParameters = new TokenValidationParameters
+
+        services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+            .AddJwtBearer(options =>
             {
-                ValidateIssuer = true,
-                ValidateAudience = true,
-                ValidateIssuerSigningKey = true,
-                ValidateLifetime = true,
-                ValidIssuer = configuration["Jwt:Issuer"] ?? "NotesCool",
-                ValidAudience = configuration["Jwt:Audience"] ?? "NotesCool",
-                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration["Jwt:SigningKey"] ?? "NotesCool development signing key must be at least 32 bytes"))
-            };
-        });
+                options.TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuer = true,
+                    ValidateAudience = true,
+                    ValidateIssuerSigningKey = true,
+                    ValidateLifetime = true,
+                    ValidIssuer = config["Jwt:Issuer"] ?? "NotesCool",
+                    ValidAudience = config["Jwt:Audience"] ?? "NotesCool",
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(config["Jwt:SigningKey"] ?? "NotesCool development signing key must be at least 32 bytes"))
+                };
+            });
+
         services.AddAuthorization();
+        services.AddOptions<SsoOptions>()
+            .Bind(config.GetSection(SsoOptions.SectionName))
+            .ValidateOnStart();
+        services.AddSingleton<IValidateOptions<SsoOptions>>(_ => new SsoOptionsValidator(environment));
+        services.AddScoped<RegistrationService>();
 
         services.AddEndpointsApiExplorer();
         services.AddSwaggerGen(options =>
@@ -50,7 +61,7 @@ public static class ServiceCollections
             options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
             {
                 In = ParameterLocation.Header,
-                Description = "Please enter JWT with Bearer into field. Example: \"Authorization: Bearer {token}\"",
+                Description = "Please enter JWT with Bearer into field. Example: "Authorization: Bearer ***"",
                 Name = "Authorization",
                 Type = SecuritySchemeType.ApiKey,
                 Scheme = "Bearer",
