@@ -1,4 +1,3 @@
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.OpenApi.Models;
@@ -21,12 +20,15 @@ public static class ServiceCollections
         services.AddSingleton<SsoStore>();
         services.AddExceptionHandler<GlobalExceptionHandler>();
         services.AddProblemDetails();
+<<<<<<< HEAD
+=======
         services.AddOptions<SsoOptions>()
             .Bind(config.GetSection(SsoOptions.SectionName))
             .ValidateOnStart();
         services.AddSingleton<IValidateOptions<SsoOptions>>(_ => new SsoOptionsValidator(environment));
         services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer();
         services.AddAuthorization();
+>>>>>>> origin/dev
 
         services.AddEndpointsApiExplorer();
         services.AddSwaggerGen(options =>
