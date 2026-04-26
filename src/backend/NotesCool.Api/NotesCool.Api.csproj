@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.*" />
+    <PackageReference Include="Microsoft.AspNetCore.Cryptography.KeyDerivation" Version="8.0.*" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="7.0.18" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.*">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -24,6 +25,7 @@
   <ItemGroup>
     <ProjectReference Include="..\NotesCool.Notes\NotesCool.Notes.csproj" />
     <ProjectReference Include="..\NotesCool.Tasks\NotesCool.Tasks.csproj" />
+    <ProjectReference Include="..\NotesCool.Identity\NotesCool.Identity.csproj" />
   </ItemGroup>
 
 </Project>

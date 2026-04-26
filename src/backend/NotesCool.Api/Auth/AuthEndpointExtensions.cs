@@ -6,9 +6,9 @@ public static class AuthEndpointExtensions
 {
     public static IEndpointRouteBuilder MapAuthEndpoints(this IEndpointRouteBuilder builder)
     {
-        var authGroup = builder.MapGroup("api/auth").WithTags("Auth");
+        var group = builder.MapGroup("api/auth").WithTags("Auth");
 
-        authGroup.MapPost("login", async Task<Results<Ok<LoginResponse>, UnauthorizedHttpResult>> (
+        group.MapPost("login", async Task<Results<Ok<LoginResponse>, UnauthorizedHttpResult>> (
             LoginRequest request,
             IUserCredentialStore credentialStore,
             IAccessTokenService tokenService,
@@ -26,6 +26,31 @@ public static class AuthEndpointExtensions
         .Produces<LoginResponse>()
         .Produces(StatusCodes.Status401Unauthorized);
 
+        group.MapPost("register", RegisterAsync)
+            .AllowAnonymous()
+            .WithSummary("Register a new user")
+            .WithDescription("Creates an active account using email/password. Enforces password policy and rejects duplicate emails.")
+            .Produces<RegisterResponse>(StatusCodes.Status201Created)
+            .Produces(StatusCodes.Status400BadRequest)
+            .Produces(StatusCodes.Status409Conflict);
+
         return builder;
+    }
+
+    private static async Task<IResult> RegisterAsync(RegisterRequest request, RegistrationService service, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var response = await service.RegisterAsync(request, cancellationToken);
+            return Results.Created($"/api/users/{response.Id}", response);
+        }
+        catch (RegistrationValidationException ex)
+        {
+            return Results.BadRequest(new { error = ex.Message });
+        }
+        catch (DuplicateEmailException ex)
+        {
+            return Results.Conflict(new { error = ex.Message });
+        }
     }
 }

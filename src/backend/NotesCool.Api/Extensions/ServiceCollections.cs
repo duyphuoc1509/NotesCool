@@ -1,11 +1,12 @@
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
-using Microsoft.Extensions.Options;
 using NotesCool.Api.Auth;
 using NotesCool.Api.Configuration;
+using NotesCool.Api.Identity;
 using NotesCool.Notes.Application;
 using NotesCool.Notes.Infrastructure;
 using NotesCool.Shared.Auth;
@@ -23,6 +24,7 @@ public static class ServiceCollections
         services.AddScoped<ICurrentUser, CurrentUser>();
         services.AddSingleton<IUserCredentialStore, InMemoryUserCredentialStore>();
         services.AddSingleton<IAccessTokenService, JwtAccessTokenService>();
+        services.AddSingleton<SsoStore>();
         services.AddExceptionHandler<GlobalExceptionHandler>();
         services.AddProblemDetails();
 
@@ -42,10 +44,12 @@ public static class ServiceCollections
             });
 
         services.AddAuthorization();
+
         services.AddOptions<SsoOptions>()
             .Bind(config.GetSection(SsoOptions.SectionName))
             .ValidateOnStart();
         services.AddSingleton<IValidateOptions<SsoOptions>>(_ => new SsoOptionsValidator(environment));
+
         services.AddScoped<RegistrationService>();
 
         services.AddEndpointsApiExplorer();
@@ -61,7 +65,7 @@ public static class ServiceCollections
             options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
             {
                 In = ParameterLocation.Header,
-                Description = "Please enter JWT with Bearer into field. Example: "Authorization: Bearer ***"",
+                Description = "Please enter JWT with Bearer into field. Example: \"Authorization: Bearer {token}\"",
                 Name = "Authorization",
                 Type = SecuritySchemeType.ApiKey,
                 Scheme = "Bearer",
