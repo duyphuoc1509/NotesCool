@@ -1,7 +1,6 @@
 using NotesCool.Api.Contracts;
 using NotesCool.Api.Extensions;
 using NotesCool.Api.Auth;
-using NotesCool.Api.Extensions;
 using NotesCool.Notes.Infrastructure;
 using NotesCool.Identity.Extensions;
 using NotesCool.Tasks.Contracts;
@@ -32,6 +31,7 @@ app.UseAuthorization();
 app.UseExceptionHandler();
 
 app.MapAuthEndpoints();
+app.MapRegistrationEndpoints();
 app.MapIdentityEndpoints();
 app.MapApiEndpoints();
 app.MapTasksEndpoints();
