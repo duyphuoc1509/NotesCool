@@ -1,16 +1,18 @@
+using System.Text;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
-using NotesCool.Api.Identity;
-using NotesCool.Api.Configuration;
 using NotesCool.Api.Auth;
+using NotesCool.Api.Configuration;
+using NotesCool.Api.Identity;
 using NotesCool.Notes.Application;
 using NotesCool.Notes.Infrastructure;
 using NotesCool.Shared.Auth;
 using NotesCool.Tasks.Application;
 using NotesCool.Tasks.Infrastructure;
 using NotesCool.Identity.Infrastructure;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 
 namespace NotesCool.Api.Extensions;
 
@@ -20,20 +22,34 @@ public static class ServiceCollections
     {
         services.AddHttpContextAccessor();
         services.AddScoped<ICurrentUser, CurrentUser>();
+        services.AddSingleton<IUserCredentialStore, InMemoryUserCredentialStore>();
+        services.AddSingleton<IAccessTokenService, JwtAccessTokenService>();
         services.AddSingleton<SsoStore>();
         services.AddExceptionHandler<GlobalExceptionHandler>();
         services.AddProblemDetails();
+
+        services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+            .AddJwtBearer(options =>
+            {
+                options.TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuer = true,
+                    ValidateAudience = true,
+                    ValidateIssuerSigningKey = true,
+                    ValidateLifetime = true,
+                    ValidIssuer = config["Jwt:Issuer"] ?? "NotesCool",
+                    ValidAudience = config["Jwt:Audience"] ?? "NotesCool",
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(config["Jwt:SigningKey"] ?? "NotesCool development signing key must be at least 32 bytes"))
+                };
+            });
+
+        services.AddAuthorization();
 
         services.AddOptions<SsoOptions>()
             .Bind(config.GetSection(SsoOptions.SectionName))
             .ValidateOnStart();
         services.AddSingleton<IValidateOptions<SsoOptions>>(_ => new SsoOptionsValidator(environment));
 
-        // Note: IdentityDbContext is used for registration in PR #30, but IdentityModule uses its own.
-        // We ensure AuthDbContext (if separate) or IdentityDbContext is registered correctly.
-        // Based on PR #30, it used AuthDbContext.
-        // services.AddDbContext<AuthDbContext>(o => o.UseNpgsql(config.GetConnectionString("DefaultConnection")));
-        
         services.AddScoped<RegistrationService>();
 
         services.AddEndpointsApiExplorer();
