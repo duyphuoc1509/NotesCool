@@ -1,6 +1,7 @@
-using NotesCool.Api.Auth;
+lusing NotesCool.Api.Auth;
 using NotesCool.Api.Extensions;
 using NotesCool.Api.Auth;
+using NotesCool.Api.Extensions;
 using NotesCool.Notes.Infrastructure;
 using NotesCool.Identity.Extensions;
 using NotesCool.Tasks.Contracts;
