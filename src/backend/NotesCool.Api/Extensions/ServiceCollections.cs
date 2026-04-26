@@ -24,7 +24,6 @@ public static class ServiceCollections
         services.AddScoped<ICurrentUser, CurrentUser>();
         services.AddExceptionHandler<GlobalExceptionHandler>();
         services.AddProblemDetails();
-
         services.AddSingleton<SsoStore>();
 
         var jwtKey = configuration["Jwt:Key"] ?? "development-only-notescool-sso-signing-key";
@@ -51,13 +50,13 @@ public static class ServiceCollections
         {
             options.AddPolicy("AdminOnly", policy => policy.RequireRole(SystemRoles.Admin));
         });
-        services.AddOptions<SsoOptions>()
+
+       services.AddOptions<SsoOptions>()
             .Bind(config.GetSection(SsoOptions.SectionName))
             .ValidateOnStart();
         services.AddSingleton<IValidateOptions<SsoOptions>>(_ => new SsoOptionsValidator(environment));
         services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer();
         services.AddAuthorization();
-
         services.AddEndpointsApiExplorer();
         services.AddSwaggerGen(options =>
         {
