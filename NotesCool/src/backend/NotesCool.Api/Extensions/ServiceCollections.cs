@@ -27,11 +27,12 @@ public static class ServiceCollections
             .ValidateOnStart();
         services.AddSingleton<IValidateOptions<SsoOptions>>(_ => new SsoOptionsValidator(environment));
 
-        // Note: IdentityDbContext is used for registration in PR #30, but IdentityModule uses its own.
-        // We ensure AuthDbContext (if separate) or IdentityDbContext is registered correctly.
-        // Based on PR #30, it used AuthDbContext.
-        // services.AddDbContext<AuthDbContext>(o => o.UseNpgsql(config.GetConnectionString("DefaultConnection")));
-        
+        // AddIdentityModule handles authentication/authorization configuration internally
+        // but if we need a baseline here:
+        // services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer();
+        // services.AddAuthorization();
+
+        services.AddDbContext<AuthDbContext>(o => o.UseNpgsql(config.GetConnectionString("DefaultConnection")));
         services.AddScoped<RegistrationService>();
 
         services.AddEndpointsApiExplorer();
