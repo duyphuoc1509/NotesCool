@@ -1,38 +1,56 @@
-import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
-import { buildSsoStartUrl, persistAuthSession, type AuthSession } from './auth'
+import { describe, expect, it, beforeEach, vi } from 'vitest'
+import {
+  clearStoredSession,
+  getStoredSession,
+  shouldRefreshSession,
+  storeSession,
+} from './auth'
 
-describe('auth service', () => {
-  beforeEach(() => {
-    const store = new Map<string, string>()
+beforeEach(() => {
+  window.localStorage.clear()
+  vi.useRealTimers()
+})
 
-    vi.stubGlobal('localStorage', {
-      clear: () => store.clear(),
-      getItem: (key: string) => store.get(key) ?? null,
-      setItem: (key: string, value: string) => store.set(key, value),
-      removeItem: (key: string) => store.delete(key),
-    })
-    vi.stubGlobal('location', { origin: 'https://app.notescool.test', href: '' })
-  })
-
-  afterEach(() => {
-    vi.unstubAllGlobals()
-  })
-
-  it('stores the auth token and user profile after successful login', () => {
-    const session: AuthSession = {
-      token: 'jwt-token',
-      user: { id: 'user-1', email: 'user@example.com', name: 'User One' },
+describe('auth session storage', () => {
+  it('persists and restores an auth session', () => {
+    const session = {
+      accessToken: 'access-token',
+      refreshToken: 'refresh-token',
+      expiresAt: Date.now() + 120_000,
     }
 
-    persistAuthSession(session)
+    storeSession(session)
 
-    expect(localStorage.getItem('token')).toBe('jwt-token')
-    expect(localStorage.getItem('auth:user')).toBe(JSON.stringify(session.user))
+    expect(getStoredSession()).toEqual(session)
   })
 
-  it('builds provider start URLs with a redirect target', () => {
-    expect(buildSsoStartUrl('google', '/notes')).toBe(
-      'http://localhost:5000/auth/sso/google/start?redirect=%2Fnotes',
-    )
+  it('clears the session and legacy token on logout', () => {
+    storeSession({ accessToken: 'access-token' })
+    window.localStorage.setItem('token', 'legacy-token')
+
+    clearStoredSession()
+
+    expect(getStoredSession()).toBeNull()
+    expect(window.localStorage.getItem('token')).toBeNull()
+  })
+
+  it('requests refresh only when a refresh token is close to expiry', () => {
+    vi.setSystemTime(new Date('2026-01-01T00:00:00.000Z'))
+
+    expect(
+      shouldRefreshSession({
+        accessToken: 'access-token',
+        refreshToken: 'refresh-token',
+        expiresAt: Date.now() + 30_000,
+      }),
+    ).toBe(true)
+    expect(
+      shouldRefreshSession({
+        accessToken: 'access-token',
+        refreshToken: 'refresh-token',
+        expiresAt: Date.now() + 120_000,
+      }),
+    ).toBe(false)
+    expect(shouldRefreshSession({ accessToken: 'access-token' })).toBe(false)
   })
 })

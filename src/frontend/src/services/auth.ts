@@ -1,39 +1,69 @@
-import { API_BASE_URL } from '../constants/env'
-import api from './api'
-
-export type AuthUser = {
-  id?: string
-  email: string
-  name?: string
-}
-
 export type AuthSession = {
-  token: string
-  user: AuthUser
+  accessToken: string
+  refreshToken?: string
+  expiresAt?: number
 }
 
-export type LoginCredentials = {
-  email: string
-  password: string
+const SESSION_STORAGE_KEY = 'notescool.auth.session'
+const REFRESH_SKEW_MS = 60_000
+
+function isBrowserStorageAvailable() {
+  return typeof window !== 'undefined' && typeof window.localStorage !== 'undefined'
 }
 
-const AUTH_USER_KEY = 'auth:user'
+export function getStoredSession(): AuthSession | null {
+  if (!isBrowserStorageAvailable()) {
+    return null
+  }
 
-export function persistAuthSession(session: AuthSession) {
-  localStorage.setItem('token', session.token)
-  localStorage.setItem(AUTH_USER_KEY, JSON.stringify(session.user))
+  const value = window.localStorage.getItem(SESSION_STORAGE_KEY)
+  if (!value) {
+    return null
+  }
+
+  try {
+    const session = JSON.parse(value) as Partial<AuthSession>
+    if (!session.accessToken || typeof session.accessToken !== 'string') {
+      clearStoredSession()
+      return null
+    }
+
+    return {
+      accessToken: session.accessToken,
+      refreshToken: session.refreshToken,
+      expiresAt: session.expiresAt,
+    }
+  } catch {
+    clearStoredSession()
+    return null
+  }
 }
 
-export function buildSsoStartUrl(provider: string, redirectTo = '/') {
-  return `${API_BASE_URL}/auth/sso/${provider}/start?redirect=${encodeURIComponent(redirectTo)}`
+export function storeSession(session: AuthSession) {
+  if (!isBrowserStorageAvailable()) {
+    return
+  }
+
+  window.localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(session))
 }
 
-export async function loginWithPassword(credentials: LoginCredentials) {
-  const { data } = await api.post<AuthSession>('/auth/login', credentials)
-  persistAuthSession(data)
-  return data
+export function clearStoredSession() {
+  if (!isBrowserStorageAvailable()) {
+    return
+  }
+
+  window.localStorage.removeItem(SESSION_STORAGE_KEY)
+  window.localStorage.removeItem('token')
 }
 
-export function startSsoLogin(provider: string, redirectTo = '/') {
-  window.location.href = buildSsoStartUrl(provider, redirectTo)
+export function shouldRefreshSession(session: AuthSession | null) {
+  if (!session?.refreshToken || !session.expiresAt) {
+    return false
+  }
+
+  return Date.now() >= session.expiresAt - REFRESH_SKEW_MS
+}
+
+export function getLoginPath() {
+  return '/login'
 }
