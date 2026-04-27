@@ -10,6 +10,8 @@ COPY src/backend/NotesCool.Notes/NotesCool.Notes.csproj src/backend/NotesCool.No
 COPY src/backend/NotesCool.Tasks/NotesCool.Tasks.csproj src/backend/NotesCool.Tasks/
 COPY tests/backend/NotesCool.Notes.Tests/NotesCool.Notes.Tests.csproj tests/backend/NotesCool.Notes.Tests/
 COPY tests/backend/NotesCool.Tasks.Tests/NotesCool.Tasks.Tests.csproj tests/backend/NotesCool.Tasks.Tests/
+COPY src/backend/NotesCool.Identity/NotesCool.Identity.csproj src/backend/NotesCool.Identity/
+COPY tests/backend/NotesCool.Identity.Tests/NotesCool.Identity.Tests.csproj tests/backend/NotesCool.Identity.Tests/
 
 # Restore dependencies
 RUN dotnet restore NotesCool.sln
