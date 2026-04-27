@@ -13,7 +13,9 @@ public sealed class InMemoryUserCredentialStore : IUserCredentialStore
     {
         var configuredUsers = users ?? new[]
         {
-            new RegisteredUser("demo-user", "demo@notescool.local", "Demo User", "P@ssw0rd!")
+            new RegisteredUser("demo-user", "demo@notescool.local", "Demo User", "P@ssw0rd!"),
+            new RegisteredUser("admin", "admin@notescool.local", "Administrator", "Admin@123"),
+            new RegisteredUser("admin", "admin", "Administrator", "Admin@123")
         };
 
         _usersByEmail = configuredUsers.ToDictionary(u => NormalizeEmail(u.Email), StringComparer.OrdinalIgnoreCase);
