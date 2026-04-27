@@ -1,21 +1,16 @@
-export type TaskStatus = 'todo' | 'in_progress' | 'done' | 'archived'
+export type TaskStatus = 'Todo' | 'InProgress' | 'Done'
 
-export interface TaskDto {
+export interface Task {
   id: string
   title: string
-  description?: string | null
+  description?: string
   status: TaskStatus
-  dueDate?: string | null
+  dueDate?: string
   createdAt: string
-  updatedAt?: string | null
+  updatedAt?: string
 }
 
-export interface PagedResult<T> {
-  items: T[]
-  page: number
-  pageSize: number
-  totalCount: number
-}
+export interface TaskDto extends Task {}
 
 export interface CreateTaskRequest {
   title: string
@@ -31,10 +26,4 @@ export interface UpdateTaskRequest {
 
 export interface ChangeTaskStatusRequest {
   status: TaskStatus
-}
-
-export interface TasksFilter {
-  status?: TaskStatus
-  page?: number
-  pageSize?: number
 }
