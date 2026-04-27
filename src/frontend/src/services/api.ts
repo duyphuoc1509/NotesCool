@@ -1,6 +1,6 @@
 import axios from 'axios'
 import { API_BASE_URL } from '../constants/env'
-import { clearStoredSession, getStoredSession, storeSession } from './auth'
+import { AUTH_STORAGE_KEY } from '../constants/auth'
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -10,21 +10,34 @@ const api = axios.create({
 })
 
 let isRefreshing = false
-let refreshSubscribers: ((token: string) => void)[] = []
+let failedQueue: Array<{
+  resolve: (value: unknown) => void
+  reject: (reason?: unknown) => void
+}> = []
 
-function subscribeTokenRefresh(cb: (token: string) => void) {
-  refreshSubscribers.push(cb)
-}
+const processQueue = (error: Error | null, token: string | null = null) => {
+  failedQueue.forEach((prom) => {
+    if (error) {
+      prom.reject(error)
+    } else {
+      prom.resolve(token)
+    }
+  })
 
-function onRefreshed(token: string) {
-  refreshSubscribers.forEach((cb) => cb(token))
-  refreshSubscribers = []
+  failedQueue = []
 }
 
 api.interceptors.request.use((config) => {
-  const session = getStoredSession()
-  if (session?.accessToken) {
-    config.headers.Authorization = `Bearer ${session.accessToken}`
+  const raw = localStorage.getItem(AUTH_STORAGE_KEY)
+  if (raw) {
+    try {
+      const { tokens } = JSON.parse(raw)
+      if (tokens?.accessToken) {
+        config.headers.Authorization = `Bearer ${tokens.accessToken}`
+      }
+    } catch {
+      // invalid json
+    }
   }
   return config
 })
@@ -32,47 +45,59 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
-    const { config, response } = error
-    const originalRequest = config
+    const originalRequest = error.config
 
-    if (response?.status === 401 && !originalRequest._retry) {
-      const session = getStoredSession()
-      if (!session?.refreshToken) {
-        clearStoredSession()
-        return Promise.reject(error)
-      }
-
+    if (error.response?.status === 401 && !originalRequest._retry) {
       if (isRefreshing) {
-        return new Promise((resolve) => {
-          subscribeTokenRefresh((token: string) => {
-            originalRequest.headers.Authorization = `Bearer ${token}`
-            resolve(api(originalRequest))
-          })
+        return new Promise((resolve, reject) => {
+          failedQueue.push({ resolve, reject })
         })
+          .then((token) => {
+            originalRequest.headers.Authorization = `Bearer ${token}`
+            return api(originalRequest)
+          })
+          .catch((err) => Promise.reject(err))
       }
 
       originalRequest._retry = true
       isRefreshing = true
 
-      try {
-        const { data } = await axios.post(`${API_BASE_URL}/api/auth/refresh`, {
-          refreshToken: session.refreshToken,
-        })
+      const raw = localStorage.getItem(AUTH_STORAGE_KEY)
+      if (!raw) {
+        isRefreshing = false
+        return Promise.reject(error)
+      }
 
-        const newSession = {
-          accessToken: data.accessToken,
-          refreshToken: data.refreshToken || session.refreshToken,
-          expiresAt: data.expiresAt,
+      try {
+        const authData = JSON.parse(raw)
+        const refreshToken = authData.tokens?.refreshToken
+
+        if (!refreshToken) {
+          throw new Error('No refresh token available')
         }
 
-        storeSession(newSession)
-        onRefreshed(data.accessToken)
-        originalRequest.headers.Authorization = `Bearer ${data.accessToken}`
+        const { data } = await axios.post(`${API_BASE_URL}/api/auth/refresh-token`, {
+          refreshToken,
+        })
+
+        const newAuthData = {
+          ...authData,
+          tokens: {
+            accessToken: data.accessToken,
+            refreshToken: data.refreshToken,
+          },
+        }
+
+        localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(newAuthData))
+        api.defaults.headers.common.Authorization = `Bearer ${data.accessToken}`
+        processQueue(null, data.accessToken)
 
         return api(originalRequest)
       } catch (refreshError) {
-        clearStoredSession()
-        window.location.href = '/login'
+        processQueue(refreshError as Error, null)
+        localStorage.removeItem(AUTH_STORAGE_KEY)
+        // Optionally redirect to login or let the component handle it
+        // window.location.href = '/login'
         return Promise.reject(refreshError)
       } finally {
         isRefreshing = false

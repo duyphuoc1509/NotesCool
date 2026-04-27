@@ -1,307 +1,162 @@
-import { useState } from 'react'
-import type { FormEvent, ReactNode } from 'react'
-import { CheckCircle2, LoaderCircle, Mail, Lock, UserRound, AlertCircle } from 'lucide-react'
-import { AxiosError } from 'axios'
-import { useNavigate } from 'react-router-dom'
-import api from '../services/api'
+import { useMemo, useState } from 'react'
+import { Link, useLocation } from 'react-router-dom'
+import axios from 'axios'
+import { useAuth } from '../contexts/useAuth'
+import type { ApiErrorResponse } from '../services/auth'
 
-type RegisterFormValues = {
-  fullName: string
-  email: string
-  password: string
-  confirmPassword: string
-}
-
-type RegisterFormErrors = Partial<Record<keyof RegisterFormValues, string>>
-
-type SubmissionState = 'idle' | 'submitting' | 'success' | 'error'
-
-type RegisterApiPayload = {
-  fullName: string
-  email: string
-  password: string
-}
-
-const INITIAL_VALUES: RegisterFormValues = {
-  fullName: '',
-  email: '',
-  password: '',
-  confirmPassword: '',
-}
-
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-const PASSWORD_MIN_LENGTH = 8
-
-function validateRegistration(values: RegisterFormValues): RegisterFormErrors {
-  const errors: RegisterFormErrors = {}
-
-  if (!values.fullName.trim()) {
-    errors.fullName = 'Full name is required.'
+function extractErrorMessage(error: unknown): string {
+  if (axios.isAxiosError<ApiErrorResponse>(error)) {
+    const apiError = error.response?.data
+    if (apiError?.errors) {
+      return Object.values(apiError.errors).flat().join(' ')
+    }
+    return apiError?.message ?? apiError?.title ?? 'Registration failed.'
   }
 
-  if (!values.email.trim()) {
-    errors.email = 'Email is required.'
-  } else if (!EMAIL_REGEX.test(values.email)) {
-    errors.email = 'Enter a valid email address.'
-  }
-
-  if (!values.password) {
-    errors.password = 'Password is required.'
-  } else if (values.password.length < PASSWORD_MIN_LENGTH) {
-    errors.password = `Password must be at least ${PASSWORD_MIN_LENGTH} characters.`
-  }
-
-  if (!values.confirmPassword) {
-    errors.confirmPassword = 'Please confirm your password.'
-  } else if (values.confirmPassword !== values.password) {
-    errors.confirmPassword = 'Passwords do not match.'
-  }
-
-  return errors
-}
-
-function toRegisterPayload(values: RegisterFormValues): RegisterApiPayload {
-  return {
-    fullName: values.fullName.trim(),
-    email: values.email.trim().toLowerCase(),
-    password: values.password,
-  }
-}
-
-function getErrorMessage(error: unknown) {
-  if (error instanceof AxiosError) {
-    return error.response?.data?.message ?? 'We could not create your account. Please try again.'
-  }
-
-  return 'Something went wrong while creating your account.'
-}
-
-function InputField({
-  id,
-  label,
-  type,
-  value,
-  placeholder,
-  error,
-  onChange,
-  icon,
-}: {
-  id: keyof RegisterFormValues
-  label: string
-  type: string
-  value: string
-  placeholder: string
-  error?: string
-  onChange: (value: string) => void
-  icon: ReactNode
-}) {
-  return (
-    <div>
-      <label htmlFor={id} className="mb-2 block text-sm font-medium text-slate-700">
-        {label}
-      </label>
-      <div
-        className={`flex items-center gap-3 rounded-2xl border bg-white px-4 py-3 shadow-sm transition ${
-          error
-            ? 'border-red-300 ring-2 ring-red-100'
-            : 'border-slate-200 focus-within:border-indigo-400 focus-within:ring-2 focus-within:ring-indigo-100'
-        }`}
-      >
-        <span className="text-slate-400">{icon}</span>
-        <input
-          id={id}
-          type={type}
-          value={value}
-          onChange={(event) => onChange(event.target.value)}
-          placeholder={placeholder}
-          aria-invalid={Boolean(error)}
-          aria-describedby={error ? `${id}-error` : undefined}
-          className="w-full border-none bg-transparent text-sm text-slate-900 outline-none placeholder:text-slate-400"
-        />
-      </div>
-      {error ? (
-        <p id={`${id}-error`} className="mt-2 text-sm text-red-600">
-          {error}
-        </p>
-      ) : null}
-    </div>
-  )
+  return error instanceof Error ? error.message : 'Registration failed.'
 }
 
 export function RegisterPage() {
-  const navigate = useNavigate()
-  const [values, setValues] = useState(INITIAL_VALUES)
-  const [errors, setErrors] = useState<RegisterFormErrors>({})
-  const [submissionState, setSubmissionState] = useState<SubmissionState>('idle')
-  const [feedbackMessage, setFeedbackMessage] = useState('')
+  const { register, isLoading } = useAuth()
+  const location = useLocation()
 
-  const isSubmitting = submissionState === 'submitting'
+  const redirectTo = useMemo(() => {
+    const state = location.state as { from?: { pathname?: string } } | null
+    return state?.from?.pathname ?? '/'
+  }, [location.state])
 
-  const updateField = (field: keyof RegisterFormValues, value: string) => {
-    setValues((current) => ({ ...current, [field]: value }))
-    setErrors((current) => {
-      if (!current[field]) {
-        return current
-      }
+  const [fullName, setFullName] = useState('')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [error, setError] = useState('')
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({})
 
-      return { ...current, [field]: undefined }
-    })
-
-    if (submissionState !== 'idle') {
-      setSubmissionState('idle')
-      setFeedbackMessage('')
-    }
-  }
-
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
+    const nextErrors: Record<string, string> = {}
 
-    const nextErrors = validateRegistration(values)
-    setErrors(nextErrors)
+    if (!fullName.trim()) nextErrors.fullName = 'Full name is required.'
+    if (!email.trim()) nextErrors.email = 'Email is required.'
+    if (!password.trim()) nextErrors.password = 'Password is required.'
+    if (password.length > 0 && password.length < 8) {
+      nextErrors.password = 'Password must be at least 8 characters.'
+    }
+    if (confirmPassword !== password) {
+      nextErrors.confirmPassword = 'Passwords do not match.'
+    }
+
+    setValidationErrors(nextErrors)
+    setError('')
 
     if (Object.keys(nextErrors).length > 0) {
-      setSubmissionState('error')
-      setFeedbackMessage('Please fix the validation errors before submitting.')
       return
     }
 
-    setSubmissionState('submitting')
-    setFeedbackMessage('')
-
-    const payload = toRegisterPayload(values)
-
     try {
-      await api.post('/auth/register', payload)
-      setSubmissionState('success')
-      setFeedbackMessage('Registration successful. Redirecting to sign in...')
-      setValues(INITIAL_VALUES)
-      setErrors({})
-      navigate('/login', {
-        replace: true,
-        state: {
-          registeredEmail: payload.email,
-        },
-      })
-    } catch (error) {
-      setSubmissionState('error')
-      setFeedbackMessage(getErrorMessage(error))
+      await register({ fullName, email, password }, redirectTo)
+    } catch (err) {
+      setError(extractErrorMessage(err))
     }
   }
 
   return (
-    <div className="min-h-screen bg-slate-100 px-4 py-10 sm:px-6 lg:px-8">
-      <div className="mx-auto grid max-w-6xl gap-8 lg:grid-cols-[1.1fr_0.9fr]">
-        <section className="rounded-[2rem] bg-gradient-to-br from-indigo-600 via-indigo-500 to-sky-500 p-8 text-white shadow-xl sm:p-10">
-          <p className="text-sm font-semibold uppercase tracking-[0.3em] text-indigo-100">
-            NotesCool registration
-          </p>
-          <h1 className="mt-5 text-4xl font-bold tracking-tight sm:text-5xl">
-            Create your account in a few quick steps.
-          </h1>
-          <p className="mt-4 max-w-xl text-base text-indigo-50 sm:text-lg">
-            Join NotesCool to organize notes, track tasks, and collaborate with your team from one clean workspace.
-          </p>
+    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
+      <div className="w-full max-w-md rounded-2xl border border-gray-200 bg-white p-8 shadow-sm">
+        <p className="text-sm font-semibold uppercase tracking-wide text-indigo-600">NotesCool CMS</p>
+        <h1 className="mt-3 text-3xl font-bold tracking-tight text-gray-950">Create account</h1>
+        <p className="mt-2 text-sm text-gray-600">Register to start managing notes and tasks.</p>
 
-          <div className="mt-10 space-y-4 rounded-3xl bg-white/10 p-6 backdrop-blur-sm">
-            {[
-              'Use your real email address for account verification.',
-              'Choose a password with at least 8 characters.',
-              'After registration, continue to the sign-in step to access your dashboard.',
-            ].map((item) => (
-              <div key={item} className="flex items-start gap-3 text-sm text-indigo-50">
-                <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0" />
-                <span>{item}</span>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        <section className="rounded-[2rem] border border-slate-200 bg-white p-8 shadow-lg sm:p-10">
-          <div className="mb-8">
-            <p className="text-sm font-semibold uppercase tracking-[0.25em] text-indigo-600">
-              Start now
-            </p>
-            <h2 className="mt-3 text-3xl font-bold tracking-tight text-slate-950">
-              Register a new account
-            </h2>
-            <p className="mt-3 text-sm text-slate-600">
-              Fill in your information below. We&apos;ll guide you to the next step after a successful registration.
-            </p>
-          </div>
-
-          <form className="space-y-5" onSubmit={handleSubmit} noValidate>
-            <InputField
+        <form className="mt-8 space-y-5" onSubmit={handleSubmit} noValidate>
+          <div>
+            <label htmlFor="fullName" className="block text-sm font-medium text-gray-700">
+              Full name
+            </label>
+            <input
               id="fullName"
-              label="Full name"
               type="text"
-              value={values.fullName}
-              placeholder="Jane Doe"
-              error={errors.fullName}
-              onChange={(value) => updateField('fullName', value)}
-              icon={<UserRound className="h-5 w-5" />}
+              value={fullName}
+              onChange={(event) => setFullName(event.target.value)}
+              className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
+              autoComplete="name"
             />
-
-            <InputField
-              id="email"
-              label="Email address"
-              type="email"
-              value={values.email}
-              placeholder="jane@example.com"
-              error={errors.email}
-              onChange={(value) => updateField('email', value)}
-              icon={<Mail className="h-5 w-5" />}
-            />
-
-            <InputField
-              id="password"
-              label="Password"
-              type="password"
-              value={values.password}
-              placeholder="Minimum 8 characters"
-              error={errors.password}
-              onChange={(value) => updateField('password', value)}
-              icon={<Lock className="h-5 w-5" />}
-            />
-
-            <InputField
-              id="confirmPassword"
-              label="Confirm password"
-              type="password"
-              value={values.confirmPassword}
-              placeholder="Re-enter your password"
-              error={errors.confirmPassword}
-              onChange={(value) => updateField('confirmPassword', value)}
-              icon={<Lock className="h-5 w-5" />}
-            />
-
-            {feedbackMessage ? (
-              <div
-                className={`flex items-start gap-3 rounded-2xl px-4 py-3 text-sm ${
-                  submissionState === 'success'
-                    ? 'bg-emerald-50 text-emerald-700'
-                    : 'bg-red-50 text-red-700'
-                }`}
-                role="status"
-              >
-                {submissionState === 'success' ? (
-                  <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0" />
-                ) : (
-                  <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" />
-                )}
-                <span>{feedbackMessage}</span>
-              </div>
+            {validationErrors.fullName ? (
+              <p className="mt-1 text-sm text-red-600">{validationErrors.fullName}</p>
             ) : null}
+          </div>
 
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-400"
-            >
-              {isSubmitting ? <LoaderCircle className="h-5 w-5 animate-spin" /> : null}
-              {isSubmitting ? 'Creating your account...' : 'Create account'}
-            </button>
-          </form>
-        </section>
+          <div>
+            <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+              Email
+            </label>
+            <input
+              id="email"
+              type="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
+              autoComplete="email"
+            />
+            {validationErrors.email ? (
+              <p className="mt-1 text-sm text-red-600">{validationErrors.email}</p>
+            ) : null}
+          </div>
+
+          <div>
+            <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+              Password
+            </label>
+            <input
+              id="password"
+              type="password"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
+              autoComplete="new-password"
+            />
+            {validationErrors.password ? (
+              <p className="mt-1 text-sm text-red-600">{validationErrors.password}</p>
+            ) : null}
+          </div>
+
+          <div>
+            <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
+              Confirm password
+            </label>
+            <input
+              id="confirmPassword"
+              type="password"
+              value={confirmPassword}
+              onChange={(event) => setConfirmPassword(event.target.value)}
+              className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
+              autoComplete="new-password"
+            />
+            {validationErrors.confirmPassword ? (
+              <p className="mt-1 text-sm text-red-600">{validationErrors.confirmPassword}</p>
+            ) : null}
+          </div>
+
+          {error ? <div className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div> : null}
+
+          <button
+            type="submit"
+            disabled={isLoading}
+            className="w-full rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-70"
+          >
+            {isLoading ? 'Creating account...' : 'Create account'}
+          </button>
+        </form>
+
+        <p className="mt-6 text-center text-sm text-gray-600">
+          Already have an account?{' '}
+          <Link
+            to="/login"
+            state={{ from: { pathname: redirectTo } }}
+            className="font-medium text-indigo-600 hover:text-indigo-500"
+          >
+            Sign in
+          </Link>
+        </p>
       </div>
     </div>
   )
