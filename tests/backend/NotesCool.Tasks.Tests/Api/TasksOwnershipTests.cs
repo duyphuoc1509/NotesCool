@@ -17,6 +17,7 @@ using NotesCool.Tasks.Contracts;
 using NotesCool.Tasks.Domain;
 using NotesCool.Tasks.Infrastructure;
 using Xunit;
+using TaskStatus = NotesCool.Tasks.Domain.TaskStatus;
 
 namespace NotesCool.Tasks.Tests.Api;
 
@@ -34,7 +35,7 @@ public class TasksOwnershipTests : IClassFixture<WebApplicationFactory<Program>>
                 if (descriptor != null) services.Remove(descriptor);
                 services.AddDbContext<TasksDbContext>(options => options.UseInMemoryDatabase("InMemoryTasksOwnershipDb"));
                 services.AddAuthentication("Test").AddScheme<AuthenticationSchemeOptions, DynamicTestAuthHandler>("Test", options => { });
-                services.AddScoped<ICurrentUser, CurrentUser>(sp => new CurrentUser(sp.GetRequiredService<IHttpContextAccessor>().HttpContext!.User));
+                services.AddScoped<ICurrentUser, CurrentUser>();
             });
         });
     }
@@ -43,8 +44,8 @@ public class TasksOwnershipTests : IClassFixture<WebApplicationFactory<Program>>
     public async Task GetTask_WhenNotOwner_ReturnsNotFound()
     {
         var clientA = CreateClient("user-a");
-        var createResponse = await clientA.PostAsJsonAsync("/api/tasks", new CreateTaskRequest("Task A", "Desc A", TaskItemPriority.Medium, null));
-        var task = await createResponse.Content.ReadFromJsonAsync<TaskResponse>();
+        var createResponse = await clientA.PostAsJsonAsync("/api/tasks", new CreateTaskRequest("Task A", "Desc A", null));
+        var task = await createResponse.Content.ReadFromJsonAsync<TaskDto>();
 
         var clientB = CreateClient("user-b");
         var getResponse = await clientB.GetAsync($"/api/tasks/{task!.Id}");
@@ -56,11 +57,11 @@ public class TasksOwnershipTests : IClassFixture<WebApplicationFactory<Program>>
     public async Task UpdateTask_WhenNotOwner_ReturnsNotFound()
     {
         var clientA = CreateClient("user-a");
-        var createResponse = await clientA.PostAsJsonAsync("/api/tasks", new CreateTaskRequest("Task A", "Desc A", TaskItemPriority.Medium, null));
-        var task = await createResponse.Content.ReadFromJsonAsync<TaskResponse>();
+        var createResponse = await clientA.PostAsJsonAsync("/api/tasks", new CreateTaskRequest("Task A", "Desc A", null));
+        var task = await createResponse.Content.ReadFromJsonAsync<TaskDto>();
 
         var clientB = CreateClient("user-b");
-        var updateResponse = await clientB.PutAsJsonAsync($"/api/tasks/{task!.Id}", new UpdateTaskRequest("Task A Updated", "Desc A Updated", TaskItemPriority.High, null));
+        var updateResponse = await clientB.PutAsJsonAsync($"/api/tasks/{task!.Id}", new UpdateTaskRequest("Task A Updated", "Desc A Updated", null));
 
         updateResponse.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
@@ -69,11 +70,11 @@ public class TasksOwnershipTests : IClassFixture<WebApplicationFactory<Program>>
     public async Task ChangeStatus_WhenNotOwner_ReturnsNotFound()
     {
         var clientA = CreateClient("user-a");
-        var createResponse = await clientA.PostAsJsonAsync("/api/tasks", new CreateTaskRequest("Task A", "Desc A", TaskItemPriority.Medium, null));
-        var task = await createResponse.Content.ReadFromJsonAsync<TaskResponse>();
+        var createResponse = await clientA.PostAsJsonAsync("/api/tasks", new CreateTaskRequest("Task A", "Desc A", null));
+        var task = await createResponse.Content.ReadFromJsonAsync<TaskDto>();
 
         var clientB = CreateClient("user-b");
-        var statusResponse = await clientB.PatchAsJsonAsync($"/api/tasks/{task!.Id}/status", new ChangeTaskStatusRequest(TaskItemStatus.InProgress));
+        var statusResponse = await clientB.PatchAsJsonAsync($"/api/tasks/{task!.Id}/status", new ChangeTaskStatusRequest(TaskStatus.InProgress));
 
         statusResponse.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
@@ -82,8 +83,8 @@ public class TasksOwnershipTests : IClassFixture<WebApplicationFactory<Program>>
     public async Task ArchiveTask_WhenNotOwner_ReturnsNotFound()
     {
         var clientA = CreateClient("user-a");
-        var createResponse = await clientA.PostAsJsonAsync("/api/tasks", new CreateTaskRequest("Task A", "Desc A", TaskItemPriority.Medium, null));
-        var task = await createResponse.Content.ReadFromJsonAsync<TaskResponse>();
+        var createResponse = await clientA.PostAsJsonAsync("/api/tasks", new CreateTaskRequest("Task A", "Desc A", null));
+        var task = await createResponse.Content.ReadFromJsonAsync<TaskDto>();
 
         var clientB = CreateClient("user-b");
         var deleteResponse = await clientB.DeleteAsync($"/api/tasks/{task!.Id}");
