@@ -25,7 +25,7 @@ describe('auth session storage', () => {
   })
 
   it('clears the session and legacy token on logout', () => {
-    storeSession({ accessToken: 'access-token' })
+    storeSession({ accessToken: 'access-token', refreshToken: '' })
     window.localStorage.setItem('token', 'legacy-token')
 
     clearStoredSession()
@@ -51,6 +51,6 @@ describe('auth session storage', () => {
         expiresAt: Date.now() + 120_000,
       }),
     ).toBe(false)
-    expect(shouldRefreshSession({ accessToken: 'access-token' })).toBe(false)
+    expect(shouldRefreshSession({ accessToken: 'access-token', refreshToken: '' })).toBe(false)
   })
 })
