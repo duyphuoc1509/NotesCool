@@ -17,7 +17,7 @@ function subscribeTokenRefresh(cb: (token: string) => void) {
 }
 
 function onRefreshed(token: string) {
-  refreshSubscribers.map((cb) => cb(token))
+  refreshSubscribers.forEach((cb) => cb(token))
   refreshSubscribers = []
 }
 
@@ -67,15 +67,15 @@ api.interceptors.response.use(
 
         storeSession(newSession)
         onRefreshed(data.accessToken)
-        isRefreshing = false
-
         originalRequest.headers.Authorization = `Bearer ${data.accessToken}`
+
         return api(originalRequest)
       } catch (refreshError) {
-        isRefreshing = false
         clearStoredSession()
         window.location.href = '/login'
         return Promise.reject(refreshError)
+      } finally {
+        isRefreshing = false
       }
     }
 
