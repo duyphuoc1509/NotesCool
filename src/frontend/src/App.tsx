@@ -51,16 +51,6 @@ function AppRoutes() {
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
       <Route
-        path="/*"
-        element={
-          <ProtectedRoute>
-            <Layout>
-              <DashboardPage />
-            </Layout>
-          </ProtectedRoute>
-        }
-      />
-      <Route
         path="/notes"
         element={
           <ProtectedRoute>
@@ -76,6 +66,16 @@ function AppRoutes() {
           <ProtectedRoute>
             <Layout>
               <TasksPage />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/*"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <DashboardPage />
             </Layout>
           </ProtectedRoute>
         }

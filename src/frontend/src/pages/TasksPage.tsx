@@ -16,12 +16,14 @@ const nextStatus: Record<TaskStatus, TaskStatus> = {
   Todo: 'InProgress',
   InProgress: 'Done',
   Done: 'Todo',
+  Archived: 'Todo',
 }
 
 const statusLabel: Record<TaskStatus, string> = {
   Todo: 'To do',
   InProgress: 'In progress',
   Done: 'Done',
+  Archived: 'Archived',
 }
 
 interface TaskFormState {
@@ -52,7 +54,8 @@ function statusClasses(status: TaskStatus) {
     'rounded-full px-2.5 py-1 text-xs font-semibold',
     status === 'Todo' && 'bg-slate-100 text-slate-700',
     status === 'InProgress' && 'bg-blue-100 text-blue-700',
-    status === 'Done' && 'bg-emerald-100 text-emerald-700'
+    status === 'Done' && 'bg-emerald-100 text-emerald-700',
+    status === 'Archived' && 'bg-gray-100 text-gray-500'
   )
 }
 
