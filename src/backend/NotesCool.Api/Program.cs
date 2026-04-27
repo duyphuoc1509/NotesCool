@@ -30,6 +30,13 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.UseExceptionHandler();
 
+// Seed default admin role and user
+using (var scope = app.Services.CreateScope())
+{
+    var seeder = scope.ServiceProvider.GetRequiredService<NotesCool.Identity.Extensions.IdentityDataSeeder>();
+    await seeder.SeedAsync();
+}
+
 app.MapAuthEndpoints();
 app.MapRegistrationEndpoints();
 app.MapIdentityEndpoints();
