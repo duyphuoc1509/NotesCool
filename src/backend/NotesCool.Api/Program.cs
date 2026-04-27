@@ -15,9 +15,6 @@ builder.Services.AddTasksModule(builder.Configuration);
 
 var app = builder.Build();
 
-await app.Services.SeedIdentityDataAsync();
-await app.Services.SeedAuthDataAsync();
-
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
