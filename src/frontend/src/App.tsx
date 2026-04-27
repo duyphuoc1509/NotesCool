@@ -6,7 +6,7 @@ import { Navbar } from './components/Navbar'
 import { LoginPage } from './pages/LoginPage'
 import { RegisterPage } from './pages/RegisterPage'
 import { NotesPage } from './pages/NotesPage'
-import { ProtectedRoute } from './components/ProtectedRoute'
+import { TasksPage } from './pages/TasksPage'
 import type { ReactNode } from 'react'
 
 function Layout({ children }: { children: ReactNode }) {
@@ -51,21 +51,31 @@ function AppRoutes() {
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
       <Route
-        path="/*"
-        element={
-          <ProtectedRoute>
-            <Layout>
-              <DashboardPage />
-            </Layout>
-          </ProtectedRoute>
-        }
-      />
-      <Route
         path="/notes"
         element={
           <ProtectedRoute>
             <Layout>
               <NotesPage />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/tasks"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <TasksPage />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/*"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <DashboardPage />
             </Layout>
           </ProtectedRoute>
         }

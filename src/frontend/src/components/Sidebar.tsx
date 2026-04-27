@@ -1,7 +1,7 @@
-import { LayoutDashboard, FileText, CheckSquare, Settings, Users } from 'lucide-react'
+import { LogOut, LayoutDashboard, FileText, CheckSquare, Settings, Users } from 'lucide-react'
 import { Link, useLocation } from 'react-router-dom'
 import { cn } from '../utils/cn'
-import { useAuth } from '../contexts/useAuth'
+import { useAuth } from '../hooks/useAuth'
 
 const navigation = [
   { name: 'Dashboard', icon: LayoutDashboard, href: '/' },
@@ -13,6 +13,7 @@ const navigation = [
 
 export function Sidebar() {
   const location = useLocation()
+  const { user, logout } = useAuth()
 
   return (
     <aside className="flex h-full w-64 flex-col border-r border-gray-200 bg-white">

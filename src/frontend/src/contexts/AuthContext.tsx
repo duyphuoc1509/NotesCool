@@ -3,12 +3,15 @@ import { useNavigate } from 'react-router-dom'
 import { AuthContext } from './auth-context'
 import {
   authService,
+  getStoredSession,
+  storeSession,
+  clearStoredSession,
   type AuthTokens,
   type AuthUser,
   type LoginPayload,
   type RegisterPayload,
+  type AuthSession,
 } from '../services/auth'
-import { AUTH_STORAGE_KEY } from '../constants/auth'
 
 export interface AuthState {
   user: AuthUser | null
@@ -23,41 +26,17 @@ export interface AuthContextValue extends AuthState {
   logout: () => Promise<void>
 }
 
-interface PersistedAuth {
-  tokens: AuthTokens
-  user?: AuthUser
-}
-
-function loadPersistedAuth(): PersistedAuth | null {
-  try {
-    const raw = localStorage.getItem(AUTH_STORAGE_KEY)
-    if (!raw) return null
-    return JSON.parse(raw) as PersistedAuth
-  } catch {
-    return null
-  }
-}
-
-function persistAuth(auth: PersistedAuth | null) {
-  if (auth) {
-    localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(auth))
-  } else {
-    localStorage.removeItem(AUTH_STORAGE_KEY)
-    // Legacy key cleanup
-    localStorage.removeItem('token')
-    localStorage.removeItem('refreshToken')
-  }
-}
-
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate()
 
   const [state, setState] = useState<AuthState>(() => {
-    const persisted = loadPersistedAuth()
+    const session = getStoredSession()
     return {
-      tokens: persisted?.tokens ?? null,
-      user: persisted?.user ?? null,
-      isAuthenticated: !!persisted?.tokens?.accessToken,
+      tokens: session
+        ? { accessToken: session.accessToken, refreshToken: session.refreshToken }
+        : null,
+      user: session?.user ?? null,
+      isAuthenticated: !!session?.accessToken,
       isLoading: false,
     }
   })
@@ -75,13 +54,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     async (payload: LoginPayload, redirectTo = '/') => {
       setState((s) => ({ ...s, isLoading: true }))
       const response = await authService.login(payload)
-      const tokens: AuthTokens = {
+      const session: AuthSession = {
         accessToken: response.accessToken,
         refreshToken: response.refreshToken,
+        user: response.user ?? { email: payload.email },
       }
-      const user = response.user ?? { email: payload.email }
-      persistAuth({ tokens, user })
-      setState({ tokens, user, isAuthenticated: true, isLoading: false })
+      storeSession(session)
+      setState({
+        tokens: { accessToken: session.accessToken, refreshToken: session.refreshToken },
+        user: session.user ?? null,
+        isAuthenticated: true,
+        isLoading: false,
+      })
       navigate(redirectTo, { replace: true })
     },
     [navigate],
@@ -91,13 +75,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     async (payload: RegisterPayload, redirectTo = '/') => {
       setState((s) => ({ ...s, isLoading: true }))
       const response = await authService.register(payload)
-      const tokens: AuthTokens = {
+      const session: AuthSession = {
         accessToken: response.accessToken,
         refreshToken: response.refreshToken,
+        user: response.user ?? { email: payload.email, fullName: payload.fullName },
       }
-      const user = response.user ?? { email: payload.email, fullName: payload.fullName }
-      persistAuth({ tokens, user })
-      setState({ tokens, user, isAuthenticated: true, isLoading: false })
+      storeSession(session)
+      setState({
+        tokens: { accessToken: session.accessToken, refreshToken: session.refreshToken },
+        user: session.user ?? null,
+        isAuthenticated: true,
+        isLoading: false,
+      })
       navigate(redirectTo, { replace: true })
     },
     [navigate],
@@ -106,13 +95,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = useCallback(async () => {
     setState((s) => ({ ...s, isLoading: true }))
     try {
-      const raw = localStorage.getItem(AUTH_STORAGE_KEY)
-      const refreshToken = raw ? (JSON.parse(raw) as PersistedAuth).tokens?.refreshToken : undefined
-      await authService.logout(refreshToken)
+      const session = getStoredSession()
+      await authService.logout(session?.refreshToken)
     } catch {
       // ignore server errors; proceed with local logout
     }
-    persistAuth(null)
+    clearStoredSession()
     setState({ tokens: null, user: null, isAuthenticated: false, isLoading: false })
     navigate('/login', { replace: true })
   }, [navigate])
@@ -124,4 +112,3 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
-
