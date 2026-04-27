@@ -27,3 +27,9 @@ export interface UpdateTaskRequest {
 export interface ChangeTaskStatusRequest {
   status: TaskStatus
 }
+
+export interface TasksFilter {
+  status?: TaskStatus
+  page?: number
+  pageSize?: number
+}

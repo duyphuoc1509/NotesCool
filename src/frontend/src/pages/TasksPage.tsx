@@ -7,23 +7,21 @@ import { cn } from '../utils/cn'
 
 const statusOptions: Array<{ value: TaskStatus | 'all'; label: string }> = [
   { value: 'all', label: 'All active' },
-  { value: 'todo', label: 'To do' },
-  { value: 'in_progress', label: 'In progress' },
-  { value: 'done', label: 'Done' },
+  { value: 'Todo', label: 'To do' },
+  { value: 'InProgress', label: 'In progress' },
+  { value: 'Done', label: 'Done' },
 ]
 
 const nextStatus: Record<TaskStatus, TaskStatus> = {
-  todo: 'in_progress',
-  in_progress: 'done',
-  done: 'todo',
-  archived: 'todo',
+  Todo: 'InProgress',
+  InProgress: 'Done',
+  Done: 'Todo',
 }
 
 const statusLabel: Record<TaskStatus, string> = {
-  todo: 'To do',
-  in_progress: 'In progress',
-  done: 'Done',
-  archived: 'Archived',
+  Todo: 'To do',
+  InProgress: 'In progress',
+  Done: 'Done',
 }
 
 interface TaskFormState {
@@ -52,10 +50,9 @@ function formatDate(value?: string | null) {
 function statusClasses(status: TaskStatus) {
   return cn(
     'rounded-full px-2.5 py-1 text-xs font-semibold',
-    status === 'todo' && 'bg-slate-100 text-slate-700',
-    status === 'in_progress' && 'bg-blue-100 text-blue-700',
-    status === 'done' && 'bg-emerald-100 text-emerald-700',
-    status === 'archived' && 'bg-gray-100 text-gray-500'
+    status === 'Todo' && 'bg-slate-100 text-slate-700',
+    status === 'InProgress' && 'bg-blue-100 text-blue-700',
+    status === 'Done' && 'bg-emerald-100 text-emerald-700'
   )
 }
 

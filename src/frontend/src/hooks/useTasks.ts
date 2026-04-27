@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import axios from 'axios'
 import type { TaskDto, TaskStatus, TasksFilter, CreateTaskRequest, UpdateTaskRequest } from '../types/task'
-import * as tasksService from '../services/tasks'
+import { tasksService } from '../services/tasksService'
 
 export function useTasks(initialFilter: TasksFilter = {}) {
   const [tasks, setTasks] = useState<TaskDto[]>([])
@@ -14,7 +14,7 @@ export function useTasks(initialFilter: TasksFilter = {}) {
     setIsLoading(true)
     setError(null)
     try {
-      const data = await tasksService.getTasks(filter)
+      const data = await tasksService.getTasks(filter.status, filter.page, filter.pageSize)
       setTasks(data.items)
       setTotalCount(data.totalCount)
     } catch (err) {
@@ -29,7 +29,6 @@ export function useTasks(initialFilter: TasksFilter = {}) {
   }, [filter])
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchTasks()
   }, [fetchTasks])
 
