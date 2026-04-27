@@ -29,6 +29,15 @@ public static class ServiceCollections
         services.AddScoped<ISecurityAuditService, SecurityAuditService>();
         services.AddExceptionHandler<GlobalExceptionHandler>();
         services.AddProblemDetails();
+        services.AddCors(options =>
+        {
+            options.AddDefaultPolicy(builder =>
+            {
+                builder.AllowAnyOrigin()
+                       .AllowAnyMethod()
+                       .AllowAnyHeader();
+            });
+        });
         
         services.AddOptions<SsoOptions>()
             .Bind(configuration.GetSection(SsoOptions.SectionName))
