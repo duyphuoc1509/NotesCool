@@ -22,7 +22,7 @@ export function Sidebar() {
             href={item.href}
             className={cn(
               'group flex items-center rounded-md px-3 py-2 text-sm font-medium transition-colors',
-              item.name === 'Dashboard'
+              item.name === 'Tasks'
                 ? 'bg-indigo-50 text-indigo-600'
                 : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
             )}
@@ -30,7 +30,7 @@ export function Sidebar() {
             <item.icon
               className={cn(
                 'mr-3 h-5 w-5 flex-shrink-0',
-                item.name === 'Dashboard' ? 'text-indigo-600' : 'text-gray-400 group-hover:text-gray-500'
+                item.name === 'Tasks' ? 'text-indigo-600' : 'text-gray-400 group-hover:text-gray-500'
               )}
             />
             {item.name}
