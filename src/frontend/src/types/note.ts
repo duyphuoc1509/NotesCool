@@ -3,23 +3,22 @@ export interface Note {
   title: string
   content: string
   createdAt: string
-  updatedAt?: string
+  updatedAt: string | null
 }
 
-export interface NoteResponse {
-  id: string
+export interface PagedResult<T> {
+  items: T[]
+  page: number
+  pageSize: number
+  totalCount: number
+}
+
+export interface CreateNotePayload {
   title: string
   content: string
-  createdAt: string
-  updatedAt?: string
 }
 
-export interface CreateNoteRequest {
-  title: string
-  content: string
-}
-
-export interface UpdateNoteRequest {
+export interface UpdateNotePayload {
   title: string
   content: string
 }

@@ -1,35 +1,34 @@
 import api from './api'
-import type { CreateNoteRequest, NoteResponse, UpdateNoteRequest } from '../types/note'
-import type { PagedResult } from '../types/common'
-
-const NOTES_BASE_PATH = '/api/notes'
+import type { Note, PagedResult, CreateNotePayload, UpdateNotePayload } from '../types/note'
 
 export const notesService = {
-  async getNotes(query?: string, page = 1, pageSize = 10): Promise<PagedResult<NoteResponse>> {
-    const { data } = await api.get<PagedResult<NoteResponse>>(NOTES_BASE_PATH, {
-      params: { query, page, pageSize },
+  async search(params: { query?: string; page?: number; pageSize?: number }): Promise<PagedResult<Note>> {
+    const { data } = await api.get<PagedResult<Note>>('/api/notes', {
+      params: {
+        query: params.query || undefined,
+        page: params.page ?? 1,
+        pageSize: params.pageSize ?? 20,
+      },
     })
     return data
   },
 
-  async getNoteById(id: string): Promise<NoteResponse> {
-    const { data } = await api.get<NoteResponse>(`${NOTES_BASE_PATH}/${id}`)
+  async getById(id: string): Promise<Note> {
+    const { data } = await api.get<Note>(`/api/notes/${id}`)
     return data
   },
 
-  async createNote(payload: CreateNoteRequest): Promise<NoteResponse> {
-    const { data } = await api.post<NoteResponse>(NOTES_BASE_PATH, payload)
+  async create(payload: CreateNotePayload): Promise<Note> {
+    const { data } = await api.post<Note>('/api/notes', payload)
     return data
   },
 
-  async updateNote(id: string, payload: UpdateNoteRequest): Promise<NoteResponse> {
-    const { data } = await api.put<NoteResponse>(`${NOTES_BASE_PATH}/${id}`, payload)
+  async update(id: string, payload: UpdateNotePayload): Promise<Note> {
+    const { data } = await api.put<Note>(`/api/notes/${id}`, payload)
     return data
   },
 
-  async deleteNote(id: string): Promise<void> {
-    await api.delete(`${NOTES_BASE_PATH}/${id}`)
+  async archive(id: string): Promise<void> {
+    await api.delete(`/api/notes/${id}`)
   },
 }
-
-export default notesService
