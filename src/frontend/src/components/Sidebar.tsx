@@ -1,8 +1,9 @@
-import { LayoutDashboard, FileText, CheckSquare, Settings, Users } from 'lucide-react'
+import { LayoutDashboard, FileText, CheckSquare, Settings, Users, LogOut } from 'lucide-react'
 import { cn } from '../utils/cn'
+import { useAuth } from '../contexts/useAuth'
 
 const navigation = [
-  { name: 'Dashboard', icon: LayoutDashboard, href: '#' },
+  { name: 'Dashboard', icon: LayoutDashboard, href: '/' },
   { name: 'Notes', icon: FileText, href: '#' },
   { name: 'Tasks', icon: CheckSquare, href: '#' },
   { name: 'Users', icon: Users, href: '#' },
@@ -10,6 +11,8 @@ const navigation = [
 ]
 
 export function Sidebar() {
+  const { user, logout } = useAuth()
+
   return (
     <aside className="flex h-full w-64 flex-col border-r border-gray-200 bg-white">
       <div className="flex h-16 items-center border-b border-gray-200 px-6">
@@ -39,11 +42,24 @@ export function Sidebar() {
       </nav>
       <div className="border-t border-gray-200 p-4">
         <div className="flex items-center space-x-3">
-          <div className="h-8 w-8 rounded-full bg-gray-200" />
-          <div className="flex-1 overflow-hidden">
-            <p className="truncate text-sm font-medium text-gray-900">Admin User</p>
-            <p className="truncate text-xs text-gray-500">admin@notescool.com</p>
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-100 text-xs font-semibold text-indigo-600 uppercase">
+            {user?.fullName?.charAt(0) ?? user?.email?.charAt(0) ?? 'A'}
           </div>
+          <div className="flex-1 overflow-hidden">
+            <p className="truncate text-sm font-medium text-gray-900">
+              {user?.fullName ?? 'Admin User'}
+            </p>
+            <p className="truncate text-xs text-gray-500">
+              {user?.email ?? 'admin@notescool.com'}
+            </p>
+          </div>
+          <button
+            onClick={() => logout()}
+            className="rounded-md p-1.5 text-gray-400 hover:bg-gray-50 hover:text-gray-500 transition"
+            title="Sign out"
+          >
+            <LogOut className="h-5 w-5" />
+          </button>
         </div>
       </div>
     </aside>

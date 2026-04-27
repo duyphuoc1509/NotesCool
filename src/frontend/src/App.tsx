@@ -1,7 +1,12 @@
+import { Route, Routes } from 'react-router-dom'
+import { AuthProvider } from './contexts/AuthContext'
+import { ProtectedRoute } from './components/ProtectedRoute'
 import { Sidebar } from './components/Sidebar'
 import { Navbar } from './components/Navbar'
+import { LoginPage } from './pages/LoginPage'
+import { RegisterPage } from './pages/RegisterPage'
 
-function App() {
+function DashboardLayout() {
   return (
     <div className="flex h-screen bg-gray-50">
       <Sidebar />
@@ -13,11 +18,10 @@ function App() {
               NotesCool CMS
             </p>
             <h1 className="mt-3 text-3xl font-bold tracking-tight text-gray-950 sm:text-4xl">
-              Frontend codebase is ready
+              Welcome back
             </h1>
             <p className="mt-4 max-w-2xl text-base text-gray-600">
-              This React + TypeScript + Vite application is prepared as the frontend
-              foundation for the NotesCool CMS.
+              This React + TypeScript + Vite application is the frontend foundation for NotesCool CMS.
             </p>
 
             <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -43,6 +47,31 @@ function App() {
         </main>
       </div>
     </div>
+  )
+}
+
+function AppRoutes() {
+  return (
+    <Routes>
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/register" element={<RegisterPage />} />
+      <Route
+        path="/*"
+        element={
+          <ProtectedRoute>
+            <DashboardLayout />
+          </ProtectedRoute>
+        }
+      />
+    </Routes>
+  )
+}
+
+function App() {
+  return (
+    <AuthProvider>
+      <AppRoutes />
+    </AuthProvider>
   )
 }
 
