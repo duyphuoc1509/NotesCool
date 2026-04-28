@@ -4,6 +4,9 @@ export interface Note {
   content: string
   createdAt: string
   updatedAt: string | null
+  tags?: string[]
+  isFavorite?: boolean
+  isArchived?: boolean
 }
 
 export interface PagedResult<T> {
@@ -16,9 +19,13 @@ export interface PagedResult<T> {
 export interface CreateNotePayload {
   title: string
   content: string
+  tags?: string[]
+  isFavorite?: boolean
 }
 
 export interface UpdateNotePayload {
   title: string
   content: string
+  tags?: string[]
+  isFavorite?: boolean
 }
