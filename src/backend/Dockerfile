@@ -28,7 +28,7 @@ WORKDIR /app
 COPY --from=build /app/publish .
 
 # Environment variables
-ENV ASPNETCORE_URLS=http://+:8080
-EXPOSE 8080
+ENV ASPNETCORE_URLS=http://+:10002
+EXPOSE 10002
 
 ENTRYPOINT ["dotnet", "NotesCool.Api.dll"]

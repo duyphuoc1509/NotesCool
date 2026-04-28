@@ -39,7 +39,7 @@ services:
       - Sso__Providers__1__CallbackPath=/signin-microsoft
       - Sso__Providers__1__RedirectUrls__0=${MICROSOFT_SSO_REDIRECT_URL:-http://localhost:5173/auth/callback/microsoft}
     ports:
-      - "8080:8080"
+      - "10002:10002"
     depends_on:
       postgres:
         condition: service_healthy
@@ -52,7 +52,7 @@ services:
         VITE_API_BASE_URL: ""
     container_name: notescool-frontend
     ports:
-      - "80:80"
+      - "10001:80"
     depends_on:
       - backend
 
