@@ -26,5 +26,5 @@ echo ">>> Checking service status..."
 docker compose ps
 
 echo ">>> Deployment completed successfully!"
-echo ">>> Frontend is available on port 80"
-echo ">>> Backend API is available on port 8080"
+echo ">>> Frontend is available on port 10001"
+echo ">>> Backend API is available on port 10002"
