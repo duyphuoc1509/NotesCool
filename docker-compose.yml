@@ -30,14 +30,14 @@ services:
       - Sso__Providers__0__ClientSecret=${GOOGLE_SSO_CLIENT_SECRET:-__SET_IN_ENV__}
       - Sso__Providers__0__Authority=https://accounts.google.com
       - Sso__Providers__0__CallbackPath=/signin-google
-      - Sso__Providers__0__RedirectUrls__0=${GOOGLE_SSO_REDIRECT_URL:-http://localhost:5173/auth/callback/google}
+      - Sso__Providers__0__RedirectUrls__0=${GOOGLE_SSO_REDIRECT_URL:-http://localhost:10001/auth/callback/google}
       - Sso__Providers__1__Name=Microsoft
       - Sso__Providers__1__Enabled=false
       - Sso__Providers__1__ClientId=${MICROSOFT_SSO_CLIENT_ID:-}
       - Sso__Providers__1__ClientSecret=${MICROSOFT_SSO_CLIENT_SECRET:-__SET_IN_ENV__}
       - Sso__Providers__1__Authority=https://login.microsoftonline.com/common/v2.0
       - Sso__Providers__1__CallbackPath=/signin-microsoft
-      - Sso__Providers__1__RedirectUrls__0=${MICROSOFT_SSO_REDIRECT_URL:-http://localhost:5173/auth/callback/microsoft}
+      - Sso__Providers__1__RedirectUrls__0=${MICROSOFT_SSO_REDIRECT_URL:-http://localhost:10001/auth/callback/microsoft}
     ports:
       - "10002:10002"
     depends_on:
