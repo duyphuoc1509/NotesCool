@@ -46,6 +46,17 @@ public class TasksEndpointsTests : IClassFixture<WebApplicationFactory<Program>>
     }
 
     [Fact]
+    public async Task GetTasks_WithoutAuthentication_ReturnsUnauthorized()
+    {
+        using var unauthenticatedClient = _client;
+        unauthenticatedClient.DefaultRequestHeaders.Authorization = null;
+
+        var response = await unauthenticatedClient.GetAsync("/api/tasks");
+
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact]
     public async Task GetTasks_ReturnsOk()
     {
         var response = await _client.GetAsync("/api/tasks");
@@ -55,11 +66,11 @@ public class TasksEndpointsTests : IClassFixture<WebApplicationFactory<Program>>
     [Fact]
     public async Task CreateTask_ReturnsOk()
     {
-        var request = new CreateTaskRequest("Test Task", "Desc", TaskItemPriority.Medium, null);
+        var request = new CreateTaskRequest("Test Task", "Desc", null);
         var response = await _client.PostAsJsonAsync("/api/tasks", request);
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
         
-        var task = await response.Content.ReadFromJsonAsync<TaskResponse>();
+        var task = await response.Content.ReadFromJsonAsync<TaskDto>();
         task.Should().NotBeNull();
         task!.Title.Should().Be("Test Task");
     }
@@ -68,6 +79,6 @@ public class TasksEndpointsTests : IClassFixture<WebApplicationFactory<Program>>
 public class TestCurrentUser : ICurrentUser
 {
     public string UserId => "test-user-id";
-    public string Email => "test@example.com";
     public string Role => "User";
+    public bool IsInRole(string role) => Role == role;
 }

@@ -1,56 +1,93 @@
-export type AuthSession = {
+import api from './api'
+import { AUTH_STORAGE_KEY } from '../constants/auth'
+
+export interface AuthTokens {
   accessToken: string
-  refreshToken?: string
+  refreshToken: string
+}
+
+export interface AuthUser {
+  id?: string
+  email: string
+  fullName?: string
+}
+
+export interface AuthResponse extends AuthTokens {
+  user?: AuthUser
+}
+
+export interface AuthSession extends AuthTokens {
+  user?: AuthUser
   expiresAt?: number
 }
 
-const SESSION_STORAGE_KEY = 'notescool.auth.session'
+export interface LoginPayload {
+  email: string
+  password: string
+}
 
-function isBrowserStorageAvailable() {
-  return typeof window !== 'undefined' && typeof window.localStorage !== 'undefined'
+export interface RegisterPayload {
+  email: string
+  password: string
+  fullName: string
+}
+
+export interface RefreshPayload {
+  refreshToken: string
+}
+
+export interface ApiErrorResponse {
+  message?: string
+  title?: string
+  errors?: Record<string, string[]>
+}
+
+export const authService = {
+  async register(payload: RegisterPayload) {
+    const { data } = await api.post<AuthResponse>('/api/auth/register', payload)
+    return data
+  },
+
+  async login(payload: LoginPayload) {
+    const { data } = await api.post<AuthResponse>('/api/auth/login', payload)
+    return data
+  },
+
+  async logout(refreshToken?: string) {
+    await api.post('/api/auth/logout', refreshToken ? { refreshToken } : {})
+  },
+
+  async refresh(payload: RefreshPayload) {
+    const { data } = await api.post<AuthResponse>('/api/auth/refresh-token', payload)
+    return data
+  },
 }
 
 export function getStoredSession(): AuthSession | null {
-  if (!isBrowserStorageAvailable()) {
-    return null
-  }
-
-  const value = window.localStorage.getItem(SESSION_STORAGE_KEY)
-  if (!value) {
-    return null
-  }
-
   try {
-    const session = JSON.parse(value) as Partial<AuthSession>
-    if (!session.accessToken || typeof session.accessToken !== 'string') {
-      clearStoredSession()
-      return null
-    }
-
-    return {
-      accessToken: session.accessToken,
-      refreshToken: session.refreshToken,
-      expiresAt: session.expiresAt,
-    }
+    const raw = localStorage.getItem(AUTH_STORAGE_KEY)
+    if (!raw) return null
+    return JSON.parse(raw) as AuthSession
   } catch {
-    clearStoredSession()
     return null
   }
 }
 
 export function storeSession(session: AuthSession) {
-  if (!isBrowserStorageAvailable()) {
-    return
+  localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(session))
+  if (session.accessToken) {
+    localStorage.setItem('token', session.accessToken)
   }
-
-  window.localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(session))
 }
 
 export function clearStoredSession() {
-  if (!isBrowserStorageAvailable()) {
-    return
-  }
+  localStorage.removeItem(AUTH_STORAGE_KEY)
+  localStorage.removeItem('token')
+  localStorage.removeItem('refreshToken')
+}
 
-  window.localStorage.removeItem(SESSION_STORAGE_KEY)
-  window.localStorage.removeItem('token') // Cleanup legacy
+export function shouldRefreshSession(session: AuthSession | null): boolean {
+  if (!session?.refreshToken || !session?.expiresAt) return false
+  const margin = 60 * 1000 // 1 minute
+  return session.expiresAt - margin < Date.now()
 }

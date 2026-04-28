@@ -8,6 +8,10 @@ COPY src/backend/NotesCool.Api/NotesCool.Api.csproj src/backend/NotesCool.Api/
 COPY src/backend/NotesCool.Shared/NotesCool.Shared.csproj src/backend/NotesCool.Shared/
 COPY src/backend/NotesCool.Notes/NotesCool.Notes.csproj src/backend/NotesCool.Notes/
 COPY src/backend/NotesCool.Tasks/NotesCool.Tasks.csproj src/backend/NotesCool.Tasks/
+COPY tests/backend/NotesCool.Notes.Tests/NotesCool.Notes.Tests.csproj tests/backend/NotesCool.Notes.Tests/
+COPY tests/backend/NotesCool.Tasks.Tests/NotesCool.Tasks.Tests.csproj tests/backend/NotesCool.Tasks.Tests/
+COPY src/backend/NotesCool.Identity/NotesCool.Identity.csproj src/backend/NotesCool.Identity/
+COPY tests/backend/NotesCool.Identity.Tests/NotesCool.Identity.Tests.csproj tests/backend/NotesCool.Identity.Tests/
 
 # Restore dependencies
 RUN dotnet restore NotesCool.sln
@@ -24,7 +28,7 @@ WORKDIR /app
 COPY --from=build /app/publish .
 
 # Environment variables
-ENV ASPNETCORE_URLS=http://+:8080
-EXPOSE 8080
+ENV ASPNETCORE_URLS=http://+:10002
+EXPOSE 10002
 
 ENTRYPOINT ["dotnet", "NotesCool.Api.dll"]

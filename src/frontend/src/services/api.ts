@@ -1,8 +1,6 @@
 import axios from 'axios'
-import type { AxiosError, AxiosRequestConfig, InternalAxiosRequestConfig } from 'axios'
 import { API_BASE_URL } from '../constants/env'
-import { clearStoredSession, getStoredSession, storeSession } from './auth'
-import { getRetryDelay, normalizeApiError, shouldRetryRequest } from './apiError'
+import { AUTH_STORAGE_KEY } from '../constants/auth'
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -11,125 +9,104 @@ const api = axios.create({
   },
 })
 
-type RetriableRequestConfig = InternalAxiosRequestConfig & {
-  _retry?: boolean
-  _retryCount?: number
-  skipAuthRefresh?: boolean
-  skipGlobalErrorHandler?: boolean
-}
+let isRefreshing = false
+let failedQueue: Array<{
+  resolve: (value: unknown) => void
+  reject: (reason?: unknown) => void
+}> = []
 
-type RefreshResponse = {
-  accessToken: string
-  refreshToken?: string
-  expiresAt?: number
-}
+const processQueue = (error: Error | null, token: string | null = null) => {
+  failedQueue.forEach((prom) => {
+    if (error) {
+      prom.reject(error)
+    } else {
+      prom.resolve(token)
+    }
+  })
 
-let refreshPromise: Promise<string> | null = null
-
-const notifyGlobalError = (error: unknown) => {
-  if (typeof window === 'undefined') return
-
-  window.dispatchEvent(
-    new CustomEvent('api:error', {
-      detail: normalizeApiError(error),
-    }),
-  )
-}
-
-const redirectToLogin = () => {
-  if (typeof window === 'undefined') return
-  if (window.location.pathname !== '/login') {
-    window.location.assign('/login')
-  }
-}
-
-async function refreshAccessToken() {
-  if (refreshPromise) {
-    return refreshPromise
-  }
-
-  const session = getStoredSession()
-  if (!session?.refreshToken) {
-    clearStoredSession()
-    throw new Error('Missing refresh token')
-  }
-
-  refreshPromise = axios
-    .post<RefreshResponse>(`${API_BASE_URL}/api/auth/refresh`, {
-      refreshToken: session.refreshToken,
-    })
-    .then(({ data }) => {
-      const nextSession = {
-        accessToken: data.accessToken,
-        refreshToken: data.refreshToken || session.refreshToken,
-        expiresAt: data.expiresAt,
-      }
-
-      storeSession(nextSession)
-      return data.accessToken
-    })
-    .catch((error) => {
-      clearStoredSession()
-      redirectToLogin()
-      throw error
-    })
-    .finally(() => {
-      refreshPromise = null
-    })
-
-  return refreshPromise
+  failedQueue = []
 }
 
 api.interceptors.request.use((config) => {
-  const session = getStoredSession()
-  if (session?.accessToken) {
-    config.headers.Authorization = `Bearer ${session.accessToken}`
+  const raw = localStorage.getItem(AUTH_STORAGE_KEY)
+  if (raw) {
+    try {
+      const parsed = JSON.parse(raw)
+      const token = parsed.tokens?.accessToken || parsed.accessToken
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`
+      }
+    } catch {
+      // invalid json
+    }
   }
   return config
 })
 
 api.interceptors.response.use(
   (response) => response,
-  async (error: AxiosError) => {
-    const originalRequest = error.config as RetriableRequestConfig | undefined
+  async (error) => {
+    const originalRequest = error.config
 
-    if (!originalRequest) {
-      notifyGlobalError(error)
-      return Promise.reject(error)
-    }
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      if (isRefreshing) {
+        return new Promise((resolve, reject) => {
+          failedQueue.push({ resolve, reject })
+        })
+          .then((token) => {
+            originalRequest.headers.Authorization = `Bearer ${token}`
+            return api(originalRequest)
+          })
+          .catch((err) => Promise.reject(err))
+      }
 
-    if (error.response?.status === 401 && !originalRequest._retry && !originalRequest.skipAuthRefresh) {
       originalRequest._retry = true
+      isRefreshing = true
+
+      const raw = localStorage.getItem(AUTH_STORAGE_KEY)
+      if (!raw) {
+        isRefreshing = false
+        return Promise.reject(error)
+      }
 
       try {
-        const accessToken = await refreshAccessToken()
-        originalRequest.headers.Authorization = `Bearer ${accessToken}`
+        const authData = JSON.parse(raw)
+        const refreshToken = authData.tokens?.refreshToken
+
+        if (!refreshToken) {
+          throw new Error('No refresh token available')
+        }
+
+        const { data } = await axios.post(`${API_BASE_URL}/api/auth/refresh-token`, {
+          refreshToken,
+        })
+
+        const newAuthData = {
+          ...authData,
+          tokens: {
+            accessToken: data.accessToken,
+            refreshToken: data.refreshToken,
+          },
+        }
+
+        localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(newAuthData))
+        api.defaults.headers.common.Authorization = `Bearer ${data.accessToken}`
+        processQueue(null, data.accessToken)
+
         return api(originalRequest)
       } catch (refreshError) {
-        notifyGlobalError(refreshError)
+        processQueue(refreshError as Error, null)
+        localStorage.removeItem(AUTH_STORAGE_KEY)
+        // Optionally redirect to login or let the component handle it
+        // window.location.href = '/login'
         return Promise.reject(refreshError)
+      } finally {
+        isRefreshing = false
       }
-    }
-
-    const retryCount = originalRequest._retryCount ?? 0
-    if (shouldRetryRequest(error, retryCount, originalRequest.method ?? 'get')) {
-      originalRequest._retryCount = retryCount + 1
-      await new Promise((resolve) => window.setTimeout(resolve, getRetryDelay(retryCount)))
-      return api(originalRequest)
-    }
-
-    if (!originalRequest.skipGlobalErrorHandler) {
-      notifyGlobalError(error)
     }
 
     return Promise.reject(error)
   },
 )
 
-export type ApiRequestConfig = AxiosRequestConfig & {
-  skipAuthRefresh?: boolean
-  skipGlobalErrorHandler?: boolean
-}
-
-export { normalizeApiError }
 export default api

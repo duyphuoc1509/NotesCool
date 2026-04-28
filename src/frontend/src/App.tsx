@@ -1,78 +1,94 @@
-import { useCallback, useEffect, useState } from 'react'
+import { Route, Routes } from 'react-router-dom'
+import { AuthProvider } from './contexts/AuthContext'
+import { ProtectedRoute } from './components/ProtectedRoute'
 import { Sidebar } from './components/Sidebar'
 import { Navbar } from './components/Navbar'
-import { ToastViewport, type ToastItem } from './components/Toast'
-import { useApiError } from './hooks/useApiError'
-import type { StandardError } from './services/apiError'
+import { LoginPage } from './pages/LoginPage'
+import { RegisterPage } from './pages/RegisterPage'
+import { NotesPage } from './pages/NotesPage'
+import { TasksPage } from './pages/TasksPage'
+import type { ReactNode } from 'react'
+
+function Layout({ children }: { children: ReactNode }) {
+  return (
+    <div className="flex h-screen bg-gray-50">
+      <Sidebar />
+      <div className="flex flex-1 flex-col overflow-hidden">
+        <Navbar />
+        <main className="flex-1 overflow-y-auto p-8">{children}</main>
+      </div>
+    </div>
+  )
+}
+
+function DashboardPage() {
+  return (
+    <div className="rounded-2xl border border-gray-200 bg-white p-8 shadow-sm">
+      <p className="text-sm font-semibold uppercase tracking-wide text-indigo-600">NotesCool CMS</p>
+      <h1 className="mt-3 text-3xl font-bold tracking-tight text-gray-950 sm:text-4xl">Session persistence is enabled</h1>
+      <p className="mt-4 max-w-2xl text-base text-gray-600">
+        Auth state is restored from storage, unauthorized requests attempt token refresh, and logout clears the session before redirecting back to login.
+      </p>
+
+      <div className="mt-8 grid gap-4 sm:grid-cols-3">
+        {[
+          'Restores stored access token on reload',
+          'Refreshes expired sessions when a refresh token exists',
+          'Clears session and redirects on logout',
+        ].map((item) => (
+          <div key={item} className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-4 text-sm text-gray-700">
+            {item}
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function AppRoutes() {
+  return (
+    <Routes>
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/register" element={<RegisterPage />} />
+      <Route
+        path="/notes"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <NotesPage />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/tasks"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <TasksPage />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/*"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <DashboardPage />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+    </Routes>
+  )
+}
 
 function App() {
-  const [toasts, setToasts] = useState<ToastItem[]>([])
-
-  const dismissToast = useCallback((id: string) => {
-    setToasts((current) => current.filter((toast) => toast.id !== id))
-  }, [])
-
-  const showToast = useCallback((message: string, tone: ToastItem['tone'] = 'error') => {
-    const id = `${Date.now()}-${Math.random().toString(16).slice(2)}`
-    setToasts((current) => [...current, { id, message, tone }])
-    window.setTimeout(() => {
-      setToasts((current) => current.filter((toast) => toast.id !== id))
-    }, 5000)
-  }, [])
-
-  useApiError((error: StandardError) => {
-    showToast(error.message, 'error')
-  })
-
-  useEffect(() => {
-    // Demo info toast to verify the shared UI state is wired.
-    const timer = window.setTimeout(() => {
-      showToast('Centralized API error handling is ready.', 'info')
-    }, 0)
-    return () => window.clearTimeout(timer)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-
   return (
-    <>
-      <ToastViewport toasts={toasts} onDismiss={dismissToast} />
-      <div className="flex h-screen bg-gray-50">
-        <Sidebar />
-        <div className="flex flex-1 flex-col overflow-hidden">
-          <Navbar />
-          <main className="flex-1 overflow-y-auto p-8">
-            <div className="rounded-2xl border border-gray-200 bg-white p-8 shadow-sm">
-              <p className="text-sm font-semibold uppercase tracking-wide text-indigo-600">NotesCool CMS</p>
-              <h1 className="mt-3 text-3xl font-bold tracking-tight text-gray-950 sm:text-4xl">
-                Centralized API error handling is ready
-              </h1>
-              <p className="mt-4 max-w-2xl text-base text-gray-600">
-                HTTP errors, network failures, refresh-token logout behavior, and shared toast messaging
-                are now managed from a single frontend API layer.
-              </p>
-
-              <div className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                {[
-                  '400 validation → standard user feedback',
-                  '401 unauthorized → token refresh or logout',
-                  '403 forbidden → permission warning',
-                  '404 missing resource → friendly empty/error copy',
-                  '409 conflict → suggest refresh and retry',
-                  '500/server & network → bounded retry for safe requests',
-                ].map((item) => (
-                  <div
-                    key={item}
-                    className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-700"
-                  >
-                    {item}
-                  </div>
-                ))}
-              </div>
-            </div>
-          </main>
-        </div>
-      </div>
-    </>
+    <AuthProvider>
+      <AppRoutes />
+    </AuthProvider>
   )
 }
 
