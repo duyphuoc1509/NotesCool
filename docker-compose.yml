@@ -27,9 +27,6 @@ services:
       - Sso__Providers__1__RedirectUrls__0=${MICROSOFT_SSO_REDIRECT_URL:-http://localhost:10001/auth/callback/microsoft}
     ports:
       - "10002:10002"
-    depends_on:
-      postgres:
-        condition: service_healthy
 
   frontend:
     build:
@@ -42,6 +39,3 @@ services:
       - "10001:80"
     depends_on:
       - backend
-
-volumes:
-  postgres_data:
