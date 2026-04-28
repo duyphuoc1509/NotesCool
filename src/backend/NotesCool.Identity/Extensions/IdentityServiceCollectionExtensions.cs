@@ -8,6 +8,7 @@ using Microsoft.IdentityModel.Tokens;
 using NotesCool.Identity.Application;
 using NotesCool.Identity.Application.Abstractions;
 using NotesCool.Identity.Infrastructure;
+using NotesCool.Shared.Configuration;
 
 namespace NotesCool.Identity.Extensions;
 
@@ -18,8 +19,10 @@ public static class IdentityServiceCollectionExtensions
         services.Configure<JwtOptions>(configuration.GetSection(JwtOptions.SectionName));
         var jwtOptions = configuration.GetSection(JwtOptions.SectionName).Get<JwtOptions>() ?? new JwtOptions();
 
+        var defaultConnectionString = configuration.GetDefaultConnectionString();
+
         services.AddDbContext<IdentityDbContext>(options =>
-            options.UseNpgsql(configuration.GetConnectionString("DefaultConnection")));
+            options.UseNpgsql(defaultConnectionString));
 
         services.AddIdentityCore<ApplicationUser>(options =>
             {

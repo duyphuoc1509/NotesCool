@@ -1,28 +1,15 @@
 services:
-  postgres:
-    image: postgres:16-alpine
-    container_name: notescool-db
-    environment:
-      POSTGRES_DB: notescool
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-
   backend:
     build:
       context: .
       dockerfile: src/backend/Dockerfile
     container_name: notescool-backend
     environment:
-      - ConnectionStrings__DefaultConnection=Host=postgres;Database=notescool;Username=postgres;Password=postgres
+      - Database__Internal__Host=${DATABASE_INTERNAL_HOST:-postgres}
+      - Database__Internal__Port=${DATABASE_INTERNAL_PORT:-5432}
+      - Database__Internal__Name=${DATABASE_INTERNAL_NAME:-notescool}
+      - Database__Internal__User=${DATABASE_INTERNAL_USER:-postgres}
+      - Database__Internal__Password=${DATABASE_INTERNAL_PASSWORD:-postgres}
       - ASPNETCORE_ENVIRONMENT=Development
       - Sso__Providers__0__Name=Google
       - Sso__Providers__0__Enabled=false
