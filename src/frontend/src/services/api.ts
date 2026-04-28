@@ -31,9 +31,10 @@ api.interceptors.request.use((config) => {
   const raw = localStorage.getItem(AUTH_STORAGE_KEY)
   if (raw) {
     try {
-      const { tokens } = JSON.parse(raw)
-      if (tokens?.accessToken) {
-        config.headers.Authorization = `Bearer ${tokens.accessToken}`
+      const parsed = JSON.parse(raw)
+      const token = parsed.tokens?.accessToken || parsed.accessToken
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`
       }
     } catch {
       // invalid json
