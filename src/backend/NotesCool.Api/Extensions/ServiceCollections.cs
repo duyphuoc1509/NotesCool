@@ -13,6 +13,7 @@ using NotesCool.Shared.Auth;
 using NotesCool.Shared.Security;
 using NotesCool.Tasks.Application;
 using NotesCool.Tasks.Infrastructure;
+using NotesCool.Shared.Configuration;
 
 namespace NotesCool.Api.Extensions;
 
@@ -44,8 +45,10 @@ public static class ServiceCollections
             .ValidateOnStart();
         services.AddSingleton<IValidateOptions<SsoOptions>>(_ => new SsoOptionsValidator(environment));
         
+        var defaultConnectionString = configuration.GetDefaultConnectionString();
+
         services.AddScoped<RegistrationService>();
-        services.AddDbContext<AuthDbContext>(o => o.UseNpgsql(configuration.GetConnectionString("DefaultConnection")));
+        services.AddDbContext<AuthDbContext>(o => o.UseNpgsql(defaultConnectionString));
 
         services.AddEndpointsApiExplorer();
         services.AddSwaggerGen(options =>
@@ -88,14 +91,18 @@ public static class ServiceCollections
 
     public static IServiceCollection AddNotesModule(this IServiceCollection services, IConfiguration config)
     {
-        services.AddDbContext<NotesDbContext>(o => o.UseNpgsql(config.GetConnectionString("DefaultConnection")));
+        var defaultConnectionString = config.GetDefaultConnectionString();
+
+        services.AddDbContext<NotesDbContext>(o => o.UseNpgsql(defaultConnectionString));
         services.AddScoped<NotesService>();
         return services;
     }
 
     public static IServiceCollection AddTasksModule(this IServiceCollection services, IConfiguration config)
     {
-        services.AddDbContext<TasksDbContext>(o => o.UseNpgsql(config.GetConnectionString("DefaultConnection")));
+        var defaultConnectionString = config.GetDefaultConnectionString();
+
+        services.AddDbContext<TasksDbContext>(o => o.UseNpgsql(defaultConnectionString));
         services.AddScoped<TasksService>();
         return services;
     }
