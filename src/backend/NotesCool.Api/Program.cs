@@ -31,6 +31,10 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.UseExceptionHandler();
 
+// Ensure the database schema exists for every module's DbContext before seeding
+// or serving traffic. Safe to call on every startup (idempotent).
+await app.Services.EnsureSchemaAsync();
+
 // Seed default admin role and user
 using (var scope = app.Services.CreateScope())
 {
