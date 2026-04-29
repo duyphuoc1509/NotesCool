@@ -149,8 +149,8 @@ export function TasksPage() {
   }
 
   return (
-    <div className="mx-auto flex max-w-7xl flex-col gap-6">
-      <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+    <div className="mx-auto flex max-w-7xl flex-col gap-4 md:gap-6">
+      <section className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm md:p-6">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
             <p className="text-sm font-semibold uppercase tracking-wide text-indigo-600">Tasks</p>
@@ -187,8 +187,8 @@ export function TasksPage() {
         </div>
       </section>
 
-      <section className="grid gap-6 lg:grid-cols-[360px_minmax(0,1fr)]">
-        <form onSubmit={handleSubmit} className="h-fit rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+      <section className="grid gap-4 pb-20 md:gap-6 md:pb-0 lg:grid-cols-[360px_minmax(0,1fr)]">
+        <form onSubmit={handleSubmit} className="h-fit rounded-2xl border border-gray-200 bg-white p-4 shadow-sm md:p-6">
           <div className="flex items-center gap-2">
             <Plus className="h-5 w-5 text-indigo-600" />
             <h2 className="text-lg font-semibold text-gray-950">
@@ -255,7 +255,7 @@ export function TasksPage() {
           </div>
         </form>
 
-        <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+        <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm md:p-6">
           <div className="flex items-center justify-between border-b border-gray-100 pb-4">
             <div>
               <h2 className="text-lg font-semibold text-gray-950">Task list</h2>

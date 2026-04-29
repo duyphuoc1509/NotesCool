@@ -203,7 +203,7 @@ export function NotesPage() {
   ]
 
   return (
-    <div className="flex h-full flex-col">
+    <div className="flex h-full min-h-0 flex-col">
       {/* Action Error Banner */}
       {actionError && (
         <div className="mx-4 mb-2 flex items-start gap-3 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
@@ -228,7 +228,7 @@ export function NotesPage() {
           )}
         >
           {/* Search header */}
-          <div className="border-b border-slate-200 bg-[#F8FAFC] px-4 pb-0 pt-4">
+          <div className="border-b border-slate-200 bg-[#F8FAFC] px-3 pb-0 pt-3 sm:px-4 sm:pt-4">
             <div className="flex items-center gap-2">
               <form onSubmit={searchNote} className="relative flex-1">
                 <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
@@ -288,7 +288,7 @@ export function NotesPage() {
           </div>
 
           {/* Note list / Loading / Error / Empty */}
-          <div className="flex-1 overflow-y-auto px-4 pb-4 space-y-2">
+          <div className="flex-1 space-y-2 overflow-y-auto px-3 pb-24 sm:px-4 lg:pb-4">
             {error ? (
               <div className="mt-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-4 text-sm text-rose-700">
                 <p className="font-semibold">Unable to load notes.</p>
@@ -351,7 +351,7 @@ export function NotesPage() {
         type="button"
         onClick={openNewNote}
         className={cn(
-          'fixed bottom-6 right-6 z-30 flex h-14 w-14 items-center justify-center rounded-full bg-indigo-600 text-white shadow-lg transition hover:bg-indigo-700 focus:outline-none focus:ring-4 focus:ring-indigo-500/30 lg:hidden',
+          'fixed bottom-24 right-4 z-30 flex h-14 w-14 items-center justify-center rounded-full bg-indigo-600 text-white shadow-lg transition hover:bg-indigo-700 focus:outline-none focus:ring-4 focus:ring-indigo-500/30 sm:right-6 lg:hidden',
           mobileScreen === 'editor' && 'hidden'
         )}
         aria-label="Create new note"
