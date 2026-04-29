@@ -7,6 +7,7 @@ public sealed class SsoStore
 {
     private readonly ConcurrentDictionary<string, SsoUserRecord> _users = new(StringComparer.OrdinalIgnoreCase);
     private readonly ConcurrentDictionary<string, string> _providerIndex = new(StringComparer.OrdinalIgnoreCase);
+    private readonly ConcurrentDictionary<string, SsoStateRecord> _states = new(StringComparer.Ordinal);
 
     public SsoUserRecord GetOrCreateUser(string provider, string providerUserId, string? email, string? displayName)
     {
@@ -70,15 +71,58 @@ public sealed class SsoStore
             : Array.Empty<LinkedSsoProviderResponse>();
     }
 
-    public static bool IsValidCallback(string provider, string code, string state, string providerUserId)
+    public string CreateState(string provider, string returnUrl)
+    {
+        // Simple periodic cleanup of expired states to prevent memory leaks
+        if (_states.Count > 1000)
+        {
+            foreach (var kvp in _states)
+            {
+                if (kvp.Value.ExpiresAt < DateTimeOffset.UtcNow)
+                {
+                    _states.TryRemove(kvp.Key, out _);
+                }
+            }
+        }
+
+        var state = "sso_" + Guid.NewGuid().ToString("N");
+        _states[state] = new SsoStateRecord(Normalize(provider), returnUrl.Trim(), DateTimeOffset.UtcNow.AddMinutes(15));
+        return state;
+    }
+
+    public bool ValidateAndConsumeState(string state, string provider, out string returnUrl)
+    {
+        returnUrl = string.Empty;
+
+        if (string.IsNullOrWhiteSpace(state) || string.IsNullOrWhiteSpace(provider))
+        {
+            return false;
+        }
+
+        if (!_states.TryRemove(state, out var record))
+        {
+            return false;
+        }
+
+        if (record.ExpiresAt <= DateTimeOffset.UtcNow || !string.Equals(record.Provider, Normalize(provider), StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        returnUrl = record.ReturnUrl;
+        return true;
+    }
+
+    public bool IsValidCallback(string provider, string code, string state, string providerUserId)
         => !string.IsNullOrWhiteSpace(provider)
            && !string.IsNullOrWhiteSpace(code)
-           && !string.IsNullOrWhiteSpace(state)
            && !string.IsNullOrWhiteSpace(providerUserId)
-           && state.StartsWith("sso_", StringComparison.OrdinalIgnoreCase);
+           && ValidateAndConsumeState(state, provider, out _);
 
     private static string BuildProviderKey(string provider, string providerUserId) => $"{Normalize(provider)}:{providerUserId.Trim()}";
     private static string Normalize(string provider) => provider.Trim().ToLowerInvariant();
+
+    private sealed record SsoStateRecord(string Provider, string ReturnUrl, DateTimeOffset ExpiresAt);
 }
 
 public sealed record SsoProviderLink(string Provider, string ProviderUserId, string? Email, DateTimeOffset LinkedAt);

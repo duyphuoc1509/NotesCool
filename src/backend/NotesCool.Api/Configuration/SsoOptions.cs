@@ -5,8 +5,6 @@ namespace NotesCool.Api.Configuration;
 
 public sealed class SsoOptions
 {
-    public const string SectionName = "Sso";
-
     public List<SsoProviderOptions> Providers { get; init; } = [];
 }
 
