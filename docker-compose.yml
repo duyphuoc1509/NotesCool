@@ -4,6 +4,9 @@ services:
       context: .
       dockerfile: src/backend/Dockerfile
     container_name: notescool-backend
+    env_file:
+      - path: ${NOTESCOOL_ENV_FILE:-/etc/sysconfig/notescool}
+        required: false
     environment:
       - Database__Internal__Host=${DATABASE_INTERNAL_HOST:-postgres}
       - Database__Internal__Port=${DATABASE_INTERNAL_PORT:-5432}
