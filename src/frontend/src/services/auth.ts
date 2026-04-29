@@ -58,7 +58,7 @@ export const authService = {
   },
 
   async refresh(payload: RefreshPayload) {
-    const { data } = await api.post<AuthResponse>('/api/auth/refresh-token', payload)
+    const { data } = await api.post<AuthResponse>('/api/auth/refresh', payload)
     return data
   },
 }
