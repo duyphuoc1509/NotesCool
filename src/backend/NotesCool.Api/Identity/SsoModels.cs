@@ -4,7 +4,7 @@ public sealed record SsoCallbackRequest(string Provider, string Code, string Sta
 
 public sealed record LinkSsoProviderRequest(string Provider, string Code, string State, string ProviderUserId, string? Email, string? DisplayName);
 
-public sealed record SsoTokenResponse(string AccessToken, string TokenType, int ExpiresIn, SsoUserResponse User);
+public sealed record SsoTokenResponse(string AccessToken, string TokenType, int ExpiresIn, string RefreshToken, SsoUserResponse User);
 
 public sealed record SsoUserResponse(string UserId, string? Email, string? DisplayName, string Role, IReadOnlyCollection<LinkedSsoProviderResponse> LinkedProviders);
 
