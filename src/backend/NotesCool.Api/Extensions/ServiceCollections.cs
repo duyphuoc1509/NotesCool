@@ -25,7 +25,7 @@ public static class ServiceCollections
         services.AddScoped<ICurrentUser, CurrentUser>();
         services.AddSingleton<IUserCredentialStore, InMemoryUserCredentialStore>();
         services.AddSingleton<IAccessTokenService, JwtAccessTokenService>();
-        services.AddSingleton<SsoStore>();
+        // SsoService is registered in Identity module
         services.AddSingleton<IRefreshTokenStore, InMemoryRefreshTokenStore>();
         services.AddHttpClient();
         services.AddScoped<ISecurityAuditService, SecurityAuditService>();

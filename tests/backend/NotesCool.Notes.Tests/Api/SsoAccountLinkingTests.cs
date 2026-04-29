@@ -6,8 +6,10 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using NotesCool.Api.Identity;
+using NotesCool.Identity.Infrastructure;
 using NotesCool.Shared.Auth;
 using Xunit;
 
@@ -23,7 +25,13 @@ public class SsoAccountLinkingTests : IClassFixture<WebApplicationFactory<Progra
         {
             builder.ConfigureTestServices(services =>
             {
-                services.AddSingleton<SsoStore>();
+                var dbName = $"IdentityDb-{Guid.NewGuid()}";
+                var optionsDescriptor = services.SingleOrDefault(d => d.ServiceType == typeof(DbContextOptions<IdentityDbContext>));
+                if (optionsDescriptor is not null) services.Remove(optionsDescriptor);
+                var contextDescriptor = services.SingleOrDefault(d => d.ServiceType == typeof(IdentityDbContext));
+                if (contextDescriptor is not null) services.Remove(contextDescriptor);
+                services.AddDbContext<IdentityDbContext>(options => options.UseInMemoryDatabase(dbName));
+
                 services.AddAuthentication(options =>
                 {
                     options.DefaultAuthenticateScheme = "Test";
@@ -106,7 +114,7 @@ public class SsoAccountLinkingTests : IClassFixture<WebApplicationFactory<Progra
         payload!.TokenType.Should().Be("Bearer");
         payload.AccessToken.Should().NotBeNullOrWhiteSpace();
         payload.ExpiresIn.Should().Be(3600);
-        payload.User.UserId.Should().Be("callback@example.com");
+        payload.User.UserId.Should().NotBeNullOrEmpty();
         payload.User.Email.Should().Be("callback@example.com");
         payload.User.LinkedProviders.Should().ContainSingle(x => x.Provider == "google" && x.ProviderUserId == "google-user-123");
     }
@@ -124,6 +132,8 @@ public class SsoAccountLinkingTests : IClassFixture<WebApplicationFactory<Progra
             "google-user-123",
             "Callback User"));
         firstResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        var firstPayload = await firstResponse.Content.ReadFromJsonAsync<SsoTokenResponse>();
+        var userId = firstPayload!.User.UserId;
 
         var secondResponse = await client.PostAsJsonAsync("/api/auth/sso/callback", new SsoCallbackRequest(
             "google",
@@ -136,7 +146,7 @@ public class SsoAccountLinkingTests : IClassFixture<WebApplicationFactory<Progra
         secondResponse.StatusCode.Should().Be(HttpStatusCode.OK);
         var payload = await secondResponse.Content.ReadFromJsonAsync<SsoTokenResponse>();
         payload.Should().NotBeNull();
-        payload!.User.UserId.Should().Be("callback@example.com");
+        payload!.User.UserId.Should().Be(userId);
         payload.User.LinkedProviders.Should().ContainSingle(x => x.Provider == "google" && x.ProviderUserId == "google-user-123");
     }
 
