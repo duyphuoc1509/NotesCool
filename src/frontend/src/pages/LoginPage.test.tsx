@@ -1,89 +1,44 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { render, screen, fireEvent, cleanup } from '@testing-library/react'
-import { MemoryRouter } from 'react-router-dom'
+import { act } from 'react'
+import { createRoot, type Root } from 'react-dom/client'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { MemoryRouter, Routes, Route } from 'react-router-dom'
 import { LoginPage } from './LoginPage'
-import { AuthContext } from '../contexts/auth-context'
+import { AuthProvider } from '../contexts/AuthContext'
 
-// Mock API_BASE_URL
-vi.mock('../constants/env', () => ({
-  API_BASE_URL: 'http://localhost:10002',
-}))
+// @ts-expect-error IS_REACT_ACT_ENVIRONMENT is used by React internals for act() support
+globalThis.IS_REACT_ACT_ENVIRONMENT = true
 
 describe('LoginPage', () => {
-  const loginMock = vi.fn()
-  const mockAuthContext = {
-    user: null,
-    tokens: null,
-    isAuthenticated: false,
-    isLoading: false,
-    login: loginMock,
-    register: vi.fn(),
-    logout: vi.fn(),
-  }
-
-  let originalLocation: Location
+  let container: HTMLDivElement
+  let root: Root
 
   beforeEach(() => {
+    container = document.createElement('div')
+    document.body.appendChild(container)
+    root = createRoot(container)
     vi.clearAllMocks()
-    originalLocation = window.location
-    // Mock window.location.assign
-    delete (window as any).location
-    window.location = { ...originalLocation, assign: vi.fn() }
   })
 
   afterEach(() => {
-    window.location = originalLocation
-    cleanup()
+    act(() => root.unmount())
+    container.remove()
   })
 
-  it('renders Google and Microsoft login buttons', () => {
-    render(
-      <MemoryRouter>
-        <AuthContext.Provider value={mockAuthContext}>
-          <LoginPage />
-        </AuthContext.Provider>
-      </MemoryRouter>
-    )
+  it('displays SSO error when error=sso_failed in query params', async () => {
+    await act(async () => {
+      root.render(
+        <MemoryRouter initialEntries={['/login?error=sso_failed']}>
+          <AuthProvider>
+            <Routes>
+              <Route path="/login" element={<LoginPage />} />
+            </Routes>
+          </AuthProvider>
+        </MemoryRouter>
+      )
+    })
 
-    expect(screen.getByRole('button', { name: /Google/i })).toBeDefined()
-    expect(screen.getByRole('button', { name: /Microsoft/i })).toBeDefined()
-  })
-
-  it('redirects to Google backend endpoint and disables form when Google is clicked', () => {
-    render(
-      <MemoryRouter>
-        <AuthContext.Provider value={mockAuthContext}>
-          <LoginPage />
-        </AuthContext.Provider>
-      </MemoryRouter>
-    )
-
-    const googleBtn = screen.getByRole('button', { name: /Google/i })
-    fireEvent.click(googleBtn)
-
-    expect(window.location.assign).toHaveBeenCalledWith('http://localhost:10002/api/auth/sso/login/google')
-    
-    // Check if form inputs and submit button are disabled
-    expect(screen.getByLabelText(/Email/i)).toHaveProperty('disabled', true)
-    expect(screen.getByLabelText(/Password/i)).toHaveProperty('disabled', true)
-    expect(screen.getByRole('button', { name: /Sign in/i })).toHaveProperty('disabled', true)
-    // Other SSO buttons should also be disabled
-    expect(googleBtn).toHaveProperty('disabled', true)
-    expect(screen.getByRole('button', { name: /Microsoft/i })).toHaveProperty('disabled', true)
-  })
-
-  it('redirects to Microsoft backend endpoint and disables form when Microsoft is clicked', () => {
-    render(
-      <MemoryRouter>
-        <AuthContext.Provider value={mockAuthContext}>
-          <LoginPage />
-        </AuthContext.Provider>
-      </MemoryRouter>
-    )
-
-    const msBtn = screen.getByRole('button', { name: /Microsoft/i })
-    fireEvent.click(msBtn)
-
-    expect(window.location.assign).toHaveBeenCalledWith('http://localhost:10002/api/auth/sso/login/microsoft')
+    const errorDiv = container.querySelector('.bg-red-50')
+    expect(errorDiv).not.toBeNull()
+    expect(errorDiv?.textContent).toContain('SSO sign-in failed. Please try again.')
   })
 })

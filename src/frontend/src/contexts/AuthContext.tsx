@@ -11,6 +11,7 @@ import {
   type LoginPayload,
   type RegisterPayload,
   type AuthSession,
+  type AuthResponse,
 } from '../services/auth'
 
 export interface AuthState {
@@ -23,6 +24,7 @@ export interface AuthState {
 export interface AuthContextValue extends AuthState {
   login: (payload: LoginPayload, redirectTo?: string) => Promise<void>
   register: (payload: RegisterPayload, redirectTo?: string) => Promise<void>
+  completeSsoLogin: (response: AuthResponse, redirectTo?: string) => void
   logout: () => Promise<void>
 }
 
@@ -56,7 +58,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const response = await authService.login(payload)
       const session: AuthSession = {
         accessToken: response.accessToken,
-        refreshToken: response.refreshToken,
+        refreshToken: response.refreshToken || '',
         user: response.user ?? { email: payload.email },
       }
       storeSession(session)
@@ -77,7 +79,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const response = await authService.register(payload)
       const session: AuthSession = {
         accessToken: response.accessToken,
-        refreshToken: response.refreshToken,
+        refreshToken: response.refreshToken || '',
         user: response.user ?? { email: payload.email, fullName: payload.fullName },
       }
       storeSession(session)
@@ -91,6 +93,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     },
     [navigate],
   )
+
+  const completeSsoLogin = useCallback((response: AuthResponse, redirectTo = '/') => {
+    const session: AuthSession = {
+      accessToken: response.accessToken,
+      refreshToken: response.refreshToken || '',
+      user: response.user,
+    }
+    storeSession(session)
+    setState({
+      user: session.user ?? null,
+      tokens: { accessToken: session.accessToken, refreshToken: session.refreshToken },
+      isAuthenticated: true,
+      isLoading: false,
+    })
+    navigate(redirectTo, { replace: true })
+  }, [navigate])
 
   const logout = useCallback(async () => {
     setState((s) => ({ ...s, isLoading: true }))
@@ -106,8 +124,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [navigate])
 
   const value = useMemo<AuthContextValue>(
-    () => ({ ...state, login, register, logout }),
-    [state, login, register, logout],
+    () => ({ ...state, login, register, completeSsoLogin, logout }),
+    [state, login, register, completeSsoLogin, logout],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
