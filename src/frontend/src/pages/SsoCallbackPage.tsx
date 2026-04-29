@@ -12,6 +12,32 @@ export function SsoCallbackPage() {
   useEffect(() => {
     const params = new URLSearchParams(location.search)
     const error = params.get('error')
+    const accessToken = params.get('accessToken')
+    const refreshToken = params.get('refreshToken')
+    const tokenType = params.get('tokenType')
+    const expiresIn = params.get('expiresIn')
+    const email = params.get('email')
+    const displayName = params.get('displayName')
+    const userId = params.get('userId')
+
+    if (!error && accessToken) {
+      completeSsoLogin(
+        {
+          accessToken,
+          refreshToken: refreshToken ?? undefined,
+          tokenType: tokenType ?? undefined,
+          expiresIn: expiresIn ? Number(expiresIn) : undefined,
+          user: {
+            userId: userId ?? undefined,
+            email: email ?? '',
+            displayName: displayName ?? undefined,
+          },
+        },
+        '/',
+      )
+      return
+    }
+
     const provider = params.get('provider')
     const code = params.get('code')
     const state = params.get('state')
@@ -30,9 +56,9 @@ export function SsoCallbackPage() {
       provider,
       code,
       state,
-      email: params.get('email') || undefined,
+      email: email || undefined,
       providerUserId: params.get('providerUserId') || undefined,
-      displayName: params.get('displayName') || undefined,
+      displayName: displayName || undefined,
     }
 
     const performCallback = async () => {

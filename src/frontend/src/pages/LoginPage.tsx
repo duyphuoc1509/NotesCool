@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom'
 import axios from 'axios'
 import { useAuth } from '../contexts/useAuth'
 import { useSsoProviders } from '../hooks/useSsoProviders'
+import { API_BASE_URL } from '../constants/env'
 import type { ApiErrorResponse } from '../services/auth'
 import type { SsoProvider } from '../services/ssoProviders'
 
@@ -62,7 +63,7 @@ export function LoginPage() {
   const handleSsoLogin = (provider: 'google' | 'microsoft') => {
     setError('')
     setIsRedirecting(true)
-    window.location.assign(`${API_BASE_URL}/api/auth/sso/login/${provider}`)
+    window.location.assign(`${API_BASE_URL}/api/auth/sso/${provider}/login`)
   }
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {

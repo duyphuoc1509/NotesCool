@@ -17,6 +17,25 @@ public static class SsoEndpoints
     {
         var group = app.MapGroup("/api/auth/sso").WithTags("SSO");
 
+        group.MapGet("/providers", Ok<IReadOnlyCollection<SsoAvailableProviderResponse>> (IOptions<SsoOptions> ssoOptions) =>
+        {
+            var providers = ssoOptions.Value.Providers
+                .Where(p => p.Enabled)
+                .Select(p =>
+                {
+                    var key = p.Name.ToLowerInvariant();
+                    return new SsoAvailableProviderResponse(
+                        Key: key,
+                        DisplayName: p.Name,
+                        Icon: key,
+                        Enabled: p.Enabled,
+                        LoginUrl: $"/api/auth/sso/{key}/login");
+                })
+                .ToArray();
+
+            return TypedResults.Ok((IReadOnlyCollection<SsoAvailableProviderResponse>)providers);
+        });
+
         group.MapPost("/callback", Results<Ok<SsoTokenResponse>, BadRequest<SsoErrorResponse>> (SsoCallbackRequest request, SsoStore store, AuthStore authStore, IOptions<SsoOptions> ssoOptions, IConfiguration config, ISecurityAuditService audit, HttpContext http) =>
         {
             var providerOptions = ssoOptions.Value.Providers.FirstOrDefault(p => string.Equals(p.Name, request.Provider, StringComparison.OrdinalIgnoreCase));
