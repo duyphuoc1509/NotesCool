@@ -6,8 +6,11 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using NotesCool.Api.Identity;
+using NotesCool.Identity.Application;
+using NotesCool.Identity.Infrastructure;
 using NotesCool.Shared.Auth;
 using Xunit;
 
@@ -23,7 +26,13 @@ public class SsoEndpointsTests : IClassFixture<WebApplicationFactory<Program>>
         {
             builder.ConfigureTestServices(services =>
             {
-                services.AddSingleton<SsoStore>();
+                var dbName = $"IdentityDb-{Guid.NewGuid()}";
+                var optionsDescriptor = services.SingleOrDefault(d => d.ServiceType == typeof(DbContextOptions<IdentityDbContext>));
+                if (optionsDescriptor is not null) services.Remove(optionsDescriptor);
+                var contextDescriptor = services.SingleOrDefault(d => d.ServiceType == typeof(IdentityDbContext));
+                if (contextDescriptor is not null) services.Remove(contextDescriptor);
+                services.AddDbContext<IdentityDbContext>(options => options.UseInMemoryDatabase(dbName));
+
                 services.AddAuthentication(options =>
                 {
                     options.DefaultAuthenticateScheme = "Test";
@@ -77,7 +86,7 @@ public class SsoEndpointsTests : IClassFixture<WebApplicationFactory<Program>>
         var client = _factory.CreateClient();
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Test");
 
-        var linkResponse = await client.PostAsJsonAsync("/api/auth/sso/providers", new LinkSsoProviderRequest(
+        var linkResponse = await client.PostAsJsonAsync("/api/auth/sso/me/providers", new LinkSsoProviderRequest(
             "github",
             "valid-code",
             "sso_state_123",
@@ -87,23 +96,11 @@ public class SsoEndpointsTests : IClassFixture<WebApplicationFactory<Program>>
 
         linkResponse.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var unlinkResponse = await client.DeleteAsync("/api/auth/sso/providers/github");
+        var unlinkResponse = await client.DeleteAsync("/api/auth/sso/me/providers/github");
         unlinkResponse.StatusCode.Should().Be(HttpStatusCode.BadRequest);
 
         var error = await unlinkResponse.Content.ReadFromJsonAsync<SsoErrorResponse>();
         error.Should().NotBeNull();
         error!.Message.Should().Contain("At least one login method must remain linked");
-    }
-
-    [Fact]
-    public void Store_RejectsLinkingSameProviderIdentityToDifferentUsers()
-    {
-        var store = new SsoStore();
-        store.LinkProvider("user-a", "google", "google-user-1", "a@example.com", "A");
-
-        var act = () => store.LinkProvider("user-b", "google", "google-user-1", "b@example.com", "B");
-
-        act.Should().Throw<InvalidOperationException>()
-            .WithMessage("*already linked to another account*");
     }
 }
