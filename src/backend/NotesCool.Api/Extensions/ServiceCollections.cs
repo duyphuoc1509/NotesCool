@@ -27,6 +27,7 @@ public static class ServiceCollections
         services.AddSingleton<IAccessTokenService, JwtAccessTokenService>();
         services.AddSingleton<SsoStore>();
         services.AddSingleton<IRefreshTokenStore, InMemoryRefreshTokenStore>();
+        services.AddHttpClient();
         services.AddScoped<ISecurityAuditService, SecurityAuditService>();
         services.AddExceptionHandler<GlobalExceptionHandler>();
         services.AddProblemDetails();
