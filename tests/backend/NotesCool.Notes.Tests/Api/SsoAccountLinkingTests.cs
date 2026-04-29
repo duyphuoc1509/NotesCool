@@ -39,7 +39,7 @@ public class SsoAccountLinkingTests : IClassFixture<WebApplicationFactory<Progra
     {
         var client = CreateClient("user-a");
 
-        var linkResponse = await client.PostAsJsonAsync("/api/auth/sso/providers", new LinkSsoProviderRequest(
+        var linkResponse = await client.PostAsJsonAsync("/api/auth/sso/me/providers", new LinkSsoProviderRequest(
             "github",
             "valid-code",
             "sso_state_123",
@@ -53,7 +53,7 @@ public class SsoAccountLinkingTests : IClassFixture<WebApplicationFactory<Progra
         payload!.UserId.Should().Be("user-a");
         payload.LinkedProviders.Should().ContainSingle(x => x.Provider == "github" && x.ProviderUserId == "github-user-1");
 
-        var providersResponse = await client.GetAsync("/api/auth/sso/providers");
+        var providersResponse = await client.GetAsync("/api/auth/sso/me/providers");
         providersResponse.StatusCode.Should().Be(HttpStatusCode.OK);
         var providers = await providersResponse.Content.ReadFromJsonAsync<IReadOnlyCollection<LinkedSsoProviderResponse>>();
         providers.Should().ContainSingle(x => x.Provider == "github" && x.ProviderUserId == "github-user-1");
@@ -63,7 +63,7 @@ public class SsoAccountLinkingTests : IClassFixture<WebApplicationFactory<Progra
     public async Task LinkProvider_WhenProviderIdentityAlreadyLinkedToAnotherAccount_ReturnsConflict()
     {
         var clientA = CreateClient("user-a");
-        var firstLinkResponse = await clientA.PostAsJsonAsync("/api/auth/sso/providers", new LinkSsoProviderRequest(
+        var firstLinkResponse = await clientA.PostAsJsonAsync("/api/auth/sso/me/providers", new LinkSsoProviderRequest(
             "google",
             "valid-code",
             "sso_state_123",
@@ -73,7 +73,7 @@ public class SsoAccountLinkingTests : IClassFixture<WebApplicationFactory<Progra
         firstLinkResponse.StatusCode.Should().Be(HttpStatusCode.OK);
 
         var clientB = CreateClient("user-b");
-        var duplicateLinkResponse = await clientB.PostAsJsonAsync("/api/auth/sso/providers", new LinkSsoProviderRequest(
+        var duplicateLinkResponse = await clientB.PostAsJsonAsync("/api/auth/sso/me/providers", new LinkSsoProviderRequest(
             "google",
             "valid-code",
             "sso_state_123",
@@ -168,7 +168,7 @@ public class SsoAccountLinkingTests : IClassFixture<WebApplicationFactory<Progra
     {
         var client = CreateClient("user-a");
 
-        var githubLinkResponse = await client.PostAsJsonAsync("/api/auth/sso/providers", new LinkSsoProviderRequest(
+        var githubLinkResponse = await client.PostAsJsonAsync("/api/auth/sso/me/providers", new LinkSsoProviderRequest(
             "github",
             "valid-code",
             "sso_state_123",
@@ -177,7 +177,7 @@ public class SsoAccountLinkingTests : IClassFixture<WebApplicationFactory<Progra
             "User A"));
         githubLinkResponse.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var googleLinkResponse = await client.PostAsJsonAsync("/api/auth/sso/providers", new LinkSsoProviderRequest(
+        var googleLinkResponse = await client.PostAsJsonAsync("/api/auth/sso/me/providers", new LinkSsoProviderRequest(
             "google",
             "valid-code",
             "sso_state_456",
@@ -186,11 +186,11 @@ public class SsoAccountLinkingTests : IClassFixture<WebApplicationFactory<Progra
             "User A"));
         googleLinkResponse.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var unlinkResponse = await client.DeleteAsync("/api/auth/sso/providers/github");
+        var unlinkResponse = await client.DeleteAsync("/api/auth/sso/me/providers/github");
 
         unlinkResponse.StatusCode.Should().Be(HttpStatusCode.NoContent);
 
-        var providersResponse = await client.GetAsync("/api/auth/sso/providers");
+        var providersResponse = await client.GetAsync("/api/auth/sso/me/providers");
         providersResponse.StatusCode.Should().Be(HttpStatusCode.OK);
         var providers = await providersResponse.Content.ReadFromJsonAsync<IReadOnlyCollection<LinkedSsoProviderResponse>>();
         providers.Should().ContainSingle(x => x.Provider == "google" && x.ProviderUserId == "google-user-1");
@@ -202,7 +202,7 @@ public class SsoAccountLinkingTests : IClassFixture<WebApplicationFactory<Progra
     {
         var client = CreateClient("user-a");
 
-        var linkResponse = await client.PostAsJsonAsync("/api/auth/sso/providers", new LinkSsoProviderRequest(
+        var linkResponse = await client.PostAsJsonAsync("/api/auth/sso/me/providers", new LinkSsoProviderRequest(
             "google",
             "valid-code",
             "sso_state_123",
@@ -211,7 +211,7 @@ public class SsoAccountLinkingTests : IClassFixture<WebApplicationFactory<Progra
             "User A"));
         linkResponse.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var unlinkResponse = await client.DeleteAsync("/api/auth/sso/providers/google");
+        var unlinkResponse = await client.DeleteAsync("/api/auth/sso/me/providers/google");
 
         unlinkResponse.StatusCode.Should().Be(HttpStatusCode.BadRequest);
         var error = await unlinkResponse.Content.ReadFromJsonAsync<SsoErrorResponse>();
@@ -225,7 +225,7 @@ public class SsoAccountLinkingTests : IClassFixture<WebApplicationFactory<Progra
     {
         var client = CreateClient("user-a");
 
-        var linkResponse = await client.PostAsJsonAsync("/api/auth/sso/providers", new LinkSsoProviderRequest(
+        var linkResponse = await client.PostAsJsonAsync("/api/auth/sso/me/providers", new LinkSsoProviderRequest(
             "google",
             "valid-code",
             "sso_state_123",
@@ -234,7 +234,7 @@ public class SsoAccountLinkingTests : IClassFixture<WebApplicationFactory<Progra
             "User A"));
         linkResponse.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var unlinkResponse = await client.DeleteAsync("/api/auth/sso/providers/github");
+        var unlinkResponse = await client.DeleteAsync("/api/auth/sso/me/providers/github");
 
         unlinkResponse.StatusCode.Should().Be(HttpStatusCode.BadRequest);
         var error = await unlinkResponse.Content.ReadFromJsonAsync<SsoErrorResponse>();
