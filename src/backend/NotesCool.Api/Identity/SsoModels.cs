@@ -10,4 +10,6 @@ public sealed record SsoUserResponse(string UserId, string? Email, string? Displ
 
 public sealed record LinkedSsoProviderResponse(string Provider, string ProviderUserId, string? Email, DateTimeOffset LinkedAt);
 
+public sealed record SsoAvailableProviderResponse(string Key, string DisplayName, string Icon, bool Enabled, string LoginUrl);
+
 public sealed record SsoErrorResponse(string Error, string Message);

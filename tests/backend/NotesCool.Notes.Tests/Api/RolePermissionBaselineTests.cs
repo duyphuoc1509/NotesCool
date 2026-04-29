@@ -2,8 +2,11 @@ using System.Net;
 using System.Net.Http.Json;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using NotesCool.Api.Identity;
+using NotesCool.Identity.Infrastructure;
 using NotesCool.Shared.Auth;
 using Xunit;
 
@@ -49,7 +52,15 @@ public class RolePermissionBaselineTests : IClassFixture<WebApplicationFactory<P
     public async Task SSO_Callback_ShouldIncludeRoleInToken()
     {
         // Arrange
-        var client = _factory.CreateClient();
+        var client = _factory.WithWebHostBuilder(builder =>
+        {
+            builder.ConfigureTestServices(services =>
+            {
+                services.RemoveAll<DbContextOptions<IdentityDbContext>>();
+                services.AddDbContext<IdentityDbContext>(options =>
+                    options.UseInMemoryDatabase("RoleBaselineTestDb"));
+            });
+        }).CreateClient();
         var request = new SsoCallbackRequest(
             Provider: "google",
             Code: "test-code",

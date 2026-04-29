@@ -38,8 +38,20 @@ public static class IdentityServiceCollectionExtensions
             .AddEntityFrameworkStores<IdentityDbContext>();
 
         services.AddScoped<AccountService>();
+        services.AddScoped<SsoService>();
         services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
         services.AddScoped<IdentityDataSeeder>();
+
+        services.Configure<MicrosoftSsoOptions>(options =>
+        {
+            configuration.GetSection(MicrosoftSsoOptions.SectionName).Bind(options);
+            options.TenantId = configuration["AUTH_MICROSOFT_TENANT_ID"]
+                ?? options.TenantId
+                ?? "common";
+            options.ClientId = configuration["AUTH_MICROSOFT_CLIENT_ID"] ?? options.ClientId;
+            options.ClientSecret = configuration["AUTH_MICROSOFT_CLIENT_SECRET"] ?? options.ClientSecret;
+        });
+        services.AddHttpClient<SsoService>();
 
         services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             .AddJwtBearer(options =>

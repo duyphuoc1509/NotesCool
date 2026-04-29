@@ -40,10 +40,10 @@ public static class SsoEndpoints
             return TypedResults.Ok(CreateTokenResponse(user, session, config));
         });
 
-        group.MapGet("/providers", Ok<IReadOnlyCollection<LinkedSsoProviderResponse>> (ICurrentUser currentUser, SsoStore store) =>
+        group.MapGet("/me/providers", Ok<IReadOnlyCollection<LinkedSsoProviderResponse>> (ICurrentUser currentUser, SsoStore store) =>
             TypedResults.Ok(store.GetProviders(currentUser.UserId))).RequireAuthorization();
 
-        group.MapPost("/providers", Results<Ok<SsoUserResponse>, BadRequest<SsoErrorResponse>, Conflict<SsoErrorResponse>> (LinkSsoProviderRequest request, ICurrentUser currentUser, SsoStore store, IOptions<SsoOptions> ssoOptions, ISecurityAuditService audit, HttpContext http) =>
+        group.MapPost("/me/providers", Results<Ok<SsoUserResponse>, BadRequest<SsoErrorResponse>, Conflict<SsoErrorResponse>> (LinkSsoProviderRequest request, ICurrentUser currentUser, SsoStore store, IOptions<SsoOptions> ssoOptions, ISecurityAuditService audit, HttpContext http) =>
         {
             var providerOptions = ssoOptions.Value.Providers.FirstOrDefault(p => string.Equals(p.Name, request.Provider, StringComparison.OrdinalIgnoreCase));
             if (providerOptions is null || !providerOptions.Enabled)
@@ -71,9 +71,10 @@ public static class SsoEndpoints
             }
         }).RequireAuthorization();
 
-        group.MapDelete("/providers/{provider}", Results<NoContent, BadRequest<SsoErrorResponse>> (string provider, ICurrentUser currentUser, SsoStore store, ISecurityAuditService audit, HttpContext http) =>
+        group.MapDelete("/me/providers/{provider}", Results<NoContent, BadRequest<SsoErrorResponse>> (string provider, ICurrentUser currentUser, SsoStore store, ISecurityAuditService audit, HttpContext http) =>
         {
-            if (!store.TryUnlinkProvider(currentUser.UserId, provider, out var error))
+            var success = store.TryUnlinkProvider(currentUser.UserId, provider, out var error);
+            if (!success)
             {
                 audit.LogAuthEvent(SecurityAuditEvents.SsoUnlink, currentUser.UserId, null, http.Connection.RemoteIpAddress?.ToString(), http.Request.Headers.UserAgent, new { status = "failed", provider, reason = error });
                 return TypedResults.BadRequest(new SsoErrorResponse("sso_unlink_denied", error ?? "Unable to unlink provider."));
@@ -96,16 +97,20 @@ public static class SsoEndpoints
         var credentials = new SigningCredentials(signingKey, SecurityAlgorithms.HmacSha256);
         var expires = DateTime.UtcNow.AddMinutes(15);
 
+        var claims = new List<Claim>
+        {
+            new Claim(JwtRegisteredClaimNames.Sub, user.UserId),
+            new Claim(ClaimTypes.NameIdentifier, user.UserId),
+            new Claim(ClaimTypes.Email, user.Email ?? string.Empty)
+        };
+
+        var role = user.Role;
+        claims.Add(new Claim(ClaimTypes.Role, role));
+
         var token = new JwtSecurityToken(
             issuer,
             audience,
-            new[]
-            {
-                new Claim(JwtRegisteredClaimNames.Sub, user.UserId),
-                new Claim(ClaimTypes.NameIdentifier, user.UserId),
-                new Claim(ClaimTypes.Email, user.Email ?? string.Empty),
-                new Claim(ClaimTypes.Role, user.Role)
-            },
+            claims,
             expires: expires,
             signingCredentials: credentials);
 
@@ -114,10 +119,10 @@ public static class SsoEndpoints
 
     private static SsoUserResponse ToUserResponse(SsoUserRecord user)
     {
-        var providers = user.LinkedProviders.Values
+        var providerResponses = user.LinkedProviders.Values
             .Select(link => new LinkedSsoProviderResponse(link.Provider, link.ProviderUserId, link.Email, link.LinkedAt))
             .ToArray();
 
-        return new SsoUserResponse(user.UserId, user.Email, user.DisplayName, user.Role, providers);
+        return new SsoUserResponse(user.UserId, user.Email, user.DisplayName, user.Role, providerResponses);
     }
 }

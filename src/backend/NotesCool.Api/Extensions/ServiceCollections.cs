@@ -28,6 +28,7 @@ public static class ServiceCollections
         services.AddSingleton<SsoStore>();
         services.AddSingleton<AuthStore>();
         services.AddSingleton<IRefreshTokenStore, InMemoryRefreshTokenStore>();
+        services.AddHttpClient();
         services.AddScoped<ISecurityAuditService, SecurityAuditService>();
         services.AddExceptionHandler<GlobalExceptionHandler>();
         services.AddProblemDetails();
@@ -41,8 +42,14 @@ public static class ServiceCollections
             });
         });
         
+        services.AddSingleton<ISsoConfigService, SsoEnvironmentConfigService>();
         services.AddOptions<SsoOptions>()
-            .Bind(configuration.GetSection(SsoOptions.SectionName))
+            .Configure<ISsoConfigService>((options, ssoConfigService) =>
+            {
+                var configuredOptions = ssoConfigService.GetOptions();
+                options.Providers.Clear();
+                options.Providers.AddRange(configuredOptions.Providers);
+            })
             .ValidateOnStart();
         services.AddSingleton<IValidateOptions<SsoOptions>>(_ => new SsoOptionsValidator(environment));
         
@@ -54,6 +61,8 @@ public static class ServiceCollections
         services.AddEndpointsApiExplorer();
         services.AddSwaggerGen(options =>
         {
+            options.CustomSchemaIds(type => type.FullName?.Replace("+", ".") ?? type.Name);
+
             options.SwaggerDoc("v1", new OpenApiInfo
             {
                 Title = "NotesCool API",
