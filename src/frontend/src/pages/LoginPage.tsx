@@ -2,8 +2,29 @@ import { useMemo, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import axios from 'axios'
 import { useAuth } from '../contexts/useAuth'
+import { useSsoProviders } from '../hooks/useSsoProviders'
 import type { ApiErrorResponse } from '../services/auth'
-import { API_BASE_URL } from '../constants/env'
+import type { SsoProvider } from '../services/ssoProviders'
+
+function SsoProviderButton({ provider }: { provider: SsoProvider }) {
+  const handleClick = () => {
+    if (provider.authorizationUrl) {
+      window.location.assign(provider.authorizationUrl)
+    }
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={handleClick}
+      disabled={!provider.authorizationUrl}
+      className="flex w-full items-center justify-center rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-70"
+      title={!provider.authorizationUrl ? `${provider.displayName} sign-in is not configured yet.` : undefined}
+    >
+      Continue with {provider.displayName}
+    </button>
+  )
+}
 
 function extractErrorMessage(error: unknown): string {
   if (axios.isAxiosError<ApiErrorResponse>(error)) {
@@ -19,6 +40,7 @@ function extractErrorMessage(error: unknown): string {
 
 export function LoginPage() {
   const { login, isLoading } = useAuth()
+  const { providers, isLoading: isLoadingProviders } = useSsoProviders()
   const location = useLocation()
 
   const redirectTo = useMemo(() => {
@@ -76,7 +98,27 @@ export function LoginPage() {
         <h1 className="mt-3 text-3xl font-bold tracking-tight text-gray-950">Sign in</h1>
         <p className="mt-2 text-sm text-gray-600">Access your workspace securely.</p>
 
-        <form className="mt-8 space-y-5" onSubmit={handleSubmit} noValidate>
+        <div className="mt-8 space-y-3" aria-live="polite">
+          {isLoadingProviders ? (
+            <div className="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-center text-sm text-gray-600">
+              Loading sign-in providers...
+            </div>
+          ) : providers.length > 0 ? (
+            <>
+              {providers.map((provider) => (
+                <SsoProviderButton key={provider.id} provider={provider} />
+              ))}
+
+              <div className="flex items-center gap-3" role="separator" aria-label="or sign in with email">
+                <span className="h-px flex-1 bg-gray-200" />
+                <span className="text-xs font-medium uppercase tracking-wide text-gray-500">or</span>
+                <span className="h-px flex-1 bg-gray-200" />
+              </div>
+            </>
+          ) : null}
+        </div>
+
+        <form className="mt-6 space-y-5" onSubmit={handleSubmit} noValidate>
           <div>
             <label htmlFor="email" className="block text-sm font-medium text-gray-700">
               Email
