@@ -102,7 +102,7 @@ public sealed record AuthResponse(
     int AccessTokenExpiresInSeconds,
     DateTimeOffset AccessTokenExpiresAtUtc);
 
-public sealed record RefreshTokenSession(string UserId, string Email, DateTimeOffset CreatedAtUtc, bool IsRevoked);
+public sealed record RefreshTokenSession(string UserId, string Email, DateTimeOffset CreatedAtUtc, DateTimeOffset ExpiresAtUtc, bool IsRevoked);
 
 public interface IRefreshTokenStore
 {
@@ -112,12 +112,25 @@ public interface IRefreshTokenStore
 
 public sealed class InMemoryRefreshTokenStore : IRefreshTokenStore
 {
+    private static readonly TimeSpan DefaultTtl = TimeSpan.FromDays(7);
+
     private readonly ConcurrentDictionary<string, RefreshTokenSession> _sessions = new();
+    private readonly TimeProvider _timeProvider;
+    private readonly TimeSpan _ttl;
+
+    public InMemoryRefreshTokenStore() : this(TimeProvider.System, DefaultTtl) { }
+
+    public InMemoryRefreshTokenStore(TimeProvider timeProvider, TimeSpan? ttl = null)
+    {
+        _timeProvider = timeProvider;
+        _ttl = ttl ?? DefaultTtl;
+    }
 
     public string Issue(string userId, string email)
     {
+        var now = _timeProvider.GetUtcNow();
         var refreshToken = Convert.ToBase64String(RandomNumberGenerator.GetBytes(64));
-        _sessions[refreshToken] = new RefreshTokenSession(userId, email, DateTimeOffset.UtcNow, false);
+        _sessions[refreshToken] = new RefreshTokenSession(userId, email, now, now.Add(_ttl), false);
         return refreshToken;
     }
 
@@ -130,6 +143,12 @@ public sealed class InMemoryRefreshTokenStore : IRefreshTokenStore
         }
 
         if (!_sessions.TryGetValue(refreshToken, out var existing) || existing.IsRevoked)
+        {
+            return false;
+        }
+
+        // Reject expired tokens
+        if (_timeProvider.GetUtcNow() > existing.ExpiresAtUtc)
         {
             return false;
         }
