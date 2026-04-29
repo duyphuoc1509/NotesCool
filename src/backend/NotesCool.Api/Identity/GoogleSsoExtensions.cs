@@ -147,7 +147,8 @@ public static class GoogleSsoExtensions
             audit.LogAuthEvent(SecurityAuditEvents.SsoCallback, user.UserId, user.Email, httpContext.Connection.RemoteIpAddress?.ToString(), httpContext.Request.Headers.UserAgent, new { status = "success", provider = "Google" });
 
             var authTokenResponse = CreateTokenResponse(user, session, config);
-            var redirectUrl = BuildFrontendCallbackRedirectUrl(googleOptions, authTokenResponse);
+            var sessionCode = store.CreatePendingSession(authTokenResponse);
+            var redirectUrl = BuildFrontendCallbackRedirectUrl(googleOptions, sessionCode);
             return Results.Redirect(redirectUrl);
         });
 
@@ -170,7 +171,7 @@ public static class GoogleSsoExtensions
         return $"{req.Scheme}://{req.Host}/api/auth/sso/google/callback";
     }
 
-    private static string BuildFrontendCallbackRedirectUrl(SsoProviderOptions options, SsoTokenResponse tokenResponse)
+    private static string BuildFrontendCallbackRedirectUrl(SsoProviderOptions options, string sessionCode)
     {
         var baseRedirectUrl = options.RedirectUrls.FirstOrDefault();
         if (string.IsNullOrWhiteSpace(baseRedirectUrl))
@@ -182,16 +183,10 @@ public static class GoogleSsoExtensions
         var query = new Dictionary<string, string>
         {
             ["provider"] = "google",
-            ["accessToken"] = tokenResponse.AccessToken,
-            ["refreshToken"] = tokenResponse.RefreshToken ?? string.Empty,
-            ["tokenType"] = tokenResponse.TokenType,
-            ["expiresIn"] = tokenResponse.ExpiresIn.ToString(CultureInfo.InvariantCulture),
-            ["email"] = tokenResponse.User.Email ?? string.Empty,
-            ["displayName"] = tokenResponse.User.DisplayName ?? string.Empty,
-            ["userId"] = tokenResponse.User.UserId
+            ["sessionCode"] = sessionCode
         };
 
-        builder.Fragment = string.Join("&", query.Select(kvp =>
+        builder.Query = string.Join("&", query.Select(kvp =>
             $"{Uri.EscapeDataString(kvp.Key)}={Uri.EscapeDataString(kvp.Value)}"));
 
         return builder.Uri.ToString();

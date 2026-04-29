@@ -40,10 +40,11 @@ export function SsoCallbackPage() {
     }
 
     const provider = params.get('provider')
+    const sessionCode = params.get('sessionCode')
     const code = params.get('code')
     const state = params.get('state')
     
-    if (error || !provider || !code || !state) {
+    if (error || !provider || (!sessionCode && (!code || !state))) {
       navigate('/login?error=sso_failed', { replace: true })
       return
     }
@@ -53,18 +54,18 @@ export function SsoCallbackPage() {
     }
     hasAttempted.current = true
 
-    const payload: SsoCallbackPayload = {
-      provider,
-      code,
-      state,
-      email: email || undefined,
-      providerUserId: params.get('providerUserId') || undefined,
-      displayName: displayName || undefined,
-    }
-
     const performCallback = async () => {
       try {
-        const response = await authService.ssoCallback(payload)
+        const response = sessionCode
+          ? await authService.exchangeSsoSession(sessionCode)
+          : await authService.ssoCallback({
+              provider,
+              code: code!,
+              state: state!,
+              email: email || undefined,
+              providerUserId: params.get('providerUserId') || undefined,
+              displayName: displayName || undefined,
+            } satisfies SsoCallbackPayload)
         completeSsoLogin(response, '/')
       } catch (err) {
         navigate('/login?error=sso_failed', { replace: true })

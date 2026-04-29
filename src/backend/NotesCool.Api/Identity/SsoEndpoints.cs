@@ -59,6 +59,15 @@ public static class SsoEndpoints
             return TypedResults.Ok(CreateTokenResponse(user, session, config));
         });
 
+        group.MapPost("/session", Results<Ok<SsoTokenResponse>, BadRequest<SsoErrorResponse>> (SsoSessionExchangeRequest request, SsoStore store) =>
+        {
+            if (store.TryConsumePendingSession(request.Code, out var tokenResponse))
+            {
+                return TypedResults.Ok(tokenResponse);
+            }
+            return TypedResults.BadRequest(new SsoErrorResponse("invalid_session_code", "Invalid or expired session code."));
+        });
+
         group.MapGet("/me/providers", Ok<IReadOnlyCollection<LinkedSsoProviderResponse>> (ICurrentUser currentUser, SsoStore store) =>
             TypedResults.Ok(store.GetProviders(currentUser.UserId))).RequireAuthorization();
 

@@ -2,6 +2,8 @@ namespace NotesCool.Api.Identity;
 
 public sealed record SsoCallbackRequest(string Provider, string Code, string State, string? Email, string? ProviderUserId, string? DisplayName);
 
+public sealed record SsoSessionExchangeRequest(string Code);
+
 public sealed record LinkSsoProviderRequest(string Provider, string Code, string State, string ProviderUserId, string? Email, string? DisplayName);
 
 public sealed record SsoTokenResponse(string AccessToken, string TokenType, int ExpiresIn, string RefreshToken, SsoUserResponse User);
