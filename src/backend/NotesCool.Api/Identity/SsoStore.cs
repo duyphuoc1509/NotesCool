@@ -8,6 +8,7 @@ public sealed class SsoStore
     private readonly ConcurrentDictionary<string, SsoUserRecord> _users = new(StringComparer.OrdinalIgnoreCase);
     private readonly ConcurrentDictionary<string, string> _providerIndex = new(StringComparer.OrdinalIgnoreCase);
     private readonly ConcurrentDictionary<string, SsoStateRecord> _states = new(StringComparer.Ordinal);
+    private readonly ConcurrentDictionary<string, SsoPendingSessionRecord> _pendingSessions = new(StringComparer.Ordinal);
 
     public SsoUserRecord GetOrCreateUser(string provider, string providerUserId, string? email, string? displayName)
     {
@@ -122,7 +123,40 @@ public sealed class SsoStore
     private static string BuildProviderKey(string provider, string providerUserId) => $"{Normalize(provider)}:{providerUserId.Trim()}";
     private static string Normalize(string provider) => provider.Trim().ToLowerInvariant();
 
+    public string CreatePendingSession(SsoTokenResponse tokenResponse)
+    {
+        // Simple periodic cleanup of expired sessions
+        if (_pendingSessions.Count > 1000)
+        {
+            foreach (var kvp in _pendingSessions)
+            {
+                if (kvp.Value.ExpiresAt < DateTimeOffset.UtcNow)
+                {
+                    _pendingSessions.TryRemove(kvp.Key, out _);
+                }
+            }
+        }
+
+        var sessionCode = "sess_" + Guid.NewGuid().ToString("N");
+        _pendingSessions[sessionCode] = new SsoPendingSessionRecord(tokenResponse, DateTimeOffset.UtcNow.AddMinutes(5));
+        return sessionCode;
+    }
+
+    public bool TryConsumePendingSession(string sessionCode, out SsoTokenResponse? tokenResponse)
+    {
+        tokenResponse = null;
+        if (string.IsNullOrWhiteSpace(sessionCode)) return false;
+
+        if (!_pendingSessions.TryRemove(sessionCode, out var record)) return false;
+
+        if (record.ExpiresAt <= DateTimeOffset.UtcNow) return false;
+
+        tokenResponse = record.TokenResponse;
+        return true;
+    }
+
     private sealed record SsoStateRecord(string Provider, string ReturnUrl, DateTimeOffset ExpiresAt);
+    private sealed record SsoPendingSessionRecord(SsoTokenResponse TokenResponse, DateTimeOffset ExpiresAt);
 }
 
 public sealed record SsoProviderLink(string Provider, string ProviderUserId, string? Email, DateTimeOffset LinkedAt);

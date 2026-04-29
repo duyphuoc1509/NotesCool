@@ -1,4 +1,5 @@
 using FluentAssertions;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
@@ -37,7 +38,8 @@ public sealed class SsoEnvironmentConfigServiceTests : IDisposable
     [Fact]
     public void GetOptions_ShouldNotRequireClientCredentials_WhenProvidersAreDisabled()
     {
-        var service = new SsoEnvironmentConfigService(NullLogger<SsoEnvironmentConfigService>.Instance);
+        var configuration = new ConfigurationBuilder().Build();
+        var service = new SsoEnvironmentConfigService(NullLogger<SsoEnvironmentConfigService>.Instance, configuration);
 
         var options = service.GetOptions();
 
@@ -57,7 +59,8 @@ public sealed class SsoEnvironmentConfigServiceTests : IDisposable
         Environment.SetEnvironmentVariable("SSO_GOOGLE_CALLBACK_PATH", "/custom-google-callback");
         Environment.SetEnvironmentVariable("SSO_GOOGLE_REDIRECT_URLS", "https://app.test/google, https://admin.test/google");
 
-        var service = new SsoEnvironmentConfigService(NullLogger<SsoEnvironmentConfigService>.Instance);
+        var configuration = new ConfigurationBuilder().AddEnvironmentVariables().Build();
+        var service = new SsoEnvironmentConfigService(NullLogger<SsoEnvironmentConfigService>.Instance, configuration);
 
         var options = service.GetOptions();
         var googleProvider = options.Providers.Single(provider => provider.Name == "Google");

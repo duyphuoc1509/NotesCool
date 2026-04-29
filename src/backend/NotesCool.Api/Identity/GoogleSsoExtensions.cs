@@ -2,6 +2,7 @@ using System.Security.Cryptography;
 using System.Text.Json;
 using System.IdentityModel.Tokens.Jwt;
 using System.Text;
+using System.Globalization;
 using Microsoft.IdentityModel.Tokens;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Http;
@@ -144,8 +145,11 @@ public static class GoogleSsoExtensions
             var user = store.GetOrCreateUser("Google", subject, email, name);
             var session = authStore.CreateSession(user.UserId);
             audit.LogAuthEvent(SecurityAuditEvents.SsoCallback, user.UserId, user.Email, httpContext.Connection.RemoteIpAddress?.ToString(), httpContext.Request.Headers.UserAgent, new { status = "success", provider = "Google" });
-            
-            return Results.Ok(CreateTokenResponse(user, session, config));
+
+            var authTokenResponse = CreateTokenResponse(user, session, config);
+            var sessionCode = store.CreatePendingSession(authTokenResponse);
+            var redirectUrl = BuildFrontendCallbackRedirectUrl(googleOptions, sessionCode);
+            return Results.Redirect(redirectUrl);
         });
 
         return app;
@@ -165,6 +169,27 @@ public static class GoogleSsoExtensions
         
         var req = httpContext.Request;
         return $"{req.Scheme}://{req.Host}/api/auth/sso/google/callback";
+    }
+
+    private static string BuildFrontendCallbackRedirectUrl(SsoProviderOptions options, string sessionCode)
+    {
+        var baseRedirectUrl = options.RedirectUrls.FirstOrDefault();
+        if (string.IsNullOrWhiteSpace(baseRedirectUrl))
+        {
+            throw new InvalidOperationException("Google SSO redirect URL is not configured.");
+        }
+
+        var builder = new UriBuilder(baseRedirectUrl);
+        var query = new Dictionary<string, string>
+        {
+            ["provider"] = "google",
+            ["sessionCode"] = sessionCode
+        };
+
+        builder.Query = string.Join("&", query.Select(kvp =>
+            $"{Uri.EscapeDataString(kvp.Key)}={Uri.EscapeDataString(kvp.Value)}"));
+
+        return builder.Uri.ToString();
     }
 
     private static SsoTokenResponse CreateTokenResponse(SsoUserRecord user, AuthSession session, IConfiguration config)

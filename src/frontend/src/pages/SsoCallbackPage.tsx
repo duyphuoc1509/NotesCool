@@ -11,12 +11,40 @@ export function SsoCallbackPage() {
 
   useEffect(() => {
     const params = new URLSearchParams(location.search)
+    const hashParams = new URLSearchParams(location.hash.startsWith('#') ? location.hash.slice(1) : location.hash)
     const error = params.get('error')
+    const accessToken = hashParams.get('accessToken')
+    const refreshToken = hashParams.get('refreshToken')
+    const tokenType = hashParams.get('tokenType')
+    const expiresIn = hashParams.get('expiresIn')
+    const email = hashParams.get('email')
+    const displayName = hashParams.get('displayName')
+    const userId = hashParams.get('userId')
+
+    if (!error && accessToken) {
+      completeSsoLogin(
+        {
+          accessToken,
+          refreshToken: refreshToken ?? undefined,
+          tokenType: tokenType ?? undefined,
+          expiresIn: expiresIn ? Number(expiresIn) : undefined,
+          user: {
+            userId: userId ?? undefined,
+            email: email ?? '',
+            displayName: displayName ?? undefined,
+          },
+        },
+        '/',
+      )
+      return
+    }
+
     const provider = params.get('provider')
+    const sessionCode = params.get('sessionCode')
     const code = params.get('code')
     const state = params.get('state')
     
-    if (error || !provider || !code || !state) {
+    if (error || !provider || (!sessionCode && (!code || !state))) {
       navigate('/login?error=sso_failed', { replace: true })
       return
     }
@@ -26,18 +54,18 @@ export function SsoCallbackPage() {
     }
     hasAttempted.current = true
 
-    const payload: SsoCallbackPayload = {
-      provider,
-      code,
-      state,
-      email: params.get('email') || undefined,
-      providerUserId: params.get('providerUserId') || undefined,
-      displayName: params.get('displayName') || undefined,
-    }
-
     const performCallback = async () => {
       try {
-        const response = await authService.ssoCallback(payload)
+        const response = sessionCode
+          ? await authService.exchangeSsoSession(sessionCode)
+          : await authService.ssoCallback({
+              provider,
+              code: code!,
+              state: state!,
+              email: email || undefined,
+              providerUserId: params.get('providerUserId') || undefined,
+              displayName: displayName || undefined,
+            } satisfies SsoCallbackPayload)
         completeSsoLogin(response, '/')
       } catch (err) {
         navigate('/login?error=sso_failed', { replace: true })
