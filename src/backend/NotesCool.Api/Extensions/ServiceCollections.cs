@@ -41,8 +41,14 @@ public static class ServiceCollections
             });
         });
         
+        services.AddSingleton<ISsoConfigService, SsoEnvironmentConfigService>();
         services.AddOptions<SsoOptions>()
-            .Bind(configuration.GetSection(SsoOptions.SectionName))
+            .Configure<ISsoConfigService>((options, ssoConfigService) =>
+            {
+                var configuredOptions = ssoConfigService.GetOptions();
+                options.Providers.Clear();
+                options.Providers.AddRange(configuredOptions.Providers);
+            })
             .ValidateOnStart();
         services.AddSingleton<IValidateOptions<SsoOptions>>(_ => new SsoOptionsValidator(environment));
         
