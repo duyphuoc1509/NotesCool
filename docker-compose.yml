@@ -4,27 +4,30 @@ services:
       context: .
       dockerfile: src/backend/Dockerfile
     container_name: notescool-backend
+    env_file:
+      - path: ${NOTESCOOL_ENV_FILE:-/etc/sysconfig/notescool}
+        required: false
     environment:
       - Database__Internal__Host=${DATABASE_INTERNAL_HOST:-postgres}
       - Database__Internal__Port=${DATABASE_INTERNAL_PORT:-5432}
       - Database__Internal__Name=${DATABASE_INTERNAL_NAME:-notescool}
       - Database__Internal__User=${DATABASE_INTERNAL_USER:-postgres}
       - Database__Internal__Password=${DATABASE_INTERNAL_PASSWORD:-postgres}
-      - ASPNETCORE_ENVIRONMENT=Development
-      - Sso__Providers__0__Name=Google
-      - Sso__Providers__0__Enabled=false
-      - Sso__Providers__0__ClientId=${GOOGLE_SSO_CLIENT_ID:-}
-      - Sso__Providers__0__ClientSecret=${GOOGLE_SSO_CLIENT_SECRET:-__SET_IN_ENV__}
-      - Sso__Providers__0__Authority=https://accounts.google.com
-      - Sso__Providers__0__CallbackPath=/signin-google
-      - Sso__Providers__0__RedirectUrls__0=${GOOGLE_SSO_REDIRECT_URL:-https://note.tripschill.com/api/auth/sso/google/callback}
-      - Sso__Providers__1__Name=Microsoft
-      - Sso__Providers__1__Enabled=false
-      - Sso__Providers__1__ClientId=${MICROSOFT_SSO_CLIENT_ID:-}
-      - Sso__Providers__1__ClientSecret=${MICROSOFT_SSO_CLIENT_SECRET:-__SET_IN_ENV__}
-      - Sso__Providers__1__Authority=https://login.microsoftonline.com/common/v2.0
-      - Sso__Providers__1__CallbackPath=/signin-microsoft
-      - Sso__Providers__1__RedirectUrls__0=${MICROSOFT_SSO_REDIRECT_URL:-http://localhost:10001/auth/callback/microsoft}
+      - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT:-Development}
+      - Sso__Providers__0__Name=${SSO__PROVIDERS__0__NAME:-Google}
+      - Sso__Providers__0__Enabled=${SSO__PROVIDERS__0__ENABLED:-false}
+      - Sso__Providers__0__ClientId=${SSO__PROVIDERS__0__CLIENTID:-${GOOGLE_SSO_CLIENT_ID:-}}
+      - Sso__Providers__0__ClientSecret=${SSO__PROVIDERS__0__CLIENTSECRET:-${GOOGLE_SSO_CLIENT_SECRET:-__SET_IN_ENV__}}
+      - Sso__Providers__0__Authority=${SSO__PROVIDERS__0__AUTHORITY:-https://accounts.google.com}
+      - Sso__Providers__0__CallbackPath=${SSO__PROVIDERS__0__CALLBACKPATH:-/signin-google}
+      - Sso__Providers__0__RedirectUrls__0=${SSO__PROVIDERS__0__REDIRECTURLS__0:-${GOOGLE_SSO_REDIRECT_URL:-http://localhost:10001/auth/callback/google}}
+      - Sso__Providers__1__Name=${SSO__PROVIDERS__1__NAME:-Microsoft}
+      - Sso__Providers__1__Enabled=${SSO__PROVIDERS__1__ENABLED:-false}
+      - Sso__Providers__1__ClientId=${SSO__PROVIDERS__1__CLIENTID:-${MICROSOFT_SSO_CLIENT_ID:-}}
+      - Sso__Providers__1__ClientSecret=${SSO__PROVIDERS__1__CLIENTSECRET:-${MICROSOFT_SSO_CLIENT_SECRET:-__SET_IN_ENV__}}
+      - Sso__Providers__1__Authority=${SSO__PROVIDERS__1__AUTHORITY:-https://login.microsoftonline.com/common/v2.0}
+      - Sso__Providers__1__CallbackPath=${SSO__PROVIDERS__1__CALLBACKPATH:-/signin-microsoft}
+      - Sso__Providers__1__RedirectUrls__0=${SSO__PROVIDERS__1__REDIRECTURLS__0:-${MICROSOFT_SSO_REDIRECT_URL:-http://localhost:10001/auth/callback/microsoft}}
     ports:
       - "10002:10002"
 
