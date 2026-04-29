@@ -48,6 +48,7 @@ app.MapIdentityEndpoints();
 app.MapApiEndpoints();
 app.MapTasksEndpoints();
 app.MapSsoEndpoints();
+app.MapGoogleSsoEndpoints();
 
 app.Run();
 

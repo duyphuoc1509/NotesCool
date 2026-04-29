@@ -27,6 +27,7 @@ public static class ServiceCollections
         services.AddSingleton<IAccessTokenService, JwtAccessTokenService>();
         // SsoService is registered in Identity module
         services.AddSingleton<IRefreshTokenStore, InMemoryRefreshTokenStore>();
+        services.AddHttpClient();
         services.AddScoped<ISecurityAuditService, SecurityAuditService>();
         services.AddExceptionHandler<GlobalExceptionHandler>();
         services.AddProblemDetails();

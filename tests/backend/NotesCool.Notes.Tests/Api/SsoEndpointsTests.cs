@@ -86,7 +86,7 @@ public class SsoEndpointsTests : IClassFixture<WebApplicationFactory<Program>>
         var client = _factory.CreateClient();
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Test");
 
-        var linkResponse = await client.PostAsJsonAsync("/api/auth/sso/providers", new LinkSsoProviderRequest(
+        var linkResponse = await client.PostAsJsonAsync("/api/auth/sso/me/providers", new LinkSsoProviderRequest(
             "github",
             "valid-code",
             "sso_state_123",
@@ -96,7 +96,7 @@ public class SsoEndpointsTests : IClassFixture<WebApplicationFactory<Program>>
 
         linkResponse.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var unlinkResponse = await client.DeleteAsync("/api/auth/sso/providers/github");
+        var unlinkResponse = await client.DeleteAsync("/api/auth/sso/me/providers/github");
         unlinkResponse.StatusCode.Should().Be(HttpStatusCode.BadRequest);
 
         var error = await unlinkResponse.Content.ReadFromJsonAsync<SsoErrorResponse>();
