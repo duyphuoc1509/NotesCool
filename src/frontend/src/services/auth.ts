@@ -77,6 +77,11 @@ export const authService = {
     return data
   },
 
+  async exchangeSsoSession(code: string) {
+    const { data } = await api.post<AuthResponse>('/api/auth/sso/session', { code })
+    return data
+  },
+
   async refresh(payload: RefreshPayload) {
     const { data } = await api.post<AuthResponse>('/api/auth/refresh', payload)
     return data

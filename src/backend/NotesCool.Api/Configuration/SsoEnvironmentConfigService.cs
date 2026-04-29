@@ -5,7 +5,7 @@ public interface ISsoConfigService
     SsoOptions GetOptions();
 }
 
-public sealed class SsoEnvironmentConfigService(ILogger<SsoEnvironmentConfigService> logger) : ISsoConfigService
+public sealed class SsoEnvironmentConfigService(ILogger<SsoEnvironmentConfigService> logger, IConfiguration configuration) : ISsoConfigService
 {
     private const string GoogleProviderName = "Google";
     private const string MicrosoftProviderName = "Microsoft";
@@ -19,15 +19,17 @@ public sealed class SsoEnvironmentConfigService(ILogger<SsoEnvironmentConfigServ
                 BuildProvider(
                     GoogleProviderName,
                     "SSO_GOOGLE",
+                    "Sso:Google",
                     "https://accounts.google.com",
                     "/signin-google",
-                    "http://localhost:5173/auth/callback/google"),
+                    "https://localhost:10001/auth/callback/google"),
                 BuildProvider(
                     MicrosoftProviderName,
                     "SSO_MICROSOFT",
+                    "Sso:Microsoft",
                     "https://login.microsoftonline.com/common/v2.0",
                     "/signin-microsoft",
-                    "http://localhost:5173/auth/callback/microsoft")
+                    "https://localhost:10001/auth/callback/microsoft")
             ]
         };
     }
@@ -35,16 +37,17 @@ public sealed class SsoEnvironmentConfigService(ILogger<SsoEnvironmentConfigServ
     private SsoProviderOptions BuildProvider(
         string providerName,
         string environmentPrefix,
+        string configurationSection,
         string defaultAuthority,
         string defaultCallbackPath,
         string defaultRedirectUrl)
     {
-        var enabled = ReadBoolean($"{environmentPrefix}_ENABLED");
-        var clientId = ReadString($"{environmentPrefix}_CLIENT_ID");
-        var clientSecret = ReadString($"{environmentPrefix}_CLIENT_SECRET");
-        var authority = ReadString($"{environmentPrefix}_AUTHORITY", defaultAuthority);
-        var callbackPath = ReadString($"{environmentPrefix}_CALLBACK_PATH", defaultCallbackPath);
-        var redirectUrls = ReadList($"{environmentPrefix}_REDIRECT_URLS", defaultRedirectUrl);
+        var enabled = ReadBoolean($"{environmentPrefix}_ENABLED", $"{configurationSection}:Enabled");
+        var clientId = ReadString($"{environmentPrefix}_CLIENT_ID", $"{configurationSection}:ClientId");
+        var clientSecret = ReadString($"{environmentPrefix}_CLIENT_SECRET", $"{configurationSection}:ClientSecret");
+        var authority = ReadString($"{environmentPrefix}_AUTHORITY", $"{configurationSection}:Authority", defaultAuthority);
+        var callbackPath = ReadString($"{environmentPrefix}_CALLBACK_PATH", $"{configurationSection}:CallbackPath", defaultCallbackPath);
+        var redirectUrls = ReadList($"{environmentPrefix}_REDIRECT_URLS", $"{configurationSection}:RedirectUrls", defaultRedirectUrl);
 
         LogMissingConfiguration(providerName, environmentPrefix, enabled, clientId, clientSecret, authority, callbackPath, redirectUrls);
 
@@ -111,21 +114,46 @@ public sealed class SsoEnvironmentConfigService(ILogger<SsoEnvironmentConfigServ
             variableName);
     }
 
-    private static bool ReadBoolean(string variableName)
+    private bool ReadBoolean(string variableName, string configurationKey)
     {
         var rawValue = Environment.GetEnvironmentVariable(variableName);
+        if (string.IsNullOrWhiteSpace(rawValue))
+        {
+            rawValue = configuration[configurationKey];
+        }
+
         return bool.TryParse(rawValue, out var enabled) && enabled;
     }
 
-    private static string ReadString(string variableName, string defaultValue = "")
+    private string ReadString(string variableName, string configurationKey, string defaultValue = "")
     {
         var value = Environment.GetEnvironmentVariable(variableName);
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            value = configuration[configurationKey];
+        }
+
         return string.IsNullOrWhiteSpace(value) ? defaultValue : value.Trim();
     }
 
-    private static List<string> ReadList(string variableName, string defaultValue)
+    private List<string> ReadList(string variableName, string configurationKey, string defaultValue)
     {
         var rawValue = Environment.GetEnvironmentVariable(variableName);
+
+        if (string.IsNullOrWhiteSpace(rawValue))
+        {
+            var configuredList = configuration.GetSection(configurationKey).Get<string[]>();
+            if (configuredList is { Length: > 0 })
+            {
+                return configuredList
+                    .Where(item => !string.IsNullOrWhiteSpace(item))
+                    .Select(item => item.Trim())
+                    .ToList();
+            }
+
+            rawValue = configuration[configurationKey];
+        }
+
         var value = string.IsNullOrWhiteSpace(rawValue) ? defaultValue : rawValue;
 
         return value

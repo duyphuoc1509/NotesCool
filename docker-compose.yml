@@ -15,12 +15,12 @@ services:
       - Database__Internal__Password=${DATABASE_INTERNAL_PASSWORD:-postgres}
       - ASPNETCORE_ENVIRONMENT=Development
       - Sso__Providers__0__Name=Google
-      - Sso__Providers__0__Enabled=${GOOGLE_SSO_ENABLED:-false}
+      - Sso__Providers__0__Enabled=${GOOGLE_SSO_ENABLED:-true}
       - Sso__Providers__0__ClientId=${GOOGLE_SSO_CLIENT_ID:-}
       - Sso__Providers__0__ClientSecret=${GOOGLE_SSO_CLIENT_SECRET:-__SET_IN_ENV__}
       - Sso__Providers__0__Authority=https://accounts.google.com
       - Sso__Providers__0__CallbackPath=/signin-google
-      - Sso__Providers__0__RedirectUrls__0=${GOOGLE_SSO_REDIRECT_URL:-http://localhost:10001/auth/callback/google}
+      - Sso__Providers__0__RedirectUrls__0=${GOOGLE_SSO_REDIRECT_URL:-https://localhost:10001/auth/callback/google}
       - Sso__Providers__1__Name=Microsoft
       - Sso__Providers__1__Enabled=${MICROSOFT_SSO_ENABLED:-false}
       - Sso__Providers__1__ClientId=${MICROSOFT_SSO_CLIENT_ID:-}

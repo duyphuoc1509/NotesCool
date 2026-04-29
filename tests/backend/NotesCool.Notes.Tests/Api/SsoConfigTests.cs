@@ -22,7 +22,7 @@ public class SsoConfigTests
         services.AddSingleton<IConfiguration>(configuration);
         services.AddSingleton<IHostEnvironment>(new MockHostEnvironment { EnvironmentName = "Production" });
         services.AddOptions<SsoOptions>()
-            .Bind(configuration.GetSection(SsoOptions.SectionName))
+            .Bind(configuration.GetSection("Sso"))
             .ValidateOnStart();
         services.AddSingleton<IValidateOptions<SsoOptions>, SsoOptionsValidator>();
 
