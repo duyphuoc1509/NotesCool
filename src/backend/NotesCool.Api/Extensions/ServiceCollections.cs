@@ -25,7 +25,8 @@ public static class ServiceCollections
         services.AddScoped<ICurrentUser, CurrentUser>();
         services.AddSingleton<IUserCredentialStore, InMemoryUserCredentialStore>();
         services.AddSingleton<IAccessTokenService, JwtAccessTokenService>();
-        // SsoService is registered in Identity module
+        services.AddSingleton<SsoStore>();
+        services.AddSingleton<AuthStore>();
         services.AddSingleton<IRefreshTokenStore, InMemoryRefreshTokenStore>();
         services.AddHttpClient();
         services.AddScoped<ISecurityAuditService, SecurityAuditService>();
@@ -60,6 +61,8 @@ public static class ServiceCollections
         services.AddEndpointsApiExplorer();
         services.AddSwaggerGen(options =>
         {
+            options.CustomSchemaIds(type => type.FullName?.Replace("+", ".") ?? type.Name);
+
             options.SwaggerDoc("v1", new OpenApiInfo
             {
                 Title = "NotesCool API",

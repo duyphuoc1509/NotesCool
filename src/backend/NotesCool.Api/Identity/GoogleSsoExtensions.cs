@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
+using NotesCool.Api.Auth;
 using NotesCool.Api.Configuration;
 using NotesCool.Shared.Security;
 
@@ -56,7 +57,7 @@ public static class GoogleSsoExtensions
             return Results.Redirect(url);
         });
 
-        group.MapGet("/callback", async (HttpContext httpContext, [FromQuery] string code, [FromQuery] string state, IOptions<SsoOptions> options, SsoStore store, IConfiguration config, ISecurityAuditService audit, IHttpClientFactory httpClientFactory) =>
+        group.MapGet("/callback", async (HttpContext httpContext, [FromQuery] string code, [FromQuery] string state, IOptions<SsoOptions> options, SsoStore store, AuthStore authStore, IConfiguration config, ISecurityAuditService audit, IHttpClientFactory httpClientFactory) =>
         {
             var googleOptions = options.Value.Providers.FirstOrDefault(p => p.Name.Equals("Google", StringComparison.OrdinalIgnoreCase));
             if (googleOptions is null || !googleOptions.Enabled)
@@ -141,9 +142,10 @@ public static class GoogleSsoExtensions
             }
 
             var user = store.GetOrCreateUser("Google", subject, email, name);
+            var session = authStore.CreateSession(user.UserId);
             audit.LogAuthEvent(SecurityAuditEvents.SsoCallback, user.UserId, user.Email, httpContext.Connection.RemoteIpAddress?.ToString(), httpContext.Request.Headers.UserAgent, new { status = "success", provider = "Google" });
             
-            return Results.Ok(CreateTokenResponse(user, config));
+            return Results.Ok(CreateTokenResponse(user, session, config));
         });
 
         return app;
@@ -165,14 +167,14 @@ public static class GoogleSsoExtensions
         return $"{req.Scheme}://{req.Host}/api/auth/sso/google/callback";
     }
 
-    private static SsoTokenResponse CreateTokenResponse(SsoUserRecord user, IConfiguration config)
+    private static SsoTokenResponse CreateTokenResponse(SsoUserRecord user, AuthSession session, IConfiguration config)
     {
         var key = config["Jwt:Key"] ?? "development-only-notescool-sso-signing-key";
         var issuer = config["Jwt:Issuer"] ?? "NotesCool";
         var audience = config["Jwt:Audience"] ?? "NotesCool";
         var signingKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key.PadRight(32, '0')));
         var credentials = new SigningCredentials(signingKey, SecurityAlgorithms.HmacSha256);
-        var expires = DateTime.UtcNow.AddHours(1);
+        var expires = DateTime.UtcNow.AddMinutes(15);
 
         var token = new JwtSecurityToken(
             issuer,
@@ -187,7 +189,7 @@ public static class GoogleSsoExtensions
             expires: expires,
             signingCredentials: credentials);
 
-        return new SsoTokenResponse(new JwtSecurityTokenHandler().WriteToken(token), "Bearer", 3600, ToUserResponse(user));
+        return new SsoTokenResponse(new JwtSecurityTokenHandler().WriteToken(token), "Bearer", 900, session.RefreshToken, ToUserResponse(user));
     }
 
     private static SsoUserResponse ToUserResponse(SsoUserRecord user)

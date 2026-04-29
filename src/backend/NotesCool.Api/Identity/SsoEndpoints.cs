@@ -2,10 +2,10 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using Microsoft.AspNetCore.Http.HttpResults;
-using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
-using NotesCool.Identity.Application;
-using NotesCool.Identity.Infrastructure;
+using NotesCool.Api.Auth;
+using NotesCool.Api.Configuration;
 using NotesCool.Shared.Auth;
 using NotesCool.Shared.Security;
 
@@ -17,8 +17,15 @@ public static class SsoEndpoints
     {
         var group = app.MapGroup("/api/auth/sso").WithTags("SSO");
 
-        group.MapPost("/callback", async Task<Results<Ok<SsoTokenResponse>, BadRequest<SsoErrorResponse>>> (SsoCallbackRequest request, SsoService store, UserManager<ApplicationUser> userManager, IConfiguration config, ISecurityAuditService audit, HttpContext http) =>
+        group.MapPost("/callback", Results<Ok<SsoTokenResponse>, BadRequest<SsoErrorResponse>> (SsoCallbackRequest request, SsoStore store, AuthStore authStore, IOptions<SsoOptions> ssoOptions, IConfiguration config, ISecurityAuditService audit, HttpContext http) =>
         {
+            var providerOptions = ssoOptions.Value.Providers.FirstOrDefault(p => string.Equals(p.Name, request.Provider, StringComparison.OrdinalIgnoreCase));
+            if (providerOptions is null || !providerOptions.Enabled)
+            {
+                audit.LogAuthEvent(SecurityAuditEvents.SsoCallback, "unknown", request.Email, http.Connection.RemoteIpAddress?.ToString(), http.Request.Headers.UserAgent, new { status = "failed", provider = request.Provider, reason = "provider_disabled" });
+                return TypedResults.BadRequest(new SsoErrorResponse("provider_disabled", "The specified SSO provider is not enabled."));
+            }
+
             var providerUserId = request.ProviderUserId ?? request.Email;
             if (!store.IsValidCallback(request.Provider, request.Code, request.State, providerUserId ?? string.Empty))
             {
@@ -26,23 +33,25 @@ public static class SsoEndpoints
                 return TypedResults.BadRequest(new SsoErrorResponse("invalid_sso_callback", "Invalid provider, state or authorization code."));
             }
 
-            var user = await store.GetOrCreateUserAsync(request.Provider, providerUserId!, request.Email, request.DisplayName);
-            audit.LogAuthEvent(SecurityAuditEvents.SsoCallback, user.Id, user.Email, http.Connection.RemoteIpAddress?.ToString(), http.Request.Headers.UserAgent, new { status = "success", provider = request.Provider });
+            var user = store.GetOrCreateUser(request.Provider, providerUserId!, request.Email, request.DisplayName);
+            var session = authStore.CreateSession(user.UserId);
+            audit.LogAuthEvent(SecurityAuditEvents.SsoCallback, user.UserId, user.Email, http.Connection.RemoteIpAddress?.ToString(), http.Request.Headers.UserAgent, new { status = "success", provider = request.Provider });
             
-            var roles = await userManager.GetRolesAsync(user);
-            var providers = await store.GetProvidersAsync(user.Id);
-            return TypedResults.Ok(CreateTokenResponse(user, roles, providers, config));
+            return TypedResults.Ok(CreateTokenResponse(user, session, config));
         });
 
-        group.MapGet("/providers", async Task<Ok<IReadOnlyCollection<LinkedSsoProviderResponse>>> (ICurrentUser currentUser, SsoService store) =>
-        {
-            var providers = await store.GetProvidersAsync(currentUser.UserId);
-            var response = providers.Select(link => new LinkedSsoProviderResponse(link.ProviderKey, link.ProviderSubject, link.Email, link.CreatedAt)).ToArray();
-            return TypedResults.Ok<IReadOnlyCollection<LinkedSsoProviderResponse>>(response);
-        }).RequireAuthorization();
+        group.MapGet("/me/providers", Ok<IReadOnlyCollection<LinkedSsoProviderResponse>> (ICurrentUser currentUser, SsoStore store) =>
+            TypedResults.Ok(store.GetProviders(currentUser.UserId))).RequireAuthorization();
 
-        group.MapPost("/providers", async Task<Results<Ok<SsoUserResponse>, BadRequest<SsoErrorResponse>, Conflict<SsoErrorResponse>>> (LinkSsoProviderRequest request, ICurrentUser currentUser, SsoService store, UserManager<ApplicationUser> userManager, ISecurityAuditService audit, HttpContext http) =>
+        group.MapPost("/me/providers", Results<Ok<SsoUserResponse>, BadRequest<SsoErrorResponse>, Conflict<SsoErrorResponse>> (LinkSsoProviderRequest request, ICurrentUser currentUser, SsoStore store, IOptions<SsoOptions> ssoOptions, ISecurityAuditService audit, HttpContext http) =>
         {
+            var providerOptions = ssoOptions.Value.Providers.FirstOrDefault(p => string.Equals(p.Name, request.Provider, StringComparison.OrdinalIgnoreCase));
+            if (providerOptions is null || !providerOptions.Enabled)
+            {
+                audit.LogAuthEvent(SecurityAuditEvents.SsoLink, currentUser.UserId, request.Email, http.Connection.RemoteIpAddress?.ToString(), http.Request.Headers.UserAgent, new { status = "failed", provider = request.Provider, reason = "provider_disabled" });
+                return TypedResults.BadRequest(new SsoErrorResponse("provider_disabled", "The specified SSO provider is not enabled."));
+            }
+
             if (!store.IsValidCallback(request.Provider, request.Code, request.State, request.ProviderUserId))
             {
                 audit.LogAuthEvent(SecurityAuditEvents.SsoLink, currentUser.UserId, request.Email, http.Connection.RemoteIpAddress?.ToString(), http.Request.Headers.UserAgent, new { status = "failed", provider = request.Provider, reason = "invalid_callback" });
@@ -51,11 +60,9 @@ public static class SsoEndpoints
 
             try
             {
-                var user = await store.LinkProviderAsync(currentUser.UserId, request.Provider, request.ProviderUserId, request.Email, request.DisplayName);
+                var user = store.LinkProvider(currentUser.UserId, request.Provider, request.ProviderUserId, request.Email, request.DisplayName);
                 audit.LogAuthEvent(SecurityAuditEvents.SsoLink, currentUser.UserId, request.Email, http.Connection.RemoteIpAddress?.ToString(), http.Request.Headers.UserAgent, new { status = "success", provider = request.Provider });
-                var roles = await userManager.GetRolesAsync(user);
-                var providers = await store.GetProvidersAsync(user.Id);
-                return TypedResults.Ok(ToUserResponse(user, roles, providers));
+                return TypedResults.Ok(ToUserResponse(user));
             }
             catch (InvalidOperationException ex)
             {
@@ -64,9 +71,9 @@ public static class SsoEndpoints
             }
         }).RequireAuthorization();
 
-        group.MapDelete("/providers/{provider}", async Task<Results<NoContent, BadRequest<SsoErrorResponse>>> (string provider, ICurrentUser currentUser, SsoService store, ISecurityAuditService audit, HttpContext http) =>
+        group.MapDelete("/me/providers/{provider}", Results<NoContent, BadRequest<SsoErrorResponse>> (string provider, ICurrentUser currentUser, SsoStore store, ISecurityAuditService audit, HttpContext http) =>
         {
-            var (success, error) = await store.TryUnlinkProviderAsync(currentUser.UserId, provider);
+            var success = store.TryUnlinkProvider(currentUser.UserId, provider, out var error);
             if (!success)
             {
                 audit.LogAuthEvent(SecurityAuditEvents.SsoUnlink, currentUser.UserId, null, http.Connection.RemoteIpAddress?.ToString(), http.Request.Headers.UserAgent, new { status = "failed", provider, reason = error });
@@ -81,23 +88,23 @@ public static class SsoEndpoints
         return app;
     }
 
-    private static SsoTokenResponse CreateTokenResponse(ApplicationUser user, IList<string> roles, IReadOnlyCollection<UserExternalLogin> providers, IConfiguration config)
+    private static SsoTokenResponse CreateTokenResponse(SsoUserRecord user, AuthSession session, IConfiguration config)
     {
         var key = config["Jwt:Key"] ?? "development-only-notescool-sso-signing-key";
         var issuer = config["Jwt:Issuer"] ?? "NotesCool";
         var audience = config["Jwt:Audience"] ?? "NotesCool";
         var signingKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key.PadRight(32, '0')));
         var credentials = new SigningCredentials(signingKey, SecurityAlgorithms.HmacSha256);
-        var expires = DateTime.UtcNow.AddHours(1);
+        var expires = DateTime.UtcNow.AddMinutes(15);
 
         var claims = new List<Claim>
         {
-            new Claim(JwtRegisteredClaimNames.Sub, user.Id),
-            new Claim(ClaimTypes.NameIdentifier, user.Id),
+            new Claim(JwtRegisteredClaimNames.Sub, user.UserId),
+            new Claim(ClaimTypes.NameIdentifier, user.UserId),
             new Claim(ClaimTypes.Email, user.Email ?? string.Empty)
         };
 
-        var role = roles.FirstOrDefault() ?? SystemRoles.User;
+        var role = user.Role;
         claims.Add(new Claim(ClaimTypes.Role, role));
 
         var token = new JwtSecurityToken(
@@ -107,16 +114,15 @@ public static class SsoEndpoints
             expires: expires,
             signingCredentials: credentials);
 
-        return new SsoTokenResponse(new JwtSecurityTokenHandler().WriteToken(token), "Bearer", 3600, ToUserResponse(user, roles, providers));
+        return new SsoTokenResponse(new JwtSecurityTokenHandler().WriteToken(token), "Bearer", 900, session.RefreshToken, ToUserResponse(user));
     }
 
-    private static SsoUserResponse ToUserResponse(ApplicationUser user, IList<string> roles, IReadOnlyCollection<UserExternalLogin> providers)
+    private static SsoUserResponse ToUserResponse(SsoUserRecord user)
     {
-        var providerResponses = providers
-            .Select(link => new LinkedSsoProviderResponse(link.ProviderKey, link.ProviderSubject, link.Email, link.CreatedAt))
+        var providerResponses = user.LinkedProviders.Values
+            .Select(link => new LinkedSsoProviderResponse(link.Provider, link.ProviderUserId, link.Email, link.LinkedAt))
             .ToArray();
 
-        var role = roles.FirstOrDefault() ?? SystemRoles.User;
-        return new SsoUserResponse(user.Id, user.Email, user.DisplayName, role, providerResponses);
+        return new SsoUserResponse(user.UserId, user.Email, user.DisplayName, user.Role, providerResponses);
     }
 }
