@@ -175,7 +175,7 @@ public static class GoogleSsoExtensions
         var baseRedirectUrl = options.RedirectUrls.FirstOrDefault();
         if (string.IsNullOrWhiteSpace(baseRedirectUrl))
         {
-            baseRedirectUrl = "https://localhost:10001/auth/sso/callback";
+            throw new InvalidOperationException("Google SSO redirect URL is not configured.");
         }
 
         var builder = new UriBuilder(baseRedirectUrl);
@@ -191,7 +191,7 @@ public static class GoogleSsoExtensions
             ["userId"] = tokenResponse.User.UserId
         };
 
-        builder.Query = string.Join("&", query.Select(kvp =>
+        builder.Fragment = string.Join("&", query.Select(kvp =>
             $"{Uri.EscapeDataString(kvp.Key)}={Uri.EscapeDataString(kvp.Value)}"));
 
         return builder.Uri.ToString();

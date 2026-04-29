@@ -11,14 +11,15 @@ export function SsoCallbackPage() {
 
   useEffect(() => {
     const params = new URLSearchParams(location.search)
+    const hashParams = new URLSearchParams(location.hash.startsWith('#') ? location.hash.slice(1) : location.hash)
     const error = params.get('error')
-    const accessToken = params.get('accessToken')
-    const refreshToken = params.get('refreshToken')
-    const tokenType = params.get('tokenType')
-    const expiresIn = params.get('expiresIn')
-    const email = params.get('email')
-    const displayName = params.get('displayName')
-    const userId = params.get('userId')
+    const accessToken = hashParams.get('accessToken')
+    const refreshToken = hashParams.get('refreshToken')
+    const tokenType = hashParams.get('tokenType')
+    const expiresIn = hashParams.get('expiresIn')
+    const email = hashParams.get('email')
+    const displayName = hashParams.get('displayName')
+    const userId = hashParams.get('userId')
 
     if (!error && accessToken) {
       completeSsoLogin(
