@@ -1,4 +1,4 @@
-import { LogOut, LayoutDashboard, FileText, CheckSquare, Settings, Users } from 'lucide-react'
+import { LogOut, LayoutDashboard, FileText, CheckSquare, Settings, Users, X } from 'lucide-react'
 import { Link, useLocation } from 'react-router-dom'
 import { cn } from '../utils/cn'
 import { useAuth } from '../hooks/useAuth'
@@ -11,15 +11,40 @@ const navigation = [
   { name: 'Settings', icon: Settings, href: '/settings' },
 ]
 
-export function Sidebar() {
+interface SidebarProps {
+  isOpen?: boolean
+  onClose?: () => void
+}
+
+export function Sidebar({ isOpen, onClose }: SidebarProps) {
   const location = useLocation()
   const { user, logout } = useAuth()
 
   return (
-    <aside className="flex h-full w-64 flex-col border-r border-gray-200 bg-white">
-      <div className="flex h-16 items-center border-b border-gray-200 px-6">
-        <span className="text-xl font-bold text-indigo-600">NotesCool</span>
-      </div>
+    <>
+      {/* Mobile Overlay */}
+      {isOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-slate-900/40 backdrop-blur-sm lg:hidden"
+          onClick={onClose}
+        />
+      )}
+
+      <aside
+        className={cn(
+          'fixed inset-y-0 left-0 z-50 flex h-full w-64 flex-col border-r border-gray-200 bg-white transition-transform duration-300 ease-in-out lg:static lg:translate-x-0',
+          isOpen ? 'translate-x-0' : '-translate-x-full'
+        )}
+      >
+        <div className="flex h-16 items-center justify-between border-b border-gray-200 px-6">
+          <span className="text-xl font-bold text-indigo-600">NotesCool</span>
+          <button
+            onClick={onClose}
+            className="rounded-md p-1.5 text-gray-400 hover:bg-gray-50 hover:text-gray-500 lg:hidden"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
       <nav className="flex-1 space-y-1 px-3 py-4">
         {navigation.map((item) => {
           const isActive = location.pathname === item.href
@@ -67,6 +92,7 @@ export function Sidebar() {
           </button>
         </div>
       </div>
-    </aside>
+      </aside>
+    </>
   )
 }
