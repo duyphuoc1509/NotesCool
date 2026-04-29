@@ -71,25 +71,41 @@ api.interceptors.response.use(
 
       try {
         const authData = JSON.parse(raw)
-        const refreshToken = authData.tokens?.refreshToken
+        const refreshToken = authData.refreshToken || authData.tokens?.refreshToken
 
         if (!refreshToken) {
           throw new Error('No refresh token available')
         }
 
-        const { data } = await axios.post(`${API_BASE_URL}/api/auth/refresh-token`, {
+        const { data } = await axios.post(`${API_BASE_URL}/api/auth/refresh`, {
           refreshToken,
         })
 
+        const expiresAt = data.accessTokenExpiresAtUtc
+          ? new Date(data.accessTokenExpiresAtUtc).getTime()
+          : Date.now() + (data.accessTokenExpiresInSeconds || 0) * 1000
+
         const newAuthData = {
           ...authData,
-          tokens: {
+          accessToken: data.accessToken,
+          refreshToken: data.refreshToken,
+          expiresAt,
+        }
+
+        // Keep nested structure if it was present
+        if (authData.tokens) {
+          newAuthData.tokens = {
+            ...authData.tokens,
             accessToken: data.accessToken,
             refreshToken: data.refreshToken,
-          },
+            expiresAt,
+          }
         }
 
         localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(newAuthData))
+        if (data.accessToken) {
+          localStorage.setItem('token', data.accessToken)
+        }
         api.defaults.headers.common.Authorization = `Bearer ${data.accessToken}`
         processQueue(null, data.accessToken)
 
@@ -97,8 +113,9 @@ api.interceptors.response.use(
       } catch (refreshError) {
         processQueue(refreshError as Error, null)
         localStorage.removeItem(AUTH_STORAGE_KEY)
-        // Optionally redirect to login or let the component handle it
-        // window.location.href = '/login'
+        localStorage.removeItem('token')
+        localStorage.removeItem('refreshToken')
+        window.location.assign('/login')
         return Promise.reject(refreshError)
       } finally {
         isRefreshing = false
