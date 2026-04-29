@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom'
 import axios from 'axios'
 import { useAuth } from '../contexts/useAuth'
 import type { ApiErrorResponse } from '../services/auth'
+import { API_BASE_URL } from '../constants/env'
 
 function extractErrorMessage(error: unknown): string {
   if (axios.isAxiosError<ApiErrorResponse>(error)) {
@@ -29,9 +30,23 @@ export function LoginPage() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({})
+  const [isRedirecting, setIsRedirecting] = useState(false)
+
+  const isFormDisabled = isLoading || isRedirecting
+
+  const handleSsoLogin = (provider: 'google' | 'microsoft') => {
+    setError('')
+    setIsRedirecting(true)
+    window.location.assign(`${API_BASE_URL}/api/auth/sso/login/${provider}`)
+  }
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
+
+    if (isFormDisabled) {
+      return
+    }
+
     const nextErrors: Record<string, string> = {}
 
     if (!email.trim()) nextErrors.email = 'Email is required.'
@@ -68,7 +83,8 @@ export function LoginPage() {
               type="email"
               value={email}
               onChange={(event) => setEmail(event.target.value)}
-              className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
+              disabled={isFormDisabled}
+              className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 disabled:opacity-70 disabled:cursor-not-allowed"
               autoComplete="email"
             />
             {validationErrors.email ? (
@@ -85,7 +101,8 @@ export function LoginPage() {
               type="password"
               value={password}
               onChange={(event) => setPassword(event.target.value)}
-              className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
+              disabled={isFormDisabled}
+              className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 disabled:opacity-70 disabled:cursor-not-allowed"
               autoComplete="current-password"
             />
             {validationErrors.password ? (
@@ -97,12 +114,40 @@ export function LoginPage() {
 
           <button
             type="submit"
-            disabled={isLoading}
+            disabled={isFormDisabled}
             className="w-full rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-70"
           >
             {isLoading ? 'Signing in...' : 'Sign in'}
           </button>
         </form>
+
+        <div className="relative mt-8">
+          <div className="absolute inset-0 flex items-center" aria-hidden="true">
+            <div className="w-full border-t border-gray-200" />
+          </div>
+          <div className="relative flex justify-center">
+            <span className="bg-white px-3 text-sm text-gray-500">Or continue with</span>
+          </div>
+        </div>
+
+        <div className="mt-6 grid grid-cols-2 gap-3">
+          <button
+            type="button"
+            onClick={() => handleSsoLogin('google')}
+            disabled={isFormDisabled}
+            className="flex w-full items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-70"
+          >
+            Google
+          </button>
+          <button
+            type="button"
+            onClick={() => handleSsoLogin('microsoft')}
+            disabled={isFormDisabled}
+            className="flex w-full items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-70"
+          >
+            Microsoft
+          </button>
+        </div>
 
         <p className="mt-6 text-center text-sm text-gray-600">
           Don&apos;t have an account?{' '}
