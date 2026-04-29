@@ -7,6 +7,7 @@ import { BottomNav } from './components/BottomNav'
 import { QuickCreateSheet } from './components/QuickCreateSheet'
 import { LoginPage } from './pages/LoginPage'
 import { RegisterPage } from './pages/RegisterPage'
+import { SsoCallbackPage } from './pages/SsoCallbackPage'
 import { NotesPage } from './pages/NotesPage'
 import { TasksPage } from './pages/TasksPage'
 import { useState, useEffect, type ReactNode } from 'react'
@@ -155,6 +156,7 @@ function AppRoutes() {
     <Routes>
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
+      <Route path="/auth/sso/callback" element={<SsoCallbackPage />} />
       <Route
         path="/notes"
         element={

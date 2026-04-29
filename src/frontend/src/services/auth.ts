@@ -8,11 +8,17 @@ export interface AuthTokens {
 
 export interface AuthUser {
   id?: string
+  userId?: string
   email: string
   fullName?: string
+  displayName?: string
 }
 
-export interface AuthResponse extends AuthTokens {
+export interface AuthResponse {
+  accessToken: string
+  refreshToken?: string
+  expiresIn?: number
+  tokenType?: string
   user?: AuthUser
 }
 
@@ -30,6 +36,15 @@ export interface RegisterPayload {
   email: string
   password: string
   fullName: string
+}
+
+export interface SsoCallbackPayload {
+  provider: string
+  code: string
+  state: string
+  email?: string
+  providerUserId?: string
+  displayName?: string
 }
 
 export interface RefreshPayload {
@@ -55,6 +70,11 @@ export const authService = {
 
   async logout(refreshToken?: string) {
     await api.post('/api/auth/logout', refreshToken ? { refreshToken } : {})
+  },
+
+  async ssoCallback(payload: SsoCallbackPayload) {
+    const { data } = await api.post<AuthResponse>('/api/auth/sso/callback', payload)
+    return data
   },
 
   async refresh(payload: RefreshPayload) {

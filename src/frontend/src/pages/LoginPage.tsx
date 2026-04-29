@@ -27,7 +27,10 @@ export function LoginPage() {
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [error, setError] = useState('')
+  const [error, setError] = useState(() => {
+    const params = new URLSearchParams(location.search)
+    return params.get('error') === 'sso_failed' ? 'SSO sign-in failed. Please try again.' : ''
+  })
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({})
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
