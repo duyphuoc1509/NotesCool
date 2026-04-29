@@ -2,7 +2,9 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+using NotesCool.Api.Configuration;
 using NotesCool.Shared.Auth;
 using NotesCool.Shared.Security;
 
@@ -29,10 +31,46 @@ public static class SsoEndpoints
             return TypedResults.Ok(CreateTokenResponse(user, config));
         });
 
-        group.MapGet("/providers", Ok<IReadOnlyCollection<LinkedSsoProviderResponse>> (ICurrentUser currentUser, SsoStore store) =>
+        group.MapGet("/providers", Ok<IReadOnlyCollection<SsoAvailableProviderResponse>> (IConfiguration config, IOptions<SsoOptions> ssoOptions) =>
+        {
+            var googleEnabled = config["AUTH_GOOGLE_ENABLED"] == "true" ||
+                (ssoOptions.Value.Providers.FirstOrDefault(p => p.Name.Equals("Google", StringComparison.OrdinalIgnoreCase))?.Enabled ?? false);
+            
+            var microsoftEnabled = config["AUTH_MICROSOFT_ENABLED"] == "true" ||
+                (ssoOptions.Value.Providers.FirstOrDefault(p => p.Name.Equals("Microsoft", StringComparison.OrdinalIgnoreCase))?.Enabled ?? false);
+
+            var availableProviders = new List<SsoAvailableProviderResponse>();
+            if (googleEnabled)
+            {
+                var googleOpt = ssoOptions.Value.Providers.FirstOrDefault(p => p.Name.Equals("Google", StringComparison.OrdinalIgnoreCase));
+                availableProviders.Add(new SsoAvailableProviderResponse(
+                    Key: "google",
+                    DisplayName: "Google",
+                    Icon: "google-icon",
+                    Enabled: true,
+                    LoginUrl: googleOpt?.CallbackPath ?? "/signin-google"
+                ));
+            }
+
+            if (microsoftEnabled)
+            {
+                var microsoftOpt = ssoOptions.Value.Providers.FirstOrDefault(p => p.Name.Equals("Microsoft", StringComparison.OrdinalIgnoreCase));
+                availableProviders.Add(new SsoAvailableProviderResponse(
+                    Key: "microsoft",
+                    DisplayName: "Microsoft",
+                    Icon: "microsoft-icon",
+                    Enabled: true,
+                    LoginUrl: microsoftOpt?.CallbackPath ?? "/signin-microsoft"
+                ));
+            }
+
+            return TypedResults.Ok<IReadOnlyCollection<SsoAvailableProviderResponse>>(availableProviders);
+        });
+
+        group.MapGet("/me/providers", Ok<IReadOnlyCollection<LinkedSsoProviderResponse>> (ICurrentUser currentUser, SsoStore store) =>
             TypedResults.Ok(store.GetProviders(currentUser.UserId))).RequireAuthorization();
 
-        group.MapPost("/providers", Results<Ok<SsoUserResponse>, BadRequest<SsoErrorResponse>, Conflict<SsoErrorResponse>> (LinkSsoProviderRequest request, ICurrentUser currentUser, SsoStore store, ISecurityAuditService audit, HttpContext http) =>
+        group.MapPost("/me/providers", Results<Ok<SsoUserResponse>, BadRequest<SsoErrorResponse>, Conflict<SsoErrorResponse>> (LinkSsoProviderRequest request, ICurrentUser currentUser, SsoStore store, ISecurityAuditService audit, HttpContext http) =>
         {
             if (!SsoStore.IsValidCallback(request.Provider, request.Code, request.State, request.ProviderUserId))
             {
@@ -53,7 +91,7 @@ public static class SsoEndpoints
             }
         }).RequireAuthorization();
 
-        group.MapDelete("/providers/{provider}", Results<NoContent, BadRequest<SsoErrorResponse>> (string provider, ICurrentUser currentUser, SsoStore store, ISecurityAuditService audit, HttpContext http) =>
+        group.MapDelete("/me/providers/{provider}", Results<NoContent, BadRequest<SsoErrorResponse>> (string provider, ICurrentUser currentUser, SsoStore store, ISecurityAuditService audit, HttpContext http) =>
         {
             if (!store.TryUnlinkProvider(currentUser.UserId, provider, out var error))
             {
