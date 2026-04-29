@@ -38,6 +38,7 @@ public static class IdentityServiceCollectionExtensions
             .AddEntityFrameworkStores<IdentityDbContext>();
 
         services.AddScoped<AccountService>();
+        services.AddScoped<SsoService>();
         services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
         services.AddScoped<IdentityDataSeeder>();
 
