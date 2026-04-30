@@ -18,14 +18,14 @@ public sealed class SsoEnvironmentConfigService(ILogger<SsoEnvironmentConfigServ
             [
                 BuildProvider(
                     GoogleProviderName,
-                    "SSO_GOOGLE",
+                    ["SSO_GOOGLE", "GOOGLE_SSO"],
                     "Sso:Google",
                     "https://accounts.google.com",
                     "/signin-google",
                     "https://localhost:10001/auth/callback/google"),
                 BuildProvider(
                     MicrosoftProviderName,
-                    "SSO_MICROSOFT",
+                    ["SSO_MICROSOFT", "MICROSOFT_SSO"],
                     "Sso:Microsoft",
                     "https://login.microsoftonline.com/common/v2.0",
                     "/signin-microsoft",
@@ -36,20 +36,21 @@ public sealed class SsoEnvironmentConfigService(ILogger<SsoEnvironmentConfigServ
 
     private SsoProviderOptions BuildProvider(
         string providerName,
-        string environmentPrefix,
+        string[] environmentPrefixes,
         string configurationSection,
         string defaultAuthority,
         string defaultCallbackPath,
         string defaultRedirectUrl)
     {
-        var enabled = ReadBoolean($"{environmentPrefix}_ENABLED", $"{configurationSection}:Enabled");
-        var clientId = ReadString($"{environmentPrefix}_CLIENT_ID", $"{configurationSection}:ClientId");
-        var clientSecret = ReadString($"{environmentPrefix}_CLIENT_SECRET", $"{configurationSection}:ClientSecret");
-        var authority = ReadString($"{environmentPrefix}_AUTHORITY", $"{configurationSection}:Authority", defaultAuthority);
-        var callbackPath = ReadString($"{environmentPrefix}_CALLBACK_PATH", $"{configurationSection}:CallbackPath", defaultCallbackPath);
-        var redirectUrls = ReadList($"{environmentPrefix}_REDIRECT_URLS", $"{configurationSection}:RedirectUrls", defaultRedirectUrl);
+        var enabled = ReadBoolean(environmentPrefixes.Select(p => $"{p}_ENABLED").ToArray(), $"{configurationSection}:Enabled");
+        var clientId = ReadString(environmentPrefixes.Select(p => $"{p}_CLIENT_ID").ToArray(), $"{configurationSection}:ClientId");
+        var clientSecret = ReadString(environmentPrefixes.Select(p => $"{p}_CLIENT_SECRET").ToArray(), $"{configurationSection}:ClientSecret");
+        var authority = ReadString(environmentPrefixes.Select(p => $"{p}_AUTHORITY").ToArray(), $"{configurationSection}:Authority", defaultAuthority);
+        var callbackPath = ReadString(environmentPrefixes.Select(p => $"{p}_CALLBACK_PATH").ToArray(), $"{configurationSection}:CallbackPath", defaultCallbackPath);
+        var redirectUrls = ReadList(environmentPrefixes.Select(p => $"{p}_REDIRECT_URLS").ToArray(), $"{configurationSection}:RedirectUrls", defaultRedirectUrl);
 
-        LogMissingConfiguration(providerName, environmentPrefix, enabled, clientId, clientSecret, authority, callbackPath, redirectUrls);
+        var primaryPrefix = environmentPrefixes[0];
+        LogMissingConfiguration(providerName, primaryPrefix, enabled, clientId, clientSecret, authority, callbackPath, redirectUrls);
 
         return new SsoProviderOptions
         {
@@ -114,9 +115,12 @@ public sealed class SsoEnvironmentConfigService(ILogger<SsoEnvironmentConfigServ
             variableName);
     }
 
-    private bool ReadBoolean(string variableName, string configurationKey)
+    private bool ReadBoolean(string[] variableNames, string configurationKey)
     {
-        var rawValue = Environment.GetEnvironmentVariable(variableName);
+        var rawValue = variableNames
+            .Select(Environment.GetEnvironmentVariable)
+            .FirstOrDefault(v => !string.IsNullOrWhiteSpace(v));
+
         if (string.IsNullOrWhiteSpace(rawValue))
         {
             rawValue = configuration[configurationKey];
@@ -125,9 +129,12 @@ public sealed class SsoEnvironmentConfigService(ILogger<SsoEnvironmentConfigServ
         return bool.TryParse(rawValue, out var enabled) && enabled;
     }
 
-    private string ReadString(string variableName, string configurationKey, string defaultValue = "")
+    private string ReadString(string[] variableNames, string configurationKey, string defaultValue = "")
     {
-        var value = Environment.GetEnvironmentVariable(variableName);
+        var value = variableNames
+            .Select(Environment.GetEnvironmentVariable)
+            .FirstOrDefault(v => !string.IsNullOrWhiteSpace(v));
+
         if (string.IsNullOrWhiteSpace(value))
         {
             value = configuration[configurationKey];
@@ -136,9 +143,11 @@ public sealed class SsoEnvironmentConfigService(ILogger<SsoEnvironmentConfigServ
         return string.IsNullOrWhiteSpace(value) ? defaultValue : value.Trim();
     }
 
-    private List<string> ReadList(string variableName, string configurationKey, string defaultValue)
+    private List<string> ReadList(string[] variableNames, string configurationKey, string defaultValue)
     {
-        var rawValue = Environment.GetEnvironmentVariable(variableName);
+        var rawValue = variableNames
+            .Select(Environment.GetEnvironmentVariable)
+            .FirstOrDefault(v => !string.IsNullOrWhiteSpace(v));
 
         if (string.IsNullOrWhiteSpace(rawValue))
         {
