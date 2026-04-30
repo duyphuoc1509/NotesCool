@@ -18,6 +18,12 @@ public sealed class SsoEnvironmentConfigServiceTests : IDisposable
         "SSO_GOOGLE_AUTHORITY",
         "SSO_GOOGLE_CALLBACK_PATH",
         "SSO_GOOGLE_REDIRECT_URLS",
+        "GOOGLE_SSO_ENABLED",
+        "GOOGLE_SSO_CLIENT_ID",
+        "GOOGLE_SSO_CLIENT_SECRET",
+        "GOOGLE_SSO_AUTHORITY",
+        "GOOGLE_SSO_CALLBACK_PATH",
+        "GOOGLE_SSO_REDIRECT_URLS",
         "SSO_MICROSOFT_ENABLED",
         "SSO_MICROSOFT_CLIENT_ID",
         "SSO_MICROSOFT_CLIENT_SECRET",
@@ -58,6 +64,30 @@ public sealed class SsoEnvironmentConfigServiceTests : IDisposable
         Environment.SetEnvironmentVariable("SSO_GOOGLE_AUTHORITY", "https://accounts.google.test");
         Environment.SetEnvironmentVariable("SSO_GOOGLE_CALLBACK_PATH", "/custom-google-callback");
         Environment.SetEnvironmentVariable("SSO_GOOGLE_REDIRECT_URLS", "https://app.test/google, https://admin.test/google");
+
+        var configuration = new ConfigurationBuilder().AddEnvironmentVariables().Build();
+        var service = new SsoEnvironmentConfigService(NullLogger<SsoEnvironmentConfigService>.Instance, configuration);
+
+        var options = service.GetOptions();
+        var googleProvider = options.Providers.Single(provider => provider.Name == "Google");
+
+        googleProvider.Enabled.Should().BeTrue();
+        googleProvider.ClientId.Should().Be("google-client-id");
+        googleProvider.ClientSecret.Should().Be("google-client-secret");
+        googleProvider.Authority.Should().Be("https://accounts.google.test");
+        googleProvider.CallbackPath.Should().Be("/custom-google-callback");
+        googleProvider.RedirectUrls.Should().Equal("https://app.test/google", "https://admin.test/google");
+    }
+
+    [Fact]
+    public void GetOptions_ShouldReadGoogleProviderConfig_FromLegacyEnvironmentVariables()
+    {
+        Environment.SetEnvironmentVariable("GOOGLE_SSO_ENABLED", "true");
+        Environment.SetEnvironmentVariable("GOOGLE_SSO_CLIENT_ID", "google-client-id");
+        Environment.SetEnvironmentVariable("GOOGLE_SSO_CLIENT_SECRET", "google-client-secret");
+        Environment.SetEnvironmentVariable("GOOGLE_SSO_AUTHORITY", "https://accounts.google.test");
+        Environment.SetEnvironmentVariable("GOOGLE_SSO_CALLBACK_PATH", "/custom-google-callback");
+        Environment.SetEnvironmentVariable("GOOGLE_SSO_REDIRECT_URLS", "https://app.test/google, https://admin.test/google");
 
         var configuration = new ConfigurationBuilder().AddEnvironmentVariables().Build();
         var service = new SsoEnvironmentConfigService(NullLogger<SsoEnvironmentConfigService>.Instance, configuration);
