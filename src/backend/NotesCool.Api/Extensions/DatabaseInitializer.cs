@@ -64,8 +64,9 @@ public static class DatabaseInitializer
         }
         catch (Exception ex)
         {
-            // Don't fail startup; surface the error so it shows up in container logs.
-            logger.LogError(ex, "Failed to ensure schema for {Context}.", typeof(TContext).Name);
+            // Fail startup; surface the error so it shows up in container logs and health checks.
+            logger.LogCritical(ex, "Failed to ensure schema for {Context}. Database is unreachable or configuration is invalid.", typeof(TContext).Name);
+            throw;
         }
     }
 

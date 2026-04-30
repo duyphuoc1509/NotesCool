@@ -1,4 +1,22 @@
 services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: notescool-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DATABASE_INTERNAL_NAME:-notescool}
+      POSTGRES_USER: ${DATABASE_INTERNAL_USER:-postgres}
+      POSTGRES_PASSWORD: ${DATABASE_INTERNAL_PASSWORD:-postgres}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DATABASE_INTERNAL_USER:-postgres} -d ${DATABASE_INTERNAL_NAME:-notescool}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
   backend:
     build:
       context: .
@@ -28,6 +46,9 @@ services:
       - SSO_MICROSOFT_REDIRECT_URLS=${SSO_MICROSOFT_REDIRECT_URLS:-https://note.tripschill.com/api/auth/sso/microsoft/callback}
     ports:
       - "10002:10002"
+    depends_on:
+      postgres:
+        condition: service_healthy
 
   frontend:
     build:
@@ -40,3 +61,6 @@ services:
       - "10001:80"
     depends_on:
       - backend
+
+volumes:
+  postgres_data:
