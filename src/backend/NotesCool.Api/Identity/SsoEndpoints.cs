@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using NotesCool.Api.Auth;
+using NotesCool.Api.Contracts;
 using NotesCool.Api.Configuration;
 using NotesCool.Shared.Auth;
 using NotesCool.Shared.Security;
@@ -36,7 +37,7 @@ public static class SsoEndpoints
             return TypedResults.Ok((IReadOnlyCollection<SsoAvailableProviderResponse>)providers);
         });
 
-        group.MapPost("/callback", Results<Ok<SsoTokenResponse>, BadRequest<SsoErrorResponse>> (SsoCallbackRequest request, SsoStore store, AuthStore authStore, IOptions<SsoOptions> ssoOptions, IConfiguration config, ISecurityAuditService audit, HttpContext http) =>
+        group.MapPost("/callback", Results<Ok<SsoTokenResponse>, BadRequest<SsoErrorResponse>> (SsoCallbackRequest request, SsoStore store, IRefreshTokenStore refreshTokens, IOptions<SsoOptions> ssoOptions, IConfiguration config, ISecurityAuditService audit, HttpContext http) =>
         {
             var providerOptions = ssoOptions.Value.Providers.FirstOrDefault(p => string.Equals(p.Name, request.Provider, StringComparison.OrdinalIgnoreCase));
             if (providerOptions is null || !providerOptions.Enabled)
@@ -53,10 +54,10 @@ public static class SsoEndpoints
             }
 
             var user = store.GetOrCreateUser(request.Provider, providerUserId!, request.Email, request.DisplayName);
-            var session = authStore.CreateSession(user.UserId);
+            var refreshToken = refreshTokens.Issue(user.UserId, user.Email ?? string.Empty);
             audit.LogAuthEvent(SecurityAuditEvents.SsoCallback, user.UserId, user.Email, http.Connection.RemoteIpAddress?.ToString(), http.Request.Headers.UserAgent, new { status = "success", provider = request.Provider });
             
-            return TypedResults.Ok(CreateTokenResponse(user, session, config));
+            return TypedResults.Ok(CreateTokenResponse(user, refreshToken, config));
         });
 
         group.MapPost("/session", Results<Ok<SsoTokenResponse>, BadRequest<SsoErrorResponse>> (SsoSessionExchangeRequest request, SsoStore store) =>
@@ -116,12 +117,12 @@ public static class SsoEndpoints
         return app;
     }
 
-    private static SsoTokenResponse CreateTokenResponse(SsoUserRecord user, AuthSession session, IConfiguration config)
+    private static SsoTokenResponse CreateTokenResponse(SsoUserRecord user, string refreshToken, IConfiguration config)
     {
-        var key = config["Jwt:Key"] ?? "development-only-notescool-sso-signing-key";
+        var key = config["Jwt:SigningKey"] ?? "NotesCool development signing key with at least 32 chars";
         var issuer = config["Jwt:Issuer"] ?? "NotesCool";
         var audience = config["Jwt:Audience"] ?? "NotesCool";
-        var signingKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key.PadRight(32, '0')));
+        var signingKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key));
         var credentials = new SigningCredentials(signingKey, SecurityAlgorithms.HmacSha256);
         var expires = DateTime.UtcNow.AddMinutes(15);
 
@@ -142,7 +143,7 @@ public static class SsoEndpoints
             expires: expires,
             signingCredentials: credentials);
 
-        return new SsoTokenResponse(new JwtSecurityTokenHandler().WriteToken(token), "Bearer", 900, session.RefreshToken, ToUserResponse(user));
+        return new SsoTokenResponse(new JwtSecurityTokenHandler().WriteToken(token), "Bearer", 900, refreshToken, ToUserResponse(user));
     }
 
     private static SsoUserResponse ToUserResponse(SsoUserRecord user)
