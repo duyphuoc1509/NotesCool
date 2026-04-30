@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.HttpOverrides;
 using NotesCool.Api.Contracts;
 using NotesCool.Api.Extensions;
 using NotesCool.Api.Auth;
@@ -14,6 +15,11 @@ builder.Services.AddNotesModule(builder.Configuration);
 builder.Services.AddTasksModule(builder.Configuration);
 
 var app = builder.Build();
+
+app.UseForwardedHeaders(new ForwardedHeadersOptions
+{
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto | ForwardedHeaders.XForwardedHost
+});
 
 if (app.Environment.IsDevelopment())
 {
