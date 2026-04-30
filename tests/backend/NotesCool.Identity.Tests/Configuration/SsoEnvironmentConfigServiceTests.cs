@@ -104,6 +104,35 @@ public sealed class SsoEnvironmentConfigServiceTests : IDisposable
     }
 
     [Fact]
+    public void GetOptions_ShouldReadGoogleProviderConfig_FromSsoProvidersConfigurationArray()
+    {
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["Sso:Providers:0:Name"] = "Google",
+                ["Sso:Providers:0:Enabled"] = "true",
+                ["Sso:Providers:0:ClientId"] = "google-client-id",
+                ["Sso:Providers:0:ClientSecret"] = "google-client-secret",
+                ["Sso:Providers:0:Authority"] = "https://accounts.google.test",
+                ["Sso:Providers:0:CallbackPath"] = "/custom-google-callback",
+                ["Sso:Providers:0:RedirectUrls:0"] = "https://app.test/google",
+                ["Sso:Providers:0:RedirectUrls:1"] = "https://admin.test/google"
+            })
+            .Build();
+        var service = new SsoEnvironmentConfigService(NullLogger<SsoEnvironmentConfigService>.Instance, configuration);
+
+        var options = service.GetOptions();
+        var googleProvider = options.Providers.Single(provider => provider.Name == "Google");
+
+        googleProvider.Enabled.Should().BeTrue();
+        googleProvider.ClientId.Should().Be("google-client-id");
+        googleProvider.ClientSecret.Should().Be("google-client-secret");
+        googleProvider.Authority.Should().Be("https://accounts.google.test");
+        googleProvider.CallbackPath.Should().Be("/custom-google-callback");
+        googleProvider.RedirectUrls.Should().Equal("https://app.test/google", "https://admin.test/google");
+    }
+
+    [Fact]
     public void Validator_ShouldFail_WhenEnabledProviderHasMissingRequiredVariables()
     {
         var provider = new SsoProviderOptions
