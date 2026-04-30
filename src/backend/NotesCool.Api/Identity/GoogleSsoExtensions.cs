@@ -12,6 +12,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using NotesCool.Api.Auth;
+using NotesCool.Api.Contracts;
 using NotesCool.Api.Configuration;
 using NotesCool.Shared.Security;
 
@@ -58,7 +59,7 @@ public static class GoogleSsoExtensions
             return Results.Redirect(url);
         });
 
-        group.MapGet("/callback", async (HttpContext httpContext, [FromQuery] string code, [FromQuery] string state, IOptions<SsoOptions> options, SsoStore store, AuthStore authStore, IConfiguration config, ISecurityAuditService audit, IHttpClientFactory httpClientFactory) =>
+        group.MapGet("/callback", async (HttpContext httpContext, [FromQuery] string code, [FromQuery] string state, IOptions<SsoOptions> options, SsoStore store, IRefreshTokenStore refreshTokens, IConfiguration config, ISecurityAuditService audit, IHttpClientFactory httpClientFactory) =>
         {
             var googleOptions = options.Value.Providers.FirstOrDefault(p => p.Name.Equals("Google", StringComparison.OrdinalIgnoreCase));
             if (googleOptions is null || !googleOptions.Enabled)
@@ -143,10 +144,10 @@ public static class GoogleSsoExtensions
             }
 
             var user = store.GetOrCreateUser("Google", subject, email, name);
-            var session = authStore.CreateSession(user.UserId);
+            var refreshToken = refreshTokens.Issue(user.UserId, user.Email ?? string.Empty);
             audit.LogAuthEvent(SecurityAuditEvents.SsoCallback, user.UserId, user.Email, httpContext.Connection.RemoteIpAddress?.ToString(), httpContext.Request.Headers.UserAgent, new { status = "success", provider = "Google" });
 
-            var authTokenResponse = CreateTokenResponse(user, session, config);
+            var authTokenResponse = CreateTokenResponse(user, refreshToken, config);
             var sessionCode = store.CreatePendingSession(authTokenResponse);
             var redirectUrl = BuildFrontendCallbackRedirectUrl(googleOptions, sessionCode);
             return Results.Redirect(redirectUrl);
@@ -192,12 +193,12 @@ public static class GoogleSsoExtensions
         return builder.Uri.ToString();
     }
 
-    private static SsoTokenResponse CreateTokenResponse(SsoUserRecord user, AuthSession session, IConfiguration config)
+    private static SsoTokenResponse CreateTokenResponse(SsoUserRecord user, string refreshToken, IConfiguration config)
     {
-        var key = config["Jwt:Key"] ?? "development-only-notescool-sso-signing-key";
+        var key = config["Jwt:SigningKey"] ?? "NotesCool development signing key with at least 32 chars";
         var issuer = config["Jwt:Issuer"] ?? "NotesCool";
         var audience = config["Jwt:Audience"] ?? "NotesCool";
-        var signingKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key.PadRight(32, '0')));
+        var signingKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key));
         var credentials = new SigningCredentials(signingKey, SecurityAlgorithms.HmacSha256);
         var expires = DateTime.UtcNow.AddMinutes(15);
 
@@ -214,7 +215,7 @@ public static class GoogleSsoExtensions
             expires: expires,
             signingCredentials: credentials);
 
-        return new SsoTokenResponse(new JwtSecurityTokenHandler().WriteToken(token), "Bearer", 900, session.RefreshToken, ToUserResponse(user));
+        return new SsoTokenResponse(new JwtSecurityTokenHandler().WriteToken(token), "Bearer", 900, refreshToken, ToUserResponse(user));
     }
 
     private static SsoUserResponse ToUserResponse(SsoUserRecord user)
