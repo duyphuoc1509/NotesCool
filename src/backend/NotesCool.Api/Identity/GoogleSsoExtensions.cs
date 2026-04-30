@@ -6,6 +6,7 @@ using System.Globalization;
 using Microsoft.IdentityModel.Tokens;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Configuration;
@@ -14,6 +15,9 @@ using Microsoft.Extensions.Options;
 using NotesCool.Api.Auth;
 using NotesCool.Api.Contracts;
 using NotesCool.Api.Configuration;
+using NotesCool.Identity.Application.Abstractions;
+using NotesCool.Identity.Contracts;
+using NotesCool.Identity.Infrastructure;
 using NotesCool.Shared.Security;
 
 namespace NotesCool.Api.Identity;
@@ -59,7 +63,7 @@ public static class GoogleSsoExtensions
             return Results.Redirect(url);
         });
 
-        group.MapGet("/callback", async (HttpContext httpContext, [FromQuery] string code, [FromQuery] string state, IOptions<SsoOptions> options, SsoStore store, IRefreshTokenStore refreshTokens, IConfiguration config, ISecurityAuditService audit, IHttpClientFactory httpClientFactory) =>
+        group.MapGet("/callback", async (HttpContext httpContext, [FromQuery] string code, [FromQuery] string state, IOptions<SsoOptions> options, SsoStore store, IRefreshTokenStore refreshTokens, UserManager<ApplicationUser> userManager, IJwtTokenGenerator tokenGenerator, ISecurityAuditService audit, IHttpClientFactory httpClientFactory) =>
         {
             var googleOptions = options.Value.Providers.FirstOrDefault(p => p.Name.Equals("Google", StringComparison.OrdinalIgnoreCase));
             if (googleOptions is null || !googleOptions.Enabled)
@@ -143,11 +147,53 @@ public static class GoogleSsoExtensions
                 return Results.BadRequest(new SsoErrorResponse("missing_subject", "Id token does not contain a subject."));
             }
 
-            var user = store.GetOrCreateUser("Google", subject, email, name);
-            var refreshToken = refreshTokens.Issue(user.UserId, user.Email ?? string.Empty);
-            audit.LogAuthEvent(SecurityAuditEvents.SsoCallback, user.UserId, user.Email, httpContext.Connection.RemoteIpAddress?.ToString(), httpContext.Request.Headers.UserAgent, new { status = "success", provider = "Google" });
+            // --- Persist user in Identity database (same pattern as Microsoft SSO) ---
+            ApplicationUser? appUser = await userManager.FindByLoginAsync("Google", subject);
+            if (appUser == null)
+            {
+                appUser = await userManager.FindByEmailAsync(email ?? string.Empty);
+                if (appUser == null)
+                {
+                    appUser = new ApplicationUser
+                    {
+                        UserName = email,
+                        Email = email,
+                        DisplayName = name ?? email ?? "Google User",
+                        Status = AccountStatus.Active,
+                        EmailConfirmed = true
+                    };
 
-            var authTokenResponse = CreateTokenResponse(user, refreshToken, config);
+                    var createResult = await userManager.CreateAsync(appUser);
+                    if (!createResult.Succeeded)
+                    {
+                        var errors = string.Join("; ", createResult.Errors.Select(e => e.Description));
+                        return Results.BadRequest(new SsoErrorResponse("user_creation_failed", $"Failed to create user account: {errors}"));
+                    }
+                }
+
+                var linkResult = await userManager.AddLoginAsync(appUser, new UserLoginInfo("Google", subject, "Google"));
+                if (!linkResult.Succeeded)
+                {
+                    var errors = string.Join("; ", linkResult.Errors.Select(e => e.Description));
+                    return Results.BadRequest(new SsoErrorResponse("link_failed", $"Failed to link Google account: {errors}"));
+                }
+            }
+
+            if (appUser.Status != AccountStatus.Active)
+            {
+                return Results.BadRequest(new SsoErrorResponse("account_inactive", $"Account is {appUser.Status}."));
+            }
+
+            // Generate token using the Identity module's JWT generator (same signing key, same claims)
+            var authResponse = tokenGenerator.CreateToken(appUser);
+            var refreshToken = refreshTokens.Issue(appUser.Id, appUser.Email ?? string.Empty);
+
+            audit.LogAuthEvent(SecurityAuditEvents.SsoCallback, appUser.Id, appUser.Email, httpContext.Connection.RemoteIpAddress?.ToString(), httpContext.Request.Headers.UserAgent, new { status = "success", provider = "Google" });
+
+            // Build SsoTokenResponse that the session-exchange endpoint expects
+            var ssoUser = new SsoUserResponse(appUser.Id, appUser.Email, appUser.DisplayName, "User",
+                new[] { new LinkedSsoProviderResponse("Google", subject, email, DateTimeOffset.UtcNow) });
+            var authTokenResponse = new SsoTokenResponse(authResponse.AccessToken, "Bearer", 900, refreshToken, ssoUser);
             var sessionCode = store.CreatePendingSession(authTokenResponse);
             var redirectUrl = BuildFrontendCallbackRedirectUrl(googleOptions, sessionCode);
             return Results.Redirect(redirectUrl);
@@ -193,37 +239,4 @@ public static class GoogleSsoExtensions
         return builder.Uri.ToString();
     }
 
-    private static SsoTokenResponse CreateTokenResponse(SsoUserRecord user, string refreshToken, IConfiguration config)
-    {
-        var key = config["Jwt:SigningKey"] ?? "NotesCool development signing key with at least 32 chars";
-        var issuer = config["Jwt:Issuer"] ?? "NotesCool";
-        var audience = config["Jwt:Audience"] ?? "NotesCool";
-        var signingKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key));
-        var credentials = new SigningCredentials(signingKey, SecurityAlgorithms.HmacSha256);
-        var expires = DateTime.UtcNow.AddMinutes(15);
-
-        var token = new JwtSecurityToken(
-            issuer,
-            audience,
-            new[]
-            {
-                new Claim(JwtRegisteredClaimNames.Sub, user.UserId),
-                new Claim(ClaimTypes.NameIdentifier, user.UserId),
-                new Claim(ClaimTypes.Email, user.Email ?? string.Empty),
-                new Claim(ClaimTypes.Role, user.Role)
-            },
-            expires: expires,
-            signingCredentials: credentials);
-
-        return new SsoTokenResponse(new JwtSecurityTokenHandler().WriteToken(token), "Bearer", 900, refreshToken, ToUserResponse(user));
-    }
-
-    private static SsoUserResponse ToUserResponse(SsoUserRecord user)
-    {
-        var providers = user.LinkedProviders.Values
-            .Select(link => new LinkedSsoProviderResponse(link.Provider, link.ProviderUserId, link.Email, link.LinkedAt))
-            .ToArray();
-
-        return new SsoUserResponse(user.UserId, user.Email, user.DisplayName, user.Role, providers);
-    }
 }
