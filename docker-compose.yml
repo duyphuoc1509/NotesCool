@@ -14,20 +14,18 @@ services:
       - Database__Internal__User=${DATABASE_INTERNAL_USER:-postgres}
       - Database__Internal__Password=${DATABASE_INTERNAL_PASSWORD:-postgres}
       - ASPNETCORE_ENVIRONMENT=Development
-      - Sso__Providers__0__Name=Google
-      - Sso__Providers__0__Enabled=${GOOGLE_SSO_ENABLED:-true}
-      - Sso__Providers__0__ClientId=${GOOGLE_SSO_CLIENT_ID:-}
-      - Sso__Providers__0__ClientSecret=${GOOGLE_SSO_CLIENT_SECRET:-__SET_IN_ENV__}
-      - Sso__Providers__0__Authority=https://accounts.google.com
-      - Sso__Providers__0__CallbackPath=/signin-google
-      - Sso__Providers__0__RedirectUrls__0=${GOOGLE_SSO_REDIRECT_URL:-https://localhost:10001/auth/callback/google}
-      - Sso__Providers__1__Name=Microsoft
-      - Sso__Providers__1__Enabled=${MICROSOFT_SSO_ENABLED:-false}
-      - Sso__Providers__1__ClientId=${MICROSOFT_SSO_CLIENT_ID:-}
-      - Sso__Providers__1__ClientSecret=${MICROSOFT_SSO_CLIENT_SECRET:-__SET_IN_ENV__}
-      - Sso__Providers__1__Authority=https://login.microsoftonline.com/common/v2.0
-      - Sso__Providers__1__CallbackPath=/signin-microsoft
-      - Sso__Providers__1__RedirectUrls__0=${MICROSOFT_SSO_REDIRECT_URL:-https://note.tripschill.com/api/auth/sso/microsoft/callback}
+      - SSO_GOOGLE_ENABLED=${SSO_GOOGLE_ENABLED:-false}
+      - SSO_GOOGLE_CLIENT_ID=${SSO_GOOGLE_CLIENT_ID:-}
+      - SSO_GOOGLE_CLIENT_SECRET=${SSO_GOOGLE_CLIENT_SECRET:-}
+      - SSO_GOOGLE_AUTHORITY=${SSO_GOOGLE_AUTHORITY:-https://accounts.google.com}
+      - SSO_GOOGLE_CALLBACK_PATH=${SSO_GOOGLE_CALLBACK_PATH:-/signin-google}
+      - SSO_GOOGLE_REDIRECT_URLS=${SSO_GOOGLE_REDIRECT_URLS:-https://localhost:10001/auth/callback/google}
+      - SSO_MICROSOFT_ENABLED=${SSO_MICROSOFT_ENABLED:-false}
+      - SSO_MICROSOFT_CLIENT_ID=${SSO_MICROSOFT_CLIENT_ID:-}
+      - SSO_MICROSOFT_CLIENT_SECRET=${SSO_MICROSOFT_CLIENT_SECRET:-}
+      - SSO_MICROSOFT_AUTHORITY=${SSO_MICROSOFT_AUTHORITY:-https://login.microsoftonline.com/common/v2.0}
+      - SSO_MICROSOFT_CALLBACK_PATH=${SSO_MICROSOFT_CALLBACK_PATH:-/signin-microsoft}
+      - SSO_MICROSOFT_REDIRECT_URLS=${SSO_MICROSOFT_REDIRECT_URLS:-https://note.tripschill.com/api/auth/sso/microsoft/callback}
     ports:
       - "10002:10002"
 
