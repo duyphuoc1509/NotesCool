@@ -44,8 +44,7 @@ public sealed class SsoEnvironmentConfigServiceTests : IDisposable
     [Fact]
     public void GetOptions_ShouldNotRequireClientCredentials_WhenProvidersAreDisabled()
     {
-        var configuration = new ConfigurationBuilder().Build();
-        var service = new SsoEnvironmentConfigService(NullLogger<SsoEnvironmentConfigService>.Instance, configuration);
+        var service = new SsoEnvironmentConfigService(NullLogger<SsoEnvironmentConfigService>.Instance);
 
         var options = service.GetOptions();
 
@@ -56,7 +55,7 @@ public sealed class SsoEnvironmentConfigServiceTests : IDisposable
     }
 
     [Fact]
-    public void GetOptions_ShouldReadGoogleProviderConfig_FromEnvironmentVariables()
+    public void GetOptions_ShouldReadGoogleProviderConfig_FromSsoGoogleEnvironmentVariablesOnly()
     {
         Environment.SetEnvironmentVariable("SSO_GOOGLE_ENABLED", "true");
         Environment.SetEnvironmentVariable("SSO_GOOGLE_CLIENT_ID", "google-client-id");
@@ -65,8 +64,7 @@ public sealed class SsoEnvironmentConfigServiceTests : IDisposable
         Environment.SetEnvironmentVariable("SSO_GOOGLE_CALLBACK_PATH", "/custom-google-callback");
         Environment.SetEnvironmentVariable("SSO_GOOGLE_REDIRECT_URLS", "https://app.test/google, https://admin.test/google");
 
-        var configuration = new ConfigurationBuilder().AddEnvironmentVariables().Build();
-        var service = new SsoEnvironmentConfigService(NullLogger<SsoEnvironmentConfigService>.Instance, configuration);
+        var service = new SsoEnvironmentConfigService(NullLogger<SsoEnvironmentConfigService>.Instance);
 
         var options = service.GetOptions();
         var googleProvider = options.Providers.Single(provider => provider.Name == "Google");
@@ -80,56 +78,33 @@ public sealed class SsoEnvironmentConfigServiceTests : IDisposable
     }
 
     [Fact]
-    public void GetOptions_ShouldReadGoogleProviderConfig_FromLegacyEnvironmentVariables()
+    public void GetOptions_ShouldIgnoreGoogleSsoLegacyEnvironmentVariables()
     {
         Environment.SetEnvironmentVariable("GOOGLE_SSO_ENABLED", "true");
         Environment.SetEnvironmentVariable("GOOGLE_SSO_CLIENT_ID", "google-client-id");
         Environment.SetEnvironmentVariable("GOOGLE_SSO_CLIENT_SECRET", "google-client-secret");
-        Environment.SetEnvironmentVariable("GOOGLE_SSO_AUTHORITY", "https://accounts.google.test");
-        Environment.SetEnvironmentVariable("GOOGLE_SSO_CALLBACK_PATH", "/custom-google-callback");
-        Environment.SetEnvironmentVariable("GOOGLE_SSO_REDIRECT_URLS", "https://app.test/google, https://admin.test/google");
 
-        var configuration = new ConfigurationBuilder().AddEnvironmentVariables().Build();
-        var service = new SsoEnvironmentConfigService(NullLogger<SsoEnvironmentConfigService>.Instance, configuration);
+        var service = new SsoEnvironmentConfigService(NullLogger<SsoEnvironmentConfigService>.Instance);
 
         var options = service.GetOptions();
         var googleProvider = options.Providers.Single(provider => provider.Name == "Google");
 
-        googleProvider.Enabled.Should().BeTrue();
-        googleProvider.ClientId.Should().Be("google-client-id");
-        googleProvider.ClientSecret.Should().Be("google-client-secret");
-        googleProvider.Authority.Should().Be("https://accounts.google.test");
-        googleProvider.CallbackPath.Should().Be("/custom-google-callback");
-        googleProvider.RedirectUrls.Should().Equal("https://app.test/google", "https://admin.test/google");
+        googleProvider.Enabled.Should().BeFalse();
+        googleProvider.ClientId.Should().BeEmpty();
+        googleProvider.ClientSecret.Should().BeEmpty();
     }
 
     [Fact]
-    public void GetOptions_ShouldReadGoogleProviderConfig_FromSsoProvidersConfigurationArray()
+    public void GetOptions_ShouldIgnoreSsoProvidersConfigurationArray()
     {
-        var configuration = new ConfigurationBuilder()
-            .AddInMemoryCollection(new Dictionary<string, string?>
-            {
-                ["Sso:Providers:0:Name"] = "Google",
-                ["Sso:Providers:0:Enabled"] = "true",
-                ["Sso:Providers:0:ClientId"] = "google-client-id",
-                ["Sso:Providers:0:ClientSecret"] = "google-client-secret",
-                ["Sso:Providers:0:Authority"] = "https://accounts.google.test",
-                ["Sso:Providers:0:CallbackPath"] = "/custom-google-callback",
-                ["Sso:Providers:0:RedirectUrls:0"] = "https://app.test/google",
-                ["Sso:Providers:0:RedirectUrls:1"] = "https://admin.test/google"
-            })
-            .Build();
-        var service = new SsoEnvironmentConfigService(NullLogger<SsoEnvironmentConfigService>.Instance, configuration);
+        var service = new SsoEnvironmentConfigService(NullLogger<SsoEnvironmentConfigService>.Instance);
 
         var options = service.GetOptions();
         var googleProvider = options.Providers.Single(provider => provider.Name == "Google");
 
-        googleProvider.Enabled.Should().BeTrue();
-        googleProvider.ClientId.Should().Be("google-client-id");
-        googleProvider.ClientSecret.Should().Be("google-client-secret");
-        googleProvider.Authority.Should().Be("https://accounts.google.test");
-        googleProvider.CallbackPath.Should().Be("/custom-google-callback");
-        googleProvider.RedirectUrls.Should().Equal("https://app.test/google", "https://admin.test/google");
+        googleProvider.Enabled.Should().BeFalse();
+        googleProvider.ClientId.Should().BeEmpty();
+        googleProvider.ClientSecret.Should().BeEmpty();
     }
 
     [Fact]
