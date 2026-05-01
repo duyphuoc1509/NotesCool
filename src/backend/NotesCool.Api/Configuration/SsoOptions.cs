@@ -129,6 +129,17 @@ public sealed class SsoOptionsValidator(IHostEnvironment environment) : IValidat
             {
                 failures.Add($"SSO provider '{providerName}' redirect URL '{redirectUrl}' must use HTTPS outside local development.");
             }
+
+            // Detect collision: a frontend RedirectUrls entry that exactly matches the OAuth
+            // RedirectUri causes a redirect loop (backend bounces browser to its own API
+            // callback, which crashes because it expects ?code/state, not ?sessionCode).
+            if (!string.IsNullOrWhiteSpace(provider.RedirectUri)
+                && string.Equals(redirectUrl.TrimEnd('/'), provider.RedirectUri.TrimEnd('/'), StringComparison.OrdinalIgnoreCase))
+            {
+                failures.Add(
+                    $"SSO provider '{providerName}' has a RedirectUrls entry '{redirectUrl}' that is identical to RedirectUri. " +
+                    "RedirectUrls must list FRONTEND URLs (e.g. /auth/callback/google), not the OAuth API callback URL.");
+            }
         }
     }
 
