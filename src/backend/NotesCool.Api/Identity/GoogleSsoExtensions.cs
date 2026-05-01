@@ -28,15 +28,16 @@ public static class GoogleSsoExtensions
     {
         var group = app.MapGroup("/api/auth/sso/google").WithTags("Google SSO");
 
-        group.MapGet("/login", (HttpContext httpContext, IOptions<SsoOptions> options) =>
+        group.MapGet("/login", (HttpContext httpContext, IOptions<SsoOptions> options, ILoggerFactory loggerFactory) =>
         {
+            var logger = loggerFactory.CreateLogger("NotesCool.Api.Identity.GoogleSso");
             var googleOptions = options.Value.Providers.FirstOrDefault(p => p.Name.Equals("Google", StringComparison.OrdinalIgnoreCase));
             if (googleOptions is null || !googleOptions.Enabled)
             {
                 return Results.BadRequest(new SsoErrorResponse("provider_disabled", "Google SSO is not enabled."));
             }
 
-            var redirectUri = GetRedirectUri(googleOptions, httpContext);
+            var redirectUri = GetRedirectUri(googleOptions, httpContext, logger);
             var stateBytes = new byte[32];
             RandomNumberGenerator.Fill(stateBytes);
             var state = Convert.ToBase64String(stateBytes).Replace("+", "-").Replace("/", "_").TrimEnd('=');
@@ -63,8 +64,9 @@ public static class GoogleSsoExtensions
             return Results.Redirect(url);
         });
 
-        group.MapGet("/callback", async (HttpContext httpContext, [FromQuery] string code, [FromQuery] string state, IOptions<SsoOptions> options, SsoStore store, IRefreshTokenStore refreshTokens, UserManager<ApplicationUser> userManager, IJwtTokenGenerator tokenGenerator, ISecurityAuditService audit, IHttpClientFactory httpClientFactory) =>
+        group.MapGet("/callback", async (HttpContext httpContext, [FromQuery] string code, [FromQuery] string state, IOptions<SsoOptions> options, SsoStore store, IRefreshTokenStore refreshTokens, UserManager<ApplicationUser> userManager, IJwtTokenGenerator tokenGenerator, ISecurityAuditService audit, IHttpClientFactory httpClientFactory, ILoggerFactory loggerFactory) =>
         {
+            var logger = loggerFactory.CreateLogger("NotesCool.Api.Identity.GoogleSso");
             var googleOptions = options.Value.Providers.FirstOrDefault(p => p.Name.Equals("Google", StringComparison.OrdinalIgnoreCase));
             if (googleOptions is null || !googleOptions.Enabled)
             {
@@ -87,7 +89,7 @@ public static class GoogleSsoExtensions
                 return Results.BadRequest(new SsoErrorResponse("invalid_code", "Authorization code is missing."));
             }
 
-            var redirectUri = GetRedirectUri(googleOptions, httpContext);
+            var redirectUri = GetRedirectUri(googleOptions, httpContext, logger);
 
             // Exchange code for token
             var tokenEndpoint = "https://oauth2.googleapis.com/token";
@@ -202,18 +204,29 @@ public static class GoogleSsoExtensions
         return app;
     }
 
-    private static string GetRedirectUri(SsoProviderOptions options, HttpContext httpContext)
+    private static string GetRedirectUri(SsoProviderOptions options, HttpContext httpContext, ILogger logger)
     {
         // Prefer the explicitly-configured OAuth redirect_uri. It MUST exactly match the value
         // registered in Google Cloud Console, including scheme. Building it from the incoming
         // request is unreliable behind reverse proxies that don't forward X-Forwarded-Proto.
         if (!string.IsNullOrWhiteSpace(options.RedirectUri))
         {
+            logger.LogInformation("Google SSO redirect_uri (from SSO_GOOGLE_REDIRECT_URI): {RedirectUri}", options.RedirectUri);
             return options.RedirectUri;
         }
 
         var request = httpContext.Request;
-        return $"{request.Scheme}://{request.Host}/api/auth/sso/google/callback";
+        var fallback = $"{request.Scheme}://{request.Host}/api/auth/sso/google/callback";
+        logger.LogWarning(
+            "Google SSO redirect_uri fell back to request-derived value: {RedirectUri}. " +
+            "SSO_GOOGLE_REDIRECT_URI is empty — set it explicitly to avoid scheme mismatch behind reverse proxies. " +
+            "request.Scheme={Scheme}, request.Host={Host}, X-Forwarded-Proto={XfProto}, X-Forwarded-Host={XfHost}",
+            fallback,
+            request.Scheme,
+            request.Host.Value,
+            request.Headers["X-Forwarded-Proto"].ToString(),
+            request.Headers["X-Forwarded-Host"].ToString());
+        return fallback;
     }
 
     private static string BuildFrontendCallbackRedirectUrl(SsoProviderOptions options, string sessionCode)
