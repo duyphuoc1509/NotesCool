@@ -56,7 +56,10 @@ export function SsoCallbackPage() {
       return
     }
 
-    const pathProvider = location.pathname.match(/\/auth\/callback\/(google|microsoft)$/)?.[1]
+    const pathProvider = location.pathname
+      .match(/\/auth(?:\/sso)?\/(google|microsoft)\/callback$|\/auth\/callback\/(google|microsoft)$/)
+      ?.slice(1)
+      .find(Boolean)
     const provider = params.get('provider') ?? pathProvider
     const sessionCode = params.get('sessionCode')
     const code = params.get('code')
@@ -99,7 +102,7 @@ export function SsoCallbackPage() {
         if (cancelled) return
 
         completeSsoLogin(response, '/')
-      } catch (_err) {
+      } catch {
         if (cancelled) return
 
         // If auth was already stored by a previous mount cycle, redirect to home

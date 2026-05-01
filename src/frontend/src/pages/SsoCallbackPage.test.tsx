@@ -171,6 +171,40 @@ describe('SsoCallbackPage', () => {
     expect(authService.exchangeSsoSession).toHaveBeenCalledWith('sess_456')
   })
 
+  it('exchanges sessionCode from /auth/sso/google/callback and redirects to / on success', async () => {
+    vi.mocked(authService.exchangeSsoSession).mockResolvedValueOnce({
+      accessToken: 'sso-access-provider-route',
+      refreshToken: 'sso-refresh-provider-route',
+      expiresIn: 900,
+      tokenType: 'Bearer',
+      user: {
+        userId: 'u-sso-provider-route',
+        email: 'sso-provider-route@example.com',
+        displayName: 'SSO Provider Route User',
+      },
+    })
+
+    await act(async () => {
+      root.render(
+        <MemoryRouter initialEntries={['/auth/sso/google/callback?provider=google&sessionCode=sess_provider_route']}>
+          <AuthProvider>
+            <Routes>
+              <Route path="/auth/sso/:provider/callback" element={<SsoCallbackPage />} />
+              <Route path="/" element={<TestLocation />} />
+            </Routes>
+          </AuthProvider>
+        </MemoryRouter>
+      )
+    })
+
+    await vi.waitFor(() => {
+      const location = container.querySelector('[data-testid="location"]')
+      expect(location?.textContent).toBe('/')
+    })
+
+    expect(authService.exchangeSsoSession).toHaveBeenCalledWith('sess_provider_route')
+  })
+
   it('does not exchange the same sessionCode twice under StrictMode remounts', async () => {
     vi.mocked(authService.exchangeSsoSession).mockResolvedValue({
       accessToken: 'strict-access-123',
