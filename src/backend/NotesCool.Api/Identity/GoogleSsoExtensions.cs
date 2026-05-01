@@ -64,7 +64,7 @@ public static class GoogleSsoExtensions
             return Results.Redirect(url);
         });
 
-        group.MapGet("/callback", async (HttpContext httpContext, [FromQuery] string code, [FromQuery] string state, IOptions<SsoOptions> options, SsoStore store, IRefreshTokenStore refreshTokens, UserManager<ApplicationUser> userManager, IJwtTokenGenerator tokenGenerator, ISecurityAuditService audit, IHttpClientFactory httpClientFactory, ILoggerFactory loggerFactory) =>
+        group.MapGet("/callback", async (HttpContext httpContext, [FromQuery] string? code, [FromQuery] string? state, [FromQuery] string? error, IOptions<SsoOptions> options, SsoStore store, IRefreshTokenStore refreshTokens, UserManager<ApplicationUser> userManager, IJwtTokenGenerator tokenGenerator, ISecurityAuditService audit, IHttpClientFactory httpClientFactory, ILoggerFactory loggerFactory) =>
         {
             var logger = loggerFactory.CreateLogger("NotesCool.Api.Identity.GoogleSso");
             var googleOptions = options.Value.Providers.FirstOrDefault(p => p.Name.Equals("Google", StringComparison.OrdinalIgnoreCase));
@@ -73,11 +73,33 @@ public static class GoogleSsoExtensions
                 return Results.BadRequest(new SsoErrorResponse("provider_disabled", "Google SSO is not enabled."));
             }
 
+            // Detect a misconfiguration loop: backend redirected the browser back to this same
+            // callback endpoint instead of a frontend page. This happens when SSO_GOOGLE_REDIRECT_URLS
+            // (frontend whitelist) is mistakenly set to the API callback URL.
+            if (string.IsNullOrEmpty(code) && string.IsNullOrEmpty(state) && string.IsNullOrEmpty(error)
+                && !string.IsNullOrEmpty(httpContext.Request.Query["sessionCode"]))
+            {
+                logger.LogError(
+                    "Received a redirect back to /api/auth/sso/google/callback with sessionCode but without OAuth code/state. " +
+                    "This means SSO_GOOGLE_REDIRECT_URLS is misconfigured: it points to the API callback URL instead of a frontend page. " +
+                    "Set SSO_GOOGLE_REDIRECT_URLS to the frontend URL (e.g. https://your-domain/auth/callback/google) and " +
+                    "SSO_GOOGLE_REDIRECT_URI to the API callback URL.");
+                return Results.BadRequest(new SsoErrorResponse(
+                    "misconfigured_redirect",
+                    "SSO_GOOGLE_REDIRECT_URLS must point to a frontend page, not the API callback URL. See server logs for details."));
+            }
+
             httpContext.Request.Cookies.TryGetValue("sso_state", out var savedState);
             httpContext.Request.Cookies.TryGetValue("sso_nonce", out var savedNonce);
 
             httpContext.Response.Cookies.Delete("sso_state");
             httpContext.Response.Cookies.Delete("sso_nonce");
+
+            if (!string.IsNullOrEmpty(error))
+            {
+                logger.LogWarning("Google returned OAuth error to callback: {Error}", error);
+                return Results.BadRequest(new SsoErrorResponse("oauth_error", $"Google returned error: {error}"));
+            }
 
             if (string.IsNullOrEmpty(state) || state != savedState)
             {
@@ -197,7 +219,7 @@ public static class GoogleSsoExtensions
                 new[] { new LinkedSsoProviderResponse("Google", subject, email, DateTimeOffset.UtcNow) });
             var authTokenResponse = new SsoTokenResponse(authResponse.AccessToken, "Bearer", 900, refreshToken, ssoUser);
             var sessionCode = store.CreatePendingSession(authTokenResponse);
-            var redirectUrl = BuildFrontendCallbackRedirectUrl(googleOptions, sessionCode);
+            var redirectUrl = BuildFrontendCallbackRedirectUrl(googleOptions, sessionCode, logger);
             return Results.Redirect(redirectUrl);
         });
 
@@ -229,12 +251,28 @@ public static class GoogleSsoExtensions
         return fallback;
     }
 
-    private static string BuildFrontendCallbackRedirectUrl(SsoProviderOptions options, string sessionCode)
+    private static string BuildFrontendCallbackRedirectUrl(SsoProviderOptions options, string sessionCode, ILogger logger)
     {
-        var baseRedirectUrl = options.RedirectUrls.FirstOrDefault();
+        // Pick the first frontend URL that is NOT the OAuth API callback. If none qualify, fall
+        // back to the first entry but log a loud warning — this avoids the redirect loop where
+        // backend bounces the browser back to its own /api/.../callback endpoint.
+        var apiCallbackPath = "/api/auth/sso/google/callback";
+        var baseRedirectUrl = options.RedirectUrls
+            .FirstOrDefault(url => !LooksLikeApiCallback(url, options, apiCallbackPath))
+            ?? options.RedirectUrls.FirstOrDefault();
+
         if (string.IsNullOrWhiteSpace(baseRedirectUrl))
         {
             throw new InvalidOperationException("Google SSO redirect URL is not configured.");
+        }
+
+        if (LooksLikeApiCallback(baseRedirectUrl, options, apiCallbackPath))
+        {
+            logger.LogError(
+                "Google SSO frontend redirect URL '{Url}' looks like the OAuth API callback. " +
+                "SSO_GOOGLE_REDIRECT_URLS must contain a frontend page (e.g. https://your-domain/auth/callback/google), " +
+                "not the API callback URL. Browser will be redirected to {Url} which will fail because it expects ?code/state, not ?sessionCode.",
+                baseRedirectUrl, baseRedirectUrl);
         }
 
         var builder = new UriBuilder(baseRedirectUrl);
@@ -248,6 +286,29 @@ public static class GoogleSsoExtensions
             $"{Uri.EscapeDataString(kvp.Key)}={Uri.EscapeDataString(kvp.Value)}"));
 
         return builder.Uri.ToString();
+    }
+
+    private static bool LooksLikeApiCallback(string url, SsoProviderOptions options, string apiCallbackPath)
+    {
+        if (!Uri.TryCreate(url, UriKind.Absolute, out var uri))
+        {
+            return false;
+        }
+
+        if (uri.AbsolutePath.Equals(apiCallbackPath, StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        if (!string.IsNullOrWhiteSpace(options.RedirectUri)
+            && Uri.TryCreate(options.RedirectUri, UriKind.Absolute, out var configured)
+            && configured.AbsolutePath.Equals(uri.AbsolutePath, StringComparison.OrdinalIgnoreCase)
+            && configured.Host.Equals(uri.Host, StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        return false;
     }
 
 }
