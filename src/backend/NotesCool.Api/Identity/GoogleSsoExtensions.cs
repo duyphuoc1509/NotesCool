@@ -248,9 +248,9 @@ public static class GoogleSsoExtensions
 
     private static string BuildFrontendCallbackRedirectUrl(SsoProviderOptions options, string sessionCode, ILogger logger)
     {
-        // Pick the first frontend URL that is NOT the OAuth API callback. If none qualify, fall
-        // back to the first entry but log a loud warning — this avoids the redirect loop where
-        // backend bounces the browser back to its own /api/.../callback endpoint.
+        // Pick the first frontend URL that is NOT the OAuth API callback. If none qualify,
+        // derive the frontend callback from the misconfigured API callback origin instead of
+        // bouncing the browser back to /api/.../callback with ?sessionCode.
         var apiCallbackPath = "/api/auth/sso/google/callback";
         var baseRedirectUrl = options.RedirectUrls
             .FirstOrDefault(url => !LooksLikeApiCallback(url, options, apiCallbackPath))
@@ -263,11 +263,25 @@ public static class GoogleSsoExtensions
 
         if (LooksLikeApiCallback(baseRedirectUrl, options, apiCallbackPath))
         {
-            logger.LogError(
-                "Google SSO frontend redirect URL '{Url}' looks like the OAuth API callback. " +
-                "SSO_GOOGLE_REDIRECT_URLS must contain a frontend page (e.g. https://your-domain/auth/callback/google), " +
-                "not the API callback URL. Browser will be redirected to {Url} which will fail because it expects ?code/state, not ?sessionCode.",
-                baseRedirectUrl, baseRedirectUrl);
+            var correctedRedirectUrl = BuildFrontendCallbackFromApiCallback(baseRedirectUrl, apiCallbackPath);
+            if (!string.IsNullOrWhiteSpace(correctedRedirectUrl))
+            {
+                logger.LogWarning(
+                    "Google SSO frontend redirect URL '{Url}' looks like the OAuth API callback. " +
+                    "Using inferred frontend callback URL '{CorrectedUrl}' to avoid redirecting sessionCode back to the API callback. " +
+                    "Set SSO_GOOGLE_REDIRECT_URLS to the frontend URL explicitly.",
+                    baseRedirectUrl,
+                    correctedRedirectUrl);
+                baseRedirectUrl = correctedRedirectUrl;
+            }
+            else
+            {
+                logger.LogError(
+                    "Google SSO frontend redirect URL '{Url}' looks like the OAuth API callback. " +
+                    "SSO_GOOGLE_REDIRECT_URLS must contain a frontend page (e.g. https://your-domain/auth/callback/google), " +
+                    "not the API callback URL. Browser will be redirected to {Url} which will fail because it expects ?code/state, not ?sessionCode.",
+                    baseRedirectUrl, baseRedirectUrl);
+            }
         }
 
         var builder = new UriBuilder(baseRedirectUrl);
@@ -304,6 +318,27 @@ public static class GoogleSsoExtensions
         }
 
         return false;
+    }
+
+    private static string? BuildFrontendCallbackFromApiCallback(string url, string apiCallbackPath)
+    {
+        if (Uri.TryCreate(url, UriKind.Absolute, out var uri))
+        {
+            if (uri.AbsolutePath.Equals(apiCallbackPath, StringComparison.OrdinalIgnoreCase))
+            {
+                // Remove /api from the beginning of the path
+                var newPath = apiCallbackPath.StartsWith("/api", StringComparison.OrdinalIgnoreCase)
+                    ? apiCallbackPath.Substring(4)
+                    : apiCallbackPath;
+
+                var builder = new UriBuilder(uri)
+                {
+                    Path = newPath
+                };
+                return builder.Uri.ToString();
+            }
+        }
+        return null;
     }
 
 }

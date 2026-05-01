@@ -72,7 +72,7 @@ public sealed class SsoEnvironmentConfigServiceTests : IDisposable
         googleProvider.Enabled.Should().BeTrue();
         googleProvider.ClientId.Should().Be("google-client-id");
         googleProvider.ClientSecret.Should().Be("google-client-secret");
-        googleProvider.Authority.Should().Be("https://accounts.google.test");
+        googleProvider.Authority.Should().Be("https://accounts.google.com"); // Prevent users from mistakenly overriding Google/MS authority with their app domain
         googleProvider.CallbackPath.Should().Be("/custom-google-callback");
         googleProvider.RedirectUrls.Should().Equal("https://app.test/google", "https://admin.test/google");
     }
