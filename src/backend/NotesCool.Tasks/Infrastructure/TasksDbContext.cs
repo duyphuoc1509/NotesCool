@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using NotesCool.Tasks.Domain;
+using TaskStatus = NotesCool.Tasks.Domain.TaskStatus;
 
 namespace NotesCool.Tasks.Infrastructure;
 
@@ -27,6 +28,13 @@ public class TasksDbContext : DbContext
             entity.Property(e => e.OwnerId)
                 .IsRequired()
                 .HasMaxLength(100);
+
+            entity.Property(e => e.Status)
+                .HasConversion(
+                    status => (int)status,
+                    dbValue => Enum.IsDefined(typeof(TaskStatus), dbValue)
+                        ? (TaskStatus)dbValue
+                        : TaskStatus.Todo);
                 
             // Apply soft delete query filter globally
             entity.HasQueryFilter(e => e.ArchivedAt == null);
