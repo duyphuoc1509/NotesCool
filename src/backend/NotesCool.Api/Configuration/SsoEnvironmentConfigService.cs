@@ -42,7 +42,7 @@ public sealed class SsoEnvironmentConfigService(ILogger<SsoEnvironmentConfigServ
         var enabled = ReadBoolean($"{environmentPrefix}_ENABLED");
         var clientId = ReadString($"{environmentPrefix}_CLIENT_ID");
         var clientSecret = ReadString($"{environmentPrefix}_CLIENT_SECRET");
-        var authority = ReadString($"{environmentPrefix}_AUTHORITY", defaultAuthority);
+        var authority = defaultAuthority; // Prevent users from mistakenly overriding Google/MS authority with their app domain
         var callbackPath = ReadString($"{environmentPrefix}_CALLBACK_PATH", defaultCallbackPath);
         var redirectUrls = ReadList($"{environmentPrefix}_REDIRECT_URLS", defaultRedirectUrl);
 
