@@ -1,28 +1,27 @@
 import { useMemo, useState } from 'react'
 import type { FormEvent } from 'react'
-import { Calendar, CheckCircle2, Loader2, Pencil, Plus, RefreshCw, Trash2 } from 'lucide-react'
+import { LayoutGrid, List, Loader2, Plus, RefreshCw } from 'lucide-react'
 import { useTasks } from '../hooks/useTasks'
 import type { TaskDto, TaskStatus } from '../types/task'
 import { cn } from '../utils/cn'
+import { TasksKanban } from '../components/tasks/TasksKanban'
+import { TasksList } from '../components/tasks/TasksList'
 
 const statusOptions: Array<{ value: TaskStatus | 'all'; label: string }> = [
   { value: 'all', label: 'All active' },
   { value: 'Todo', label: 'To do' },
   { value: 'InProgress', label: 'In progress' },
+  { value: 'InReview', label: 'In review' },
   { value: 'Done', label: 'Done' },
+  { value: 'Blocked', label: 'Blocked / Cancelled' },
 ]
 
-const nextStatus: Record<TaskStatus, TaskStatus> = {
-  Todo: 'InProgress',
-  InProgress: 'Done',
-  Done: 'Todo',
-  Archived: 'Todo',
-}
-
-const statusLabel: Record<TaskStatus, string> = {
+const statusLabel: Record<string, string> = {
   Todo: 'To do',
   InProgress: 'In progress',
+  InReview: 'In review',
   Done: 'Done',
+  Blocked: 'Blocked / Cancelled',
   Archived: 'Archived',
 }
 
@@ -42,24 +41,8 @@ function toIsoDate(value: string) {
   return value ? new Date(`${value}T00:00:00`).toISOString() : undefined
 }
 
-function formatDate(value?: string | null) {
-  if (!value) return 'No due date'
-  return new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric', year: 'numeric' }).format(
-    new Date(value)
-  )
-}
-
-function statusClasses(status: TaskStatus) {
-  return cn(
-    'rounded-full px-2.5 py-1 text-xs font-semibold',
-    status === 'Todo' && 'bg-slate-100 text-slate-700',
-    status === 'InProgress' && 'bg-blue-100 text-blue-700',
-    status === 'Done' && 'bg-emerald-100 text-emerald-700',
-    status === 'Archived' && 'bg-gray-100 text-gray-500'
-  )
-}
-
 export function TasksPage() {
+  const [viewMode, setViewMode] = useState<'list' | 'kanban'>('kanban')
   const {
     tasks,
     isLoading,
@@ -72,7 +55,7 @@ export function TasksPage() {
     updateTask,
     changeTaskStatus,
     deleteTask,
-  } = useTasks({ page: 1, pageSize: 20 })
+  } = useTasks({ page: 1, pageSize: 100 }) // Increased pageSize for Kanban
   const [form, setForm] = useState<TaskFormState>(emptyForm)
   const [editingTask, setEditingTask] = useState<TaskDto | null>(null)
   const [submitting, setSubmitting] = useState(false)
@@ -81,7 +64,7 @@ export function TasksPage() {
 
   const pageTitle = useMemo(() => {
     if (!filter.status) return 'All active tasks'
-    return statusLabel[filter.status]
+    return statusLabel[filter.status] || filter.status
   }, [filter.status])
 
   const startEdit = (task: TaskDto) => {
@@ -130,7 +113,7 @@ export function TasksPage() {
     }
   }
 
-  const handleStatusChange = async (task: TaskDto, status: TaskStatus = nextStatus[task.status]) => {
+  const handleStatusChange = async (task: TaskDto, status: TaskStatus) => {
     setActionTaskId(task.id)
     try {
       await changeTaskStatus(task.id, status)
@@ -156,16 +139,38 @@ export function TasksPage() {
             <p className="text-sm font-semibold uppercase tracking-wide text-indigo-600">Tasks</p>
             <h1 className="mt-2 text-3xl font-bold tracking-tight text-gray-950">{pageTitle}</h1>
             <p className="mt-2 text-sm text-gray-500">
-              Create tasks, update progress, filter by status, and archive completed work.
+              Manage your work using Kanban or List views. Drag-and-drop support coming soon.
             </p>
           </div>
-          <button
-            type="button"
-            onClick={refresh}
-            className="inline-flex items-center justify-center gap-2 rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
-          >
-            <RefreshCw className="h-4 w-4" /> Refresh
-          </button>
+          <div className="flex items-center gap-2">
+            <div className="flex rounded-lg border border-gray-300 p-1">
+              <button
+                onClick={() => setViewMode('kanban')}
+                className={cn(
+                  'inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition',
+                  viewMode === 'kanban' ? 'bg-indigo-50 text-indigo-700' : 'text-gray-500 hover:bg-gray-50'
+                )}
+              >
+                <LayoutGrid className="h-4 w-4" /> Kanban
+              </button>
+              <button
+                onClick={() => setViewMode('list')}
+                className={cn(
+                  'inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition',
+                  viewMode === 'list' ? 'bg-indigo-50 text-indigo-700' : 'text-gray-500 hover:bg-gray-50'
+                )}
+              >
+                <List className="h-4 w-4" /> List
+              </button>
+            </div>
+            <button
+              type="button"
+              onClick={refresh}
+              className="inline-flex items-center justify-center gap-2 rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
+            >
+              <RefreshCw className="h-4 w-4" /> Refresh
+            </button>
+          </div>
         </div>
 
         <div className="mt-6 flex flex-wrap gap-2">
@@ -187,8 +192,14 @@ export function TasksPage() {
         </div>
       </section>
 
-      <section className="grid gap-4 pb-20 md:gap-6 md:pb-0 lg:grid-cols-[360px_minmax(0,1fr)]">
-        <form onSubmit={handleSubmit} className="h-fit rounded-2xl border border-gray-200 bg-white p-4 shadow-sm md:p-6">
+      <section className={cn(
+        "grid gap-4 pb-20 md:gap-6 md:pb-0",
+        viewMode === 'list' ? "lg:grid-cols-[360px_minmax(0,1fr)]" : "flex flex-col lg:flex-row gap-6"
+      )}>
+        <form onSubmit={handleSubmit} className={cn(
+          "h-fit rounded-2xl border border-gray-200 bg-white p-4 shadow-sm md:p-6",
+          viewMode === 'kanban' ? "lg:w-[360px] shrink-0" : "w-full"
+        )}>
           <div className="flex items-center gap-2">
             <Plus className="h-5 w-5 text-indigo-600" />
             <h2 className="text-lg font-semibold text-gray-950">
@@ -255,83 +266,27 @@ export function TasksPage() {
           </div>
         </form>
 
-        <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm md:p-6">
-          <div className="flex items-center justify-between border-b border-gray-100 pb-4">
-            <div>
-              <h2 className="text-lg font-semibold text-gray-950">Task list</h2>
-              <p className="text-sm text-gray-500">{totalCount} total matching task(s)</p>
-            </div>
-          </div>
-
-          {error ? (
-            <div className="mt-6 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-              <p className="font-semibold">Could not load tasks</p>
-              <p className="mt-1">{error}</p>
-              <button type="button" onClick={refresh} className="mt-3 font-semibold text-red-800 underline">
-                Retry
-              </button>
-            </div>
-          ) : null}
-
-          {isLoading ? (
-            <div className="mt-6 space-y-3" aria-label="Loading tasks">
-              {Array.from({ length: 4 }).map((_, index) => (
-                <div key={index} className="h-24 animate-pulse rounded-xl bg-gray-100" />
-              ))}
-            </div>
-          ) : !error && tasks.length === 0 ? (
-            <div className="mt-6 rounded-xl border border-dashed border-gray-300 p-8 text-center">
-              <CheckCircle2 className="mx-auto h-10 w-10 text-gray-300" />
-              <h3 className="mt-3 text-base font-semibold text-gray-950">No tasks found</h3>
-              <p className="mt-1 text-sm text-gray-500">
-                Create your first task or switch filters to see other statuses.
-              </p>
-            </div>
+        <div className="flex-1 min-w-0">
+          {viewMode === 'kanban' ? (
+            <TasksKanban
+              tasks={tasks}
+              isLoading={isLoading}
+              error={error}
+              onStatusChange={handleStatusChange}
+              onTaskClick={startEdit}
+            />
           ) : (
-            <ul className="mt-6 space-y-3">
-              {tasks.map((task) => (
-                <li key={task.id} className="rounded-xl border border-gray-200 p-4 transition hover:border-indigo-200 hover:shadow-sm">
-                  <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className={statusClasses(task.status)}>{statusLabel[task.status]}</span>
-                        <span className="inline-flex items-center gap-1 text-xs text-gray-500">
-                          <Calendar className="h-3.5 w-3.5" /> {formatDate(task.dueDate)}
-                        </span>
-                      </div>
-                      <h3 className="mt-2 text-base font-semibold text-gray-950">{task.title}</h3>
-                      {task.description ? <p className="mt-1 text-sm text-gray-600">{task.description}</p> : null}
-                    </div>
-
-                    <div className="flex flex-wrap gap-2">
-                      <button
-                        type="button"
-                        disabled={actionTaskId === task.id}
-                        onClick={() => handleStatusChange(task)}
-                        className="rounded-lg bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-100 disabled:opacity-60"
-                      >
-                        Move to {statusLabel[nextStatus[task.status]]}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => startEdit(task)}
-                        className="inline-flex items-center gap-1 rounded-lg bg-gray-100 px-3 py-2 text-xs font-semibold text-gray-700 transition hover:bg-gray-200"
-                      >
-                        <Pencil className="h-3.5 w-3.5" /> Edit
-                      </button>
-                      <button
-                        type="button"
-                        disabled={actionTaskId === task.id}
-                        onClick={() => handleArchive(task)}
-                        className="inline-flex items-center gap-1 rounded-lg bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 transition hover:bg-red-100 disabled:opacity-60"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" /> Archive
-                      </button>
-                    </div>
-                  </div>
-                </li>
-              ))}
-            </ul>
+            <TasksList
+              tasks={tasks}
+              isLoading={isLoading}
+              error={error}
+              totalCount={totalCount}
+              actionTaskId={actionTaskId}
+              onStatusChange={handleStatusChange}
+              onEdit={startEdit}
+              onArchive={handleArchive}
+              onRefresh={refresh}
+            />
           )}
         </div>
       </section>
