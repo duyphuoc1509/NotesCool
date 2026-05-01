@@ -18,7 +18,11 @@ var app = builder.Build();
 
 var forwardedHeadersOptions = new ForwardedHeadersOptions
 {
-    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto | ForwardedHeaders.XForwardedHost
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto | ForwardedHeaders.XForwardedHost,
+    // NotesCool can sit behind more than one proxy (e.g. edge proxy/CDN -> nginx -> container).
+    // The default ForwardLimit=1 only trusts the nearest value, which can leave Request.Scheme as
+    // http even when the original client-facing scheme was https.
+    ForwardLimit = null
 };
 forwardedHeadersOptions.KnownNetworks.Clear();
 forwardedHeadersOptions.KnownProxies.Clear();
