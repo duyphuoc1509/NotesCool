@@ -81,6 +81,9 @@ public class TasksService
 
     public async Task<TaskDto> ChangeTaskStatusAsync(Guid id, ChangeTaskStatusRequest request, string ownerId, CancellationToken cancellationToken = default)
     {
+        if (!Enum.IsDefined(typeof(TaskStatus), request.Status))
+            throw new ApiException("invalid_task_status", "Invalid task status. Allowed values are Todo, InProgress, Done, Cancelled.", 400);
+
         var task = await GetTaskEntityAsync(id, ownerId, cancellationToken);
         
         task.ChangeStatus(request.Status);

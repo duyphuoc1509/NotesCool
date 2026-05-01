@@ -7,9 +7,8 @@ public enum TaskStatus
 {
     Todo = 0,
     InProgress = 1,
-    InReview = 2,
-    Done = 3,
-    Blocked = 4
+    Done = 2,
+    Cancelled = 3
 }
 
 public class TaskItem : Entity
@@ -50,6 +49,9 @@ public class TaskItem : Entity
     
     public void ChangeStatus(TaskStatus newStatus)
     {
+        if (!Enum.IsDefined(typeof(TaskStatus), newStatus))
+            throw new ArgumentException("Invalid task status", nameof(newStatus));
+
         if (Status != newStatus)
         {
             Status = newStatus;

@@ -32,5 +32,6 @@ public record UpdateTaskRequest(
 
 public record ChangeTaskStatusRequest(
     [Required(ErrorMessage = "Status is required")]
+    [EnumDataType(typeof(TaskStatus), ErrorMessage = "Invalid status value")]
     TaskStatus Status
 );
