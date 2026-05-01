@@ -19,13 +19,21 @@ services:
       - SSO_GOOGLE_CLIENT_SECRET=${SSO_GOOGLE_CLIENT_SECRET:-}
       - SSO_GOOGLE_AUTHORITY=${SSO_GOOGLE_AUTHORITY:-https://accounts.google.com}
       - SSO_GOOGLE_CALLBACK_PATH=${SSO_GOOGLE_CALLBACK_PATH:-/signin-google}
+      # OAuth redirect_uri sent to Google. MUST exactly match the value registered in
+      # Google Cloud Console (including scheme). Leave empty to derive from request (only
+      # safe when X-Forwarded-Proto is reliably forwarded by every reverse proxy in front).
+      - SSO_GOOGLE_REDIRECT_URI=${SSO_GOOGLE_REDIRECT_URI:-}
+      # Frontend redirect URLs (whitelist) the backend may bounce the browser back to after
+      # exchanging the OAuth code. The first entry is used by default; query string carries
+      # ?provider=google&sessionCode=...
       - SSO_GOOGLE_REDIRECT_URLS=${SSO_GOOGLE_REDIRECT_URLS:-https://localhost:10001/auth/callback/google}
       - SSO_MICROSOFT_ENABLED=${SSO_MICROSOFT_ENABLED:-false}
       - SSO_MICROSOFT_CLIENT_ID=${SSO_MICROSOFT_CLIENT_ID:-}
       - SSO_MICROSOFT_CLIENT_SECRET=${SSO_MICROSOFT_CLIENT_SECRET:-}
       - SSO_MICROSOFT_AUTHORITY=${SSO_MICROSOFT_AUTHORITY:-https://login.microsoftonline.com/common/v2.0}
       - SSO_MICROSOFT_CALLBACK_PATH=${SSO_MICROSOFT_CALLBACK_PATH:-/signin-microsoft}
-      - SSO_MICROSOFT_REDIRECT_URLS=${SSO_MICROSOFT_REDIRECT_URLS:-https://note.tripschill.com/api/auth/sso/microsoft/callback}
+      - SSO_MICROSOFT_REDIRECT_URI=${SSO_MICROSOFT_REDIRECT_URI:-}
+      - SSO_MICROSOFT_REDIRECT_URLS=${SSO_MICROSOFT_REDIRECT_URLS:-https://localhost:10001/auth/callback/microsoft}
     ports:
       - "10002:10002"
 
