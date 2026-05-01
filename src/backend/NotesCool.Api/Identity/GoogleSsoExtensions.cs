@@ -238,16 +238,11 @@ public static class GoogleSsoExtensions
         }
 
         var request = httpContext.Request;
-        var fallback = $"{request.Scheme}://{request.Host}/api/auth/sso/google/callback";
+        var fallback = $"https://{request.Host}/api/auth/sso/google/callback";
         logger.LogWarning(
-            "Google SSO redirect_uri fell back to request-derived value: {RedirectUri}. " +
-            "SSO_GOOGLE_REDIRECT_URI is empty — set it explicitly to avoid scheme mismatch behind reverse proxies. " +
-            "request.Scheme={Scheme}, request.Host={Host}, X-Forwarded-Proto={XfProto}, X-Forwarded-Host={XfHost}",
-            fallback,
-            request.Scheme,
-            request.Host.Value,
-            request.Headers["X-Forwarded-Proto"].ToString(),
-            request.Headers["X-Forwarded-Host"].ToString());
+            "Google SSO redirect_uri fell back to forced HTTPS request-derived value: {RedirectUri}. " +
+            "SSO_GOOGLE_REDIRECT_URI is empty — set it explicitly to override this fallback.",
+            fallback);
         return fallback;
     }
 
