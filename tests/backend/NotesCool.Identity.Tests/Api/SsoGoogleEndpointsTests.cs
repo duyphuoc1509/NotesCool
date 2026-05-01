@@ -37,9 +37,31 @@ public class SsoGoogleEndpointsTests : IClassFixture<WebApplicationFactory<Progr
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Redirect);
         var location = response.Headers.Location!.ToString();
-        
+
         // This is the core issue: if it returns http://... instead of https://..., 
         // Google will reject it if the registered URI is https://...
         location.Should().Contain("redirect_uri=https%3A%2F%2Fnote.tripschill.com%2Fapi%2Fauth%2Fsso%2Fgoogle%2Fcallback");
+    }
+
+    [Fact]
+    public async Task Get_Login_WithMultiProxyForwardedProtoChain_ShouldUseOriginalHttpsScheme()
+    {
+        // Arrange
+        var client = _factory.CreateClient(new WebApplicationFactoryClientOptions
+        {
+            AllowAutoRedirect = false
+        });
+
+        var request = new HttpRequestMessage(HttpMethod.Get, "/api/auth/sso/google/login");
+        request.Headers.Add("X-Forwarded-Proto", "https,http");
+        request.Headers.Add("X-Forwarded-Host", "note.tripschill.com,notescool-frontend");
+
+        // Act
+        var response = await client.SendAsync(request);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.Redirect);
+        response.Headers.Location!.ToString()
+            .Should().Contain("redirect_uri=https%3A%2F%2Fnote.tripschill.com%2Fapi%2Fauth%2Fsso%2Fgoogle%2Fcallback");
     }
 }
