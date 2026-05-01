@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import { useEffect, useMemo, useState } from 'react'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import axios from 'axios'
 import { useAuth } from '../contexts/useAuth'
 import { useSsoProviders } from '../hooks/useSsoProviders'
@@ -40,9 +40,10 @@ function extractErrorMessage(error: unknown): string {
 }
 
 export function LoginPage() {
-  const { login, isLoading } = useAuth()
+  const { login, isLoading, isAuthenticated } = useAuth()
   const { providers, isLoading: isLoadingProviders } = useSsoProviders()
   const location = useLocation()
+  const navigate = useNavigate()
 
   const redirectTo = useMemo(() => {
     const state = location.state as { from?: { pathname?: string } } | null
@@ -57,6 +58,17 @@ export function LoginPage() {
   })
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({})
   const [isRedirecting, setIsRedirecting] = useState(false)
+
+  // Global fallback: if we land on /login with a sessionCode (e.g. backend misconfigured redirect URL),
+  // we can still exchange the session and log in!
+  useEffect(() => {
+    const params = new URLSearchParams(location.search)
+    const sessionCode = params.get('sessionCode')
+    if (sessionCode && !isAuthenticated) {
+      navigate('/auth/callback/google' + location.search, { replace: true })
+    }
+  }, [location.search, navigate, isAuthenticated])
+
 
   const isFormDisabled = isLoading || isRedirecting
 
