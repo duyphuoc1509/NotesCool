@@ -1,3 +1,4 @@
+import { lazy, Suspense, useEffect, useState, type ReactNode } from 'react'
 import { Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import { AuthProvider } from './contexts/AuthContext'
 import { ProtectedRoute } from './components/ProtectedRoute'
@@ -10,11 +11,21 @@ import { RegisterPage } from './pages/RegisterPage'
 import { SsoCallbackPage } from './pages/SsoCallbackPage'
 import { NotesPage } from './pages/NotesPage'
 import { TasksPage } from './pages/TasksPage'
-import { useState, useEffect, type ReactNode } from 'react'
 import { useAuth } from './hooks/useAuth'
 import { FileText, CheckSquare, Clock } from 'lucide-react'
 import { useNotes } from './hooks/useNotes'
 import { useTasks } from './hooks/useTasks'
+
+const AccountSsoSettingsPage = lazy(() =>
+  import('./modules/settings/routes').then((module) => ({ default: module.AccountSsoSettingsPage }))
+)
+const ProfileSettingsPage = lazy(() =>
+  import('./modules/settings/routes').then((module) => ({ default: module.ProfileSettingsPage }))
+)
+
+function PageFallback() {
+  return <div className="rounded-2xl border border-gray-200 bg-white p-6 text-sm text-gray-600 shadow-sm">Loading...</div>
+}
 
 function Layout({ children }: { children: ReactNode }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
@@ -23,8 +34,12 @@ function Layout({ children }: { children: ReactNode }) {
 
   // Close sidebar and quick create on route change
   useEffect(() => {
-    setIsSidebarOpen(false)
-    setIsQuickCreateOpen(false)
+    const timeoutId = window.setTimeout(() => {
+      setIsSidebarOpen(false)
+      setIsQuickCreateOpen(false)
+    }, 0)
+
+    return () => window.clearTimeout(timeoutId)
   }, [location.pathname])
 
   return (
@@ -175,6 +190,30 @@ function AppRoutes() {
           <ProtectedRoute>
             <Layout>
               <TasksPage />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/settings"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <Suspense fallback={<PageFallback />}>
+                <AccountSsoSettingsPage />
+              </Suspense>
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/profile"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <Suspense fallback={<PageFallback />}>
+                <ProfileSettingsPage />
+              </Suspense>
             </Layout>
           </ProtectedRoute>
         }

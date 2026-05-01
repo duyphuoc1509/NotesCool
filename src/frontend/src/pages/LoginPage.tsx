@@ -2,10 +2,9 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import axios from 'axios'
 import { useAuth } from '../contexts/useAuth'
-import { useSsoProviders } from '../hooks/useSsoProviders'
+import { useSsoProviders, type SsoProvider } from '../modules/settings'
 import { API_BASE_URL } from '../constants/env'
 import type { ApiErrorResponse } from '../services/auth'
-import type { SsoProvider } from '../services/ssoProviders'
 
 function SsoProviderButton({ provider }: { provider: SsoProvider }) {
   const handleClick = () => {

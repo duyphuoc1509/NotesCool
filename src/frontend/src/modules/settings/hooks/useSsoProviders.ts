@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
-import { ssoProvidersService, type SsoProvider } from '../services/ssoProviders'
+import { settingsService } from '../services/settingsService'
+import type { SsoProvider } from '../types'
 
 export interface UseSsoProvidersResult {
   providers: SsoProvider[]
@@ -17,12 +18,8 @@ export function useSsoProviders(): UseSsoProvidersResult {
     setError(null)
 
     try {
-      const result = await ssoProvidersService.getProviders()
-      const enabledProviders = result.filter((provider) => provider.enabled)
-      setProviders(enabledProviders)
+      setProviders(await settingsService.getEnabledSsoProviders())
     } catch {
-      // If the endpoint is not available (401, 404, 500, network error),
-      // gracefully fall back to empty list — the login form is still usable.
       setProviders([])
       setError('Unable to load SSO providers.')
     } finally {
@@ -31,7 +28,11 @@ export function useSsoProviders(): UseSsoProvidersResult {
   }, [])
 
   useEffect(() => {
-    fetchProviders()
+    const timeoutId = window.setTimeout(() => {
+      void fetchProviders()
+    }, 0)
+
+    return () => window.clearTimeout(timeoutId)
   }, [fetchProviders])
 
   return { providers, isLoading, error }

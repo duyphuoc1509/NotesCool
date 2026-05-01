@@ -1,99 +1,16 @@
 import { AlertTriangle, CheckCircle2, ExternalLink, Link2, LockKeyhole, ShieldCheck, Unlink } from 'lucide-react'
-import { useMemo, useState } from 'react'
-import { cn } from '../utils/cn'
+import { cn } from '../../../utils/cn'
+import { useAccountSsoSettings } from '../hooks/useAccountSsoSettings'
 
-type SsoProviderStatus = 'linked' | 'available'
-
-type SsoProvider = {
-  id: string
-  name: string
-  description: string
-  status: SsoProviderStatus
-  email?: string
-  linkedAt?: string
-  lastUsedAt?: string
-  accentClassName: string
-}
-
-const initialProviders: SsoProvider[] = [
-  {
-    id: 'google',
-    name: 'Google',
-    description: 'Use your Google Workspace or Gmail account to sign in.',
-    status: 'linked',
-    email: 'admin@notescool.com',
-    linkedAt: 'Jan 12, 2026',
-    lastUsedAt: 'Today at 09:14',
-    accentClassName: 'bg-red-50 text-red-600 ring-red-100',
-  },
-  {
-    id: 'github',
-    name: 'GitHub',
-    description: 'Connect GitHub for developer-friendly single sign-on.',
-    status: 'linked',
-    email: 'admin@github.example',
-    linkedAt: 'Feb 03, 2026',
-    lastUsedAt: 'Mar 20, 2026',
-    accentClassName: 'bg-slate-100 text-slate-700 ring-slate-200',
-  },
-  {
-    id: 'microsoft',
-    name: 'Microsoft',
-    description: 'Sign in with a Microsoft 365 or Azure AD account.',
-    status: 'available',
-    accentClassName: 'bg-blue-50 text-blue-600 ring-blue-100',
-  },
-]
-
-function getLinkedProviders(providers: SsoProvider[]) {
-  return providers.filter((provider) => provider.status === 'linked')
-}
-
-export function AccountSsoSettings() {
-  const [providers, setProviders] = useState(initialProviders)
-  const linkedProviders = useMemo(() => getLinkedProviders(providers), [providers])
-  const hasPasswordLogin = false
-
-  const handleLink = (providerId: string) => {
-    setProviders((currentProviders) =>
-      currentProviders.map((provider) =>
-        provider.id === providerId
-          ? {
-              ...provider,
-              status: 'linked',
-              email: `admin@${provider.id}.example`,
-              linkedAt: 'Just now',
-              lastUsedAt: 'Not used yet',
-            }
-          : provider
-      )
-    )
-  }
-
-  const handleUnlink = (providerId: string) => {
-    setProviders((currentProviders) =>
-      currentProviders.map((provider) =>
-        provider.id === providerId
-          ? {
-              ...provider,
-              status: 'available',
-              email: undefined,
-              linkedAt: undefined,
-              lastUsedAt: undefined,
-            }
-          : provider
-      )
-    )
-  }
+export function AccountSsoSettingsPage() {
+  const { providers, linkedProviders, hasPasswordLogin, linkProvider, unlinkProvider } = useAccountSsoSettings()
 
   return (
     <section className="mx-auto max-w-6xl space-y-6" aria-labelledby="sso-settings-title">
       <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm sm:p-8">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div>
-            <p className="text-sm font-semibold uppercase tracking-wide text-indigo-600">
-              Account settings
-            </p>
+            <p className="text-sm font-semibold uppercase tracking-wide text-indigo-600">Account settings</p>
             <h1 id="sso-settings-title" className="mt-2 text-3xl font-bold tracking-tight text-gray-950">
               Single sign-on providers
             </h1>
@@ -142,7 +59,7 @@ export function AccountSsoSettings() {
                     </span>
                   </div>
                 </div>
-                {isLinked && <CheckCircle2 className="h-5 w-5 text-emerald-500" aria-label="Linked provider" />}
+                {isLinked ? <CheckCircle2 className="h-5 w-5 text-emerald-500" aria-label="Linked provider" /> : null}
               </div>
 
               <p className="mt-4 text-sm leading-6 text-gray-600">{provider.description}</p>
@@ -164,17 +81,17 @@ export function AccountSsoSettings() {
                 </div>
               </dl>
 
-              {isLastLoginMethod && (
+              {isLastLoginMethod ? (
                 <p className="mt-4 rounded-lg bg-gray-50 px-3 py-2 text-xs font-medium text-gray-600 ring-1 ring-gray-200">
                   Unlink disabled because this is your last available login method.
                 </p>
-              )}
+              ) : null}
 
               <div className="mt-auto pt-5">
                 {isLinked ? (
                   <button
                     type="button"
-                    onClick={() => handleUnlink(provider.id)}
+                    onClick={() => unlinkProvider(provider.id)}
                     disabled={isLastLoginMethod}
                     className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:border-gray-200 disabled:bg-gray-100 disabled:text-gray-400"
                   >
@@ -184,7 +101,7 @@ export function AccountSsoSettings() {
                 ) : (
                   <button
                     type="button"
-                    onClick={() => handleLink(provider.id)}
+                    onClick={() => linkProvider(provider.id)}
                     className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
                   >
                     <Link2 className="h-4 w-4" aria-hidden="true" />

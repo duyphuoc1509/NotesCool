@@ -1,12 +1,5 @@
-import api from './api'
-
-export interface SsoProvider {
-  id: string
-  name: string
-  displayName: string
-  enabled: boolean
-  authorizationUrl?: string
-}
+import api from '../../../services/api'
+import type { SsoProvider } from '../types'
 
 interface SsoProviderResponse {
   id?: string
@@ -45,9 +38,7 @@ function normalizeProvider(provider: SsoProviderResponse): SsoProvider | null {
   }
 }
 
-export const ssoProvidersService = {
-  async getProviders(): Promise<SsoProvider[]> {
-    const { data } = await api.get<SsoProviderResponse[]>('/api/auth/sso/providers')
-    return data.map(normalizeProvider).filter((provider): provider is SsoProvider => Boolean(provider))
-  },
+export async function fetchSsoProviders(): Promise<SsoProvider[]> {
+  const { data } = await api.get<SsoProviderResponse[]>('/api/auth/sso/providers')
+  return data.map(normalizeProvider).filter((provider): provider is SsoProvider => Boolean(provider))
 }

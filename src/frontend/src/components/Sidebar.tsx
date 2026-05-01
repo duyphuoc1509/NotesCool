@@ -8,6 +8,7 @@ const navigation = [
   { name: 'Notes', icon: FileText, href: '/notes' },
   { name: 'Tasks', icon: CheckSquare, href: '/tasks' },
   { name: 'Users', icon: Users, href: '/users' },
+  { name: 'Profile', icon: Users, href: '/profile' },
   { name: 'Settings', icon: Settings, href: '/settings' },
 ]
 

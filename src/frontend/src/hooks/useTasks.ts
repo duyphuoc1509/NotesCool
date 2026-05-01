@@ -29,7 +29,11 @@ export function useTasks(initialFilter: TasksFilter = {}) {
   }, [filter])
 
   useEffect(() => {
-    fetchTasks()
+    const timeoutId = window.setTimeout(() => {
+      void fetchTasks()
+    }, 0)
+
+    return () => window.clearTimeout(timeoutId)
   }, [fetchTasks])
 
   const handleCreateTask = async (payload: CreateTaskRequest) => {

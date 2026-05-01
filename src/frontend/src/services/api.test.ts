@@ -133,7 +133,7 @@ describe('api interceptor — refresh token flow', () => {
           accessTokenExpiresInSeconds: 3600,
           accessTokenExpiresAtUtc: new Date(Date.now() + 3600_000).toISOString(),
         },
-      })) as any,
+      })) as ReturnType<typeof axios.post>,
     )
 
     const api = apiModule.default
