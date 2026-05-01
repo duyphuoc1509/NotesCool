@@ -22,6 +22,19 @@ public sealed class SsoProviderOptions
 
     public string CallbackPath { get; init; } = string.Empty;
 
+    /// <summary>
+    /// Absolute URL sent to the OAuth provider as <c>redirect_uri</c>. This MUST exactly match what
+    /// is registered with the provider (e.g. Google Cloud Console). When empty, the API falls back
+    /// to building the URL from the incoming request, which can produce wrong scheme (http vs https)
+    /// behind reverse proxies that don't forward <c>X-Forwarded-Proto</c> correctly.
+    /// </summary>
+    public string RedirectUri { get; init; } = string.Empty;
+
+    /// <summary>
+    /// Whitelist of frontend URLs the API may redirect the browser to after a successful SSO
+    /// exchange (the URL receives <c>?provider=...&amp;sessionCode=...</c>). NOT the OAuth
+    /// <c>redirect_uri</c> — see <see cref="RedirectUri"/> for that.
+    /// </summary>
     public List<string> RedirectUrls { get; init; } = [];
 }
 
@@ -76,6 +89,24 @@ public sealed class SsoOptionsValidator(IHostEnvironment environment) : IValidat
         if (string.IsNullOrWhiteSpace(provider.CallbackPath) || !provider.CallbackPath.StartsWith('/'))
         {
             failures.Add($"SSO provider '{providerName}' must define CallbackPath starting with '/'.");
+        }
+
+        if (!string.IsNullOrWhiteSpace(provider.RedirectUri))
+        {
+            if (!Uri.TryCreate(provider.RedirectUri, UriKind.Absolute, out var oauthRedirectUri))
+            {
+                failures.Add($"SSO provider '{providerName}' has invalid RedirectUri '{provider.RedirectUri}'.");
+            }
+            else
+            {
+                var isLocalhost = oauthRedirectUri.Host.Equals("localhost", StringComparison.OrdinalIgnoreCase)
+                    || oauthRedirectUri.Host.Equals("127.0.0.1", StringComparison.OrdinalIgnoreCase);
+
+                if (oauthRedirectUri.Scheme != Uri.UriSchemeHttps && !(environment.IsDevelopment() && isLocalhost))
+                {
+                    failures.Add($"SSO provider '{providerName}' RedirectUri '{provider.RedirectUri}' must use HTTPS outside local development.");
+                }
+            }
         }
 
         if (provider.RedirectUrls.Count == 0)

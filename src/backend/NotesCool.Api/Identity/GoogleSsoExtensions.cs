@@ -204,18 +204,16 @@ public static class GoogleSsoExtensions
 
     private static string GetRedirectUri(SsoProviderOptions options, HttpContext httpContext)
     {
-        if (options.RedirectUrls != null && options.RedirectUrls.Count > 0)
+        // Prefer the explicitly-configured OAuth redirect_uri. It MUST exactly match the value
+        // registered in Google Cloud Console, including scheme. Building it from the incoming
+        // request is unreliable behind reverse proxies that don't forward X-Forwarded-Proto.
+        if (!string.IsNullOrWhiteSpace(options.RedirectUri))
         {
-             // Use the first configured redirect URI, or match with incoming host if needed
-             // Assuming the first one is the intended API callback or front-end callback
-             // But since we are handling callback at /api/auth/sso/google/callback, we need to ensure the redirect URI matches exactly what's registered in Google.
-             // We can construct it based on current request host.
-             var request = httpContext.Request;
-             return $"{request.Scheme}://{request.Host}/api/auth/sso/google/callback";
+            return options.RedirectUri;
         }
-        
-        var req = httpContext.Request;
-        return $"{req.Scheme}://{req.Host}/api/auth/sso/google/callback";
+
+        var request = httpContext.Request;
+        return $"{request.Scheme}://{request.Host}/api/auth/sso/google/callback";
     }
 
     private static string BuildFrontendCallbackRedirectUrl(SsoProviderOptions options, string sessionCode)

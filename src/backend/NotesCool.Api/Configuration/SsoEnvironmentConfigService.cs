@@ -44,6 +44,7 @@ public sealed class SsoEnvironmentConfigService(ILogger<SsoEnvironmentConfigServ
         var clientSecret = ReadString($"{environmentPrefix}_CLIENT_SECRET");
         var authority = defaultAuthority; // Prevent users from mistakenly overriding Google/MS authority with their app domain
         var callbackPath = ReadString($"{environmentPrefix}_CALLBACK_PATH", defaultCallbackPath);
+        var redirectUri = ReadString($"{environmentPrefix}_REDIRECT_URI");
         var redirectUrls = ReadList($"{environmentPrefix}_REDIRECT_URLS", defaultRedirectUrl);
 
         LogMissingConfiguration(providerName, environmentPrefix, enabled, clientId, clientSecret, authority, callbackPath, redirectUrls);
@@ -56,6 +57,7 @@ public sealed class SsoEnvironmentConfigService(ILogger<SsoEnvironmentConfigServ
             ClientSecret = clientSecret,
             Authority = authority,
             CallbackPath = callbackPath,
+            RedirectUri = redirectUri,
             RedirectUrls = redirectUrls
         };
     }
