@@ -56,12 +56,13 @@ export function SsoCallbackPage() {
       return
     }
 
-    const provider = params.get('provider')
+    const pathProvider = location.pathname.match(/\/auth\/callback\/(google|microsoft)$/)?.[1]
+    const provider = params.get('provider') ?? pathProvider
     const sessionCode = params.get('sessionCode')
     const code = params.get('code')
     const state = params.get('state')
 
-    if (error || !provider || (!sessionCode && (!code || !state))) {
+    if (error || (!sessionCode && (!provider || !code || !state))) {
       navigate('/login?error=sso_failed', { replace: true })
       return
     }
@@ -85,7 +86,7 @@ export function SsoCallbackPage() {
           response = await sessionCodeCache.get(sessionCode)!
         } else {
           response = await authService.ssoCallback({
-            provider,
+            provider: provider!,
             code: code!,
             state: state!,
             email: email || undefined,
@@ -98,7 +99,7 @@ export function SsoCallbackPage() {
         if (cancelled) return
 
         completeSsoLogin(response, '/')
-      } catch (err) {
+      } catch (_err) {
         if (cancelled) return
 
         // If auth was already stored by a previous mount cycle, redirect to home
@@ -117,7 +118,7 @@ export function SsoCallbackPage() {
     return () => {
       cancelled = true
     }
-  }, [location.search, location.hash, navigate, completeSsoLogin, isAuthenticated])
+  }, [location.search, location.hash, location.pathname, navigate, completeSsoLogin, isAuthenticated])
 
   return (
     <div className="flex h-screen w-full items-center justify-center bg-gray-50">
