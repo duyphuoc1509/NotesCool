@@ -1,6 +1,8 @@
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using FluentAssertions;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Xunit;
@@ -14,10 +16,17 @@ using NotesCool.Tasks.Domain;
 using NotesCool.Tasks.Infrastructure;
 using Microsoft.AspNetCore.TestHost;
 
+using TaskStatus = NotesCool.Tasks.Domain.TaskStatus;
+
 namespace NotesCool.Tasks.Tests.Api;
 
 public class TasksEndpointsTests : IClassFixture<WebApplicationFactory<Program>>
 {
+    private static readonly JsonSerializerOptions JsonOptions = new()
+    {
+        Converters = { new JsonStringEnumConverter() }
+    };
+
     private readonly HttpClient _client;
 
     public TasksEndpointsTests(WebApplicationFactory<Program> factory)
@@ -70,9 +79,27 @@ public class TasksEndpointsTests : IClassFixture<WebApplicationFactory<Program>>
         var response = await _client.PostAsJsonAsync("/api/tasks", request);
         response.StatusCode.Should().Be(HttpStatusCode.Created);
         
-        var task = await response.Content.ReadFromJsonAsync<TaskDto>();
+        var task = await response.Content.ReadFromJsonAsync<TaskDto>(JsonOptions);
         task.Should().NotBeNull();
         task!.Title.Should().Be("Test Task");
+        task.Status.Should().Be(TaskStatus.Todo);
+    }
+
+    [Fact]
+    public async Task ChangeTaskStatus_WithStringEnumPayload_ReturnsUpdatedStatus()
+    {
+        var createResponse = await _client.PostAsJsonAsync("/api/tasks", new CreateTaskRequest("Kanban Task", "Desc", null));
+        createResponse.StatusCode.Should().Be(HttpStatusCode.Created);
+
+        var createdTask = await createResponse.Content.ReadFromJsonAsync<TaskDto>(JsonOptions);
+        createdTask.Should().NotBeNull();
+
+        var statusResponse = await _client.PatchAsJsonAsync($"/api/tasks/{createdTask!.Id}/status", new { status = "InReview" });
+        statusResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var updatedTask = await statusResponse.Content.ReadFromJsonAsync<TaskDto>(JsonOptions);
+        updatedTask.Should().NotBeNull();
+        updatedTask!.Status.Should().Be(TaskStatus.InReview);
     }
 }
 

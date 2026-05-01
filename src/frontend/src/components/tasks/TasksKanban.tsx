@@ -6,8 +6,9 @@ import { cn } from '../../utils/cn'
 const COLUMNS: { id: TaskStatus; label: string }[] = [
   { id: 'Todo', label: 'Todo' },
   { id: 'InProgress', label: 'In Progress' },
+  { id: 'InReview', label: 'In Review' },
   { id: 'Done', label: 'Done' },
-  { id: 'Blocked', label: 'Cancelled' },
+  { id: 'Blocked', label: 'Blocked / Cancelled' },
 ]
 
 interface TasksKanbanProps {
