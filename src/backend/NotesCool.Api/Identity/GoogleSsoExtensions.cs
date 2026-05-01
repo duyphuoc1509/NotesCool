@@ -304,14 +304,14 @@ public static class GoogleSsoExtensions
             return false;
         }
 
-        if (uri.AbsolutePath.Equals(apiCallbackPath, StringComparison.OrdinalIgnoreCase))
+        if (IsApiCallbackPath(uri.AbsolutePath, apiCallbackPath))
         {
             return true;
         }
 
         if (!string.IsNullOrWhiteSpace(options.RedirectUri)
             && Uri.TryCreate(options.RedirectUri, UriKind.Absolute, out var configured)
-            && configured.AbsolutePath.Equals(uri.AbsolutePath, StringComparison.OrdinalIgnoreCase)
+            && IsApiCallbackPath(configured.AbsolutePath, uri.AbsolutePath)
             && configured.Host.Equals(uri.Host, StringComparison.OrdinalIgnoreCase))
         {
             return true;
@@ -324,12 +324,14 @@ public static class GoogleSsoExtensions
     {
         if (Uri.TryCreate(url, UriKind.Absolute, out var uri))
         {
-            if (uri.AbsolutePath.Equals(apiCallbackPath, StringComparison.OrdinalIgnoreCase))
+            if (IsApiCallbackPath(uri.AbsolutePath, apiCallbackPath))
             {
                 // Remove /api from the beginning of the path
-                var newPath = apiCallbackPath.StartsWith("/api", StringComparison.OrdinalIgnoreCase)
-                    ? apiCallbackPath.Substring(4)
-                    : apiCallbackPath;
+                var pathTrimmed = uri.AbsolutePath.TrimEnd('/');
+                var apiPathTrimmed = apiCallbackPath.TrimEnd('/');
+                var newPath = pathTrimmed.StartsWith("/api", StringComparison.OrdinalIgnoreCase)
+                    ? pathTrimmed.Substring(4)
+                    : pathTrimmed;
 
                 var builder = new UriBuilder(uri)
                 {
@@ -341,4 +343,10 @@ public static class GoogleSsoExtensions
         return null;
     }
 
+    private static bool IsApiCallbackPath(string pathA, string pathB)
+    {
+        var normalizedA = pathA.TrimEnd('/');
+        var normalizedB = pathB.TrimEnd('/');
+        return normalizedA.Equals(normalizedB, StringComparison.OrdinalIgnoreCase);
+    }
 }
