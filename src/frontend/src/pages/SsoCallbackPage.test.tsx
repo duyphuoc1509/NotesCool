@@ -137,6 +137,40 @@ describe('SsoCallbackPage', () => {
     expect(authService.exchangeSsoSession).toHaveBeenCalledWith('sess_123')
   })
 
+  it('exchanges sessionCode from provider route when provider query is missing', async () => {
+    vi.mocked(authService.exchangeSsoSession).mockResolvedValueOnce({
+      accessToken: 'sso-access-456',
+      refreshToken: 'sso-refresh-456',
+      expiresIn: 900,
+      tokenType: 'Bearer',
+      user: {
+        userId: 'u-sso-no-provider',
+        email: 'sso-no-provider@example.com',
+        displayName: 'SSO No Provider User',
+      },
+    })
+
+    await act(async () => {
+      root.render(
+        <MemoryRouter initialEntries={['/auth/callback/google?sessionCode=sess_456']}>
+          <AuthProvider>
+            <Routes>
+              <Route path="/auth/callback/google" element={<SsoCallbackPage />} />
+              <Route path="/" element={<TestLocation />} />
+            </Routes>
+          </AuthProvider>
+        </MemoryRouter>
+      )
+    })
+
+    await vi.waitFor(() => {
+      const location = container.querySelector('[data-testid="location"]')
+      expect(location?.textContent).toBe('/')
+    })
+
+    expect(authService.exchangeSsoSession).toHaveBeenCalledWith('sess_456')
+  })
+
   it('does not exchange the same sessionCode twice under StrictMode remounts', async () => {
     vi.mocked(authService.exchangeSsoSession).mockResolvedValue({
       accessToken: 'strict-access-123',
