@@ -16,4 +16,4 @@ public sealed record UpdateNoteRequest(
     [Required]
     string Content);
 
-public sealed record NoteResponse(Guid Id, string Title, string Content, DateTimeOffset CreatedAt, DateTimeOffset? UpdatedAt);
+public sealed record NoteResponse(Guid Id, string Title, string Content, bool IsFavorite, DateTimeOffset CreatedAt, DateTimeOffset? UpdatedAt, bool IsArchived);

@@ -8,6 +8,8 @@ namespace NotesCool.Api.Extensions;
 
 public static class EndpointExtensions
 {
+    public sealed record SetNoteFavoriteRequest(bool IsFavorite);
+
     public static IEndpointRouteBuilder MapApiEndpoints(this IEndpointRouteBuilder builder)
     {
         var notesGroup = builder.MapGroup("api/notes").WithTags("Notes").RequireAuthorization();
@@ -29,6 +31,11 @@ public static class EndpointExtensions
         notesGroup.MapPut("{id:guid}", async (Guid id, UpdateNoteRequest req, NotesService service, ICurrentUser u, CancellationToken ct) => Results.Ok(await service.UpdateAsync(u.UserId, id, req, ct)))
             .WithSummary("Update note")
             .WithDescription("Updates title and content for a note owned by the current user.")
+            .Produces<NoteResponse>();
+
+        notesGroup.MapPatch("{id:guid}/favorite", async (Guid id, SetNoteFavoriteRequest req, NotesService service, ICurrentUser u, CancellationToken ct) => Results.Ok(await service.SetFavoriteAsync(u.UserId, id, req.IsFavorite, ct)))
+            .WithSummary("Set note favorite")
+            .WithDescription("Updates favorite state for a note owned by the current user.")
             .Produces<NoteResponse>();
 
         notesGroup.MapDelete("{id:guid}", async (Guid id, NotesService service, ICurrentUser u, CancellationToken ct) => { await service.ArchiveAsync(u.UserId, id, ct); return Results.NoContent(); })
