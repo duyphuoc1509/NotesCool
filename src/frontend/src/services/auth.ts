@@ -12,6 +12,8 @@ export interface AuthUser {
   email: string
   fullName?: string
   displayName?: string
+  status?: string
+  roles?: string[]
 }
 
 export interface AuthResponse {
