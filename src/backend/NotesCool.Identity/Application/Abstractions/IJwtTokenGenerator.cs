@@ -5,5 +5,5 @@ namespace NotesCool.Identity.Application.Abstractions;
 
 public interface IJwtTokenGenerator
 {
-    AuthResponse CreateToken(ApplicationUser user);
+    AuthResponse CreateToken(ApplicationUser user, IEnumerable<string>? roles = null);
 }
