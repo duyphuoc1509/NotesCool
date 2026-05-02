@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, type DragEvent } from 'react'
 import { Calendar, MoreVertical } from 'lucide-react'
 import type { TaskDto, TaskStatus } from '../../types/task'
 import { cn } from '../../utils/cn'
@@ -26,6 +26,7 @@ function formatDate(value?: string | null) {
 
 export function TasksKanban({ tasks, isLoading, error, onStatusChange, onTaskClick }: TasksKanbanProps) {
   const [movingTaskId, setMovingTaskId] = useState<string | null>(null)
+  const [draggingOverColumn, setDraggingOverColumn] = useState<TaskStatus | null>(null)
 
   if (error) {
     return (
@@ -69,12 +70,50 @@ export function TasksKanban({ tasks, isLoading, error, onStatusChange, onTaskCli
     }
   }
 
+  // ── drag-and-drop handlers ──────────────────────────────────────────────────
+
+  const handleDragStart = (event: DragEvent<HTMLElement>, task: TaskDto) => {
+    event.dataTransfer.setData('application/json', JSON.stringify(task))
+    event.dataTransfer.effectAllowed = 'move'
+  }
+
+  const handleDragOver = (event: DragEvent<HTMLDivElement>, columnId: TaskStatus) => {
+    event.preventDefault()
+    event.dataTransfer.dropEffect = 'move'
+    setDraggingOverColumn(columnId)
+  }
+
+  const handleDragLeave = () => {
+    setDraggingOverColumn(null)
+  }
+
+  const handleDrop = (event: DragEvent<HTMLDivElement>, targetStatus: TaskStatus) => {
+    event.preventDefault()
+    setDraggingOverColumn(null)
+    try {
+      const task = JSON.parse(event.dataTransfer.getData('application/json')) as TaskDto
+      void handleStatusChange(task, targetStatus)
+    } catch {
+      // ignore malformed drag data
+    }
+  }
+
+  // ───────────────────────────────────────────────────────────────────────────
+
   return (
     <div className="flex gap-4 overflow-x-auto pb-4 snap-x">
       {COLUMNS.map((column) => (
         <div
           key={column.id}
-          className="flex min-h-[500px] w-80 shrink-0 snap-center flex-col rounded-xl border border-gray-200/60 bg-gray-50/50 p-4"
+          onDragOver={(event) => handleDragOver(event, column.id)}
+          onDragLeave={handleDragLeave}
+          onDrop={(event) => handleDrop(event, column.id)}
+          className={cn(
+            'flex min-h-[500px] w-80 shrink-0 snap-center flex-col rounded-xl border p-4 transition-colors',
+            draggingOverColumn === column.id
+              ? 'border-indigo-400 bg-indigo-50/60'
+              : 'border-gray-200/60 bg-gray-50/50',
+          )}
         >
           <div className="mb-4 flex items-center justify-between">
             <h3 className="flex items-center gap-2 font-semibold text-gray-700">
@@ -87,16 +126,21 @@ export function TasksKanban({ tasks, isLoading, error, onStatusChange, onTaskCli
 
           <div className="flex-1 space-y-3">
             {tasksByColumn[column.id]?.length === 0 ? (
-              <div className="flex h-32 flex-col items-center justify-center rounded-lg border-2 border-dashed border-gray-200 text-gray-400">
-                <span className="text-sm">No tasks</span>
+              <div className={cn(
+                'flex h-32 flex-col items-center justify-center rounded-lg border-2 border-dashed text-gray-400 transition-colors',
+                draggingOverColumn === column.id ? 'border-indigo-300 bg-indigo-50' : 'border-gray-200',
+              )}>
+                <span className="text-sm">Drop tasks here</span>
               </div>
             ) : (
               tasksByColumn[column.id]?.map((task) => (
                 <article
                   key={task.id}
+                  draggable
+                  onDragStart={(event) => handleDragStart(event, task)}
                   onClick={() => onTaskClick(task)}
                   className={cn(
-                    'group relative flex cursor-pointer flex-col gap-2 rounded-lg border border-gray-200 bg-white p-3 shadow-sm transition hover:border-indigo-300 hover:shadow-md',
+                    'group relative flex cursor-grab active:cursor-grabbing flex-col gap-2 rounded-lg border border-gray-200 bg-white p-3 shadow-sm transition hover:border-indigo-300 hover:shadow-md',
                     movingTaskId === task.id && 'pointer-events-none opacity-50',
                   )}
                 >
