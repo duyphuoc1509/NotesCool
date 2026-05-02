@@ -8,7 +8,11 @@ public enum TaskStatus
     Todo = 0,
     InProgress = 1,
     Done = 2,
-    Cancelled = 3
+    // Value 3 was previously named Cancelled. Keep the value stable for existing rows,
+    // but expose the frontend-aligned name used by Kanban filters/actions.
+    Blocked = 3,
+    InReview = 4,
+    Archived = 5
 }
 
 public class TaskItem : Entity
