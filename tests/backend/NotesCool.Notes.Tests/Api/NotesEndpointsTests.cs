@@ -12,6 +12,7 @@ using NotesCool.Shared.Auth;
 using NotesCool.Notes.Contracts;
 using NotesCool.Notes.Infrastructure;
 using Microsoft.AspNetCore.TestHost;
+using NotesCool.Shared.Common;
 
 namespace NotesCool.Notes.Tests.Api;
 
@@ -72,6 +73,44 @@ public class NotesEndpointsTests : IClassFixture<WebApplicationFactory<Program>>
         var note = await response.Content.ReadFromJsonAsync<NoteResponse>();
         note.Should().NotBeNull();
         note!.Title.Should().Be("Test Note");
+        note.IsFavorite.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task SetFavorite_ReturnsUpdatedNote()
+    {
+        var createResponse = await _client.PostAsJsonAsync("/api/notes", new CreateNoteRequest("Fav Note", "Content"));
+        createResponse.StatusCode.Should().Be(HttpStatusCode.Created);
+
+        var createdNote = await createResponse.Content.ReadFromJsonAsync<NoteResponse>();
+        createdNote.Should().NotBeNull();
+
+        var response = await _client.PatchAsJsonAsync($"/api/notes/{createdNote!.Id}/favorite", new { isFavorite = true });
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var updatedNote = await response.Content.ReadFromJsonAsync<NoteResponse>();
+        updatedNote.Should().NotBeNull();
+        updatedNote!.IsFavorite.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task GetNotes_ReturnsArchivedNotesWithIsArchivedFlag()
+    {
+        var createResponse = await _client.PostAsJsonAsync("/api/notes", new CreateNoteRequest("Archived Note", "Content"));
+        createResponse.StatusCode.Should().Be(HttpStatusCode.Created);
+
+        var createdNote = await createResponse.Content.ReadFromJsonAsync<NoteResponse>();
+        createdNote.Should().NotBeNull();
+
+        var archiveResponse = await _client.DeleteAsync($"/api/notes/{createdNote!.Id}");
+        archiveResponse.StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        var response = await _client.GetAsync("/api/notes");
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var payload = await response.Content.ReadFromJsonAsync<PagedResult<NoteResponse>>();
+        payload.Should().NotBeNull();
+        payload!.Items.Should().ContainSingle(n => n.Id == createdNote.Id && n.IsArchived);
     }
 }
 

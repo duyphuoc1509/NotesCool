@@ -25,6 +25,8 @@ public class TaskItem : Entity
     
     public TaskStatus Status { get; private set; } = TaskStatus.Todo;
     
+    public bool IsFavorite { get; private set; }
+    
     public DateTimeOffset? DueDate { get; private set; }
     
     protected TaskItem() { } // For EF Core
@@ -61,5 +63,14 @@ public class TaskItem : Entity
             Status = newStatus;
             Touch();
         }
+    }
+
+    public void SetFavorite(bool isFavorite)
+    {
+        if (IsFavorite == isFavorite)
+            return;
+
+        IsFavorite = isFavorite;
+        Touch();
     }
 }

@@ -51,6 +51,16 @@ public class TaskItemTests
         task.Status.Should().Be(TaskStatus.Todo);
     }
 
+    [Fact]
+    public void SetFavorite_ShouldUpdateFlag()
+    {
+        var task = new TaskItem("Title", "Description", null, "owner1");
+
+        task.SetFavorite(true);
+
+        task.IsFavorite.Should().BeTrue();
+    }
+
     [Theory]
     [InlineData("")]
     [InlineData(" ")]
