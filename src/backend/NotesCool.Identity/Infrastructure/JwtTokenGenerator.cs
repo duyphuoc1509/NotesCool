@@ -18,11 +18,12 @@ public sealed class JwtTokenGenerator : IJwtTokenGenerator
         _jwtOptions = jwtOptions.Value;
     }
 
-    public AuthResponse CreateToken(ApplicationUser user)
+    public AuthResponse CreateToken(ApplicationUser user, IEnumerable<string>? roles = null)
     {
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtOptions.SigningKey));
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
         var expires = DateTime.UtcNow.AddMinutes(_jwtOptions.ExpiresInMinutes);
+        var resolvedRoles = (roles ?? Array.Empty<string>()).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
 
         var claims = new List<Claim>
         {
@@ -32,6 +33,8 @@ public sealed class JwtTokenGenerator : IJwtTokenGenerator
             new("display_name", user.DisplayName),
             new("status", user.Status.ToString())
         };
+
+        claims.AddRange(resolvedRoles.Select(role => new Claim(ClaimTypes.Role, role)));
 
         var token = new JwtSecurityToken(
             issuer: _jwtOptions.Issuer,
@@ -50,7 +53,8 @@ public sealed class JwtTokenGenerator : IJwtTokenGenerator
                 user.Id,
                 user.Email!,
                 user.DisplayName,
-                user.Status.ToString()
+                user.Status.ToString(),
+                resolvedRoles
             )
         );
     }

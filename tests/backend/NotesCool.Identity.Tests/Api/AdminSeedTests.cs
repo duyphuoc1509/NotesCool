@@ -1,12 +1,12 @@
-using System.Net;
 using FluentAssertions;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using NotesCool.Identity.Infrastructure;
+using NotesCool.Shared.Auth;
 using Xunit;
-using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.AspNetCore.TestHost;
 
 namespace NotesCool.Identity.Tests.Api;
 
@@ -23,26 +23,21 @@ public class AdminSeedTests : IClassFixture<WebApplicationFactory<Program>>
     public async Task Seed_ShouldCreateAdminUserAndRole()
     {
         var app = CreateApp($"IdentityDb-{Guid.NewGuid()}");
-        
-        using var scope = app.Services.CreateAsyncScope();
-        
-        // We expect RoleManager to be available after we fix the implementation
+
+        await using var scope = app.Services.CreateAsyncScope();
         var roleManager = scope.ServiceProvider.GetService<RoleManager<IdentityRole>>();
         roleManager.Should().NotBeNull("RoleManager should be registered");
 
         var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
 
-        // Verify Role admin exists
-        var roleExists = await roleManager!.RoleExistsAsync("admin");
+        var roleExists = await roleManager!.RoleExistsAsync(SystemRoles.Admin);
         roleExists.Should().BeTrue("admin role should be seeded");
 
-        // Verify User admin exists
-        var user = await userManager.FindByNameAsync("admin");
+        var user = await userManager.FindByNameAsync("admin@notescool.com");
         user.Should().NotBeNull("admin user should be seeded");
-        user!.Email.Should().Be("admin");
-        
-        // Verify User is in Role admin
-        var isInRole = await userManager.IsInRoleAsync(user, "admin");
+        user!.Email.Should().Be("admin@notescool.com");
+
+        var isInRole = await userManager.IsInRoleAsync(user, SystemRoles.Admin);
         isInRole.Should().BeTrue("admin user should be in admin role");
     }
 
