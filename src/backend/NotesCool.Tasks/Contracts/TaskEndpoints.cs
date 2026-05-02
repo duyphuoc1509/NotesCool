@@ -86,6 +86,20 @@ public static class TaskEndpoints
         .WithDescription("Updates the status of a task.")
         .Produces<TaskDto>();
 
+        group.MapPatch("{id:guid}/favorite", async (
+            [FromRoute] Guid id,
+            [FromBody] SetTaskFavoriteRequest request,
+            [FromServices] TasksService service,
+            [FromServices] ICurrentUser currentUser,
+            CancellationToken ct = default) =>
+        {
+            var result = await service.SetTaskFavoriteAsync(id, request.IsFavorite, currentUser.UserId, ct);
+            return Results.Ok(result);
+        })
+        .WithSummary("Set task favorite")
+        .WithDescription("Updates favorite state for a task.")
+        .Produces<TaskDto>();
+
         group.MapDelete("{id:guid}", async (
             [FromRoute] Guid id,
             [FromServices] TasksService service,

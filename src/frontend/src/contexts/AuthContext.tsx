@@ -14,10 +14,17 @@ import {
   type AuthResponse,
 } from '../services/auth'
 
+const ADMIN_ROLE = 'Admin'
+
+function isAdminUser(user: AuthUser | null | undefined): boolean {
+  return user?.roles?.some((role) => role.toLowerCase() === ADMIN_ROLE.toLowerCase()) ?? false
+}
+
 export interface AuthState {
   user: AuthUser | null
   tokens: AuthTokens | null
   isAuthenticated: boolean
+  isAdmin: boolean
   isLoading: boolean
 }
 
@@ -33,12 +40,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const [state, setState] = useState<AuthState>(() => {
     const session = getStoredSession()
+    const user = session?.user ?? null
     return {
       tokens: session
         ? { accessToken: session.accessToken, refreshToken: session.refreshToken }
         : null,
-      user: session?.user ?? null,
+      user,
       isAuthenticated: !!session?.accessToken,
+      isAdmin: isAdminUser(user),
       isLoading: false,
     }
   })
@@ -66,6 +75,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         tokens: { accessToken: session.accessToken, refreshToken: session.refreshToken },
         user: session.user ?? null,
         isAuthenticated: true,
+        isAdmin: isAdminUser(session.user),
         isLoading: false,
       })
       navigate(redirectTo, { replace: true })
@@ -87,6 +97,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         tokens: { accessToken: session.accessToken, refreshToken: session.refreshToken },
         user: session.user ?? null,
         isAuthenticated: true,
+        isAdmin: isAdminUser(session.user),
         isLoading: false,
       })
       navigate(redirectTo, { replace: true })
@@ -105,6 +116,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       user: session.user ?? null,
       tokens: { accessToken: session.accessToken, refreshToken: session.refreshToken },
       isAuthenticated: true,
+      isAdmin: isAdminUser(session.user),
       isLoading: false,
     })
     navigate(redirectTo, { replace: true })
@@ -119,7 +131,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // ignore server errors; proceed with local logout
     }
     clearStoredSession()
-    setState({ tokens: null, user: null, isAuthenticated: false, isLoading: false })
+    setState({ tokens: null, user: null, isAuthenticated: false, isAdmin: false, isLoading: false })
     navigate('/login', { replace: true })
   }, [navigate])
 

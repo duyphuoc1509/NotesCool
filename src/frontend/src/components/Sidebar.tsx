@@ -7,9 +7,10 @@ const navigation = [
   { name: 'Dashboard', icon: LayoutDashboard, href: '/' },
   { name: 'Notes', icon: FileText, href: '/notes' },
   { name: 'Tasks', icon: CheckSquare, href: '/tasks' },
-  { name: 'Users', icon: Users, href: '/users' },
   { name: 'Settings', icon: Settings, href: '/settings' },
 ]
+
+const adminNavigation = [{ name: 'Users', icon: Users, href: '/users' }]
 
 interface SidebarProps {
   isOpen?: boolean
@@ -18,7 +19,9 @@ interface SidebarProps {
 
 export function Sidebar({ isOpen, onClose }: SidebarProps) {
   const location = useLocation()
-  const { user, logout } = useAuth()
+  const { user, logout, isAdmin } = useAuth()
+
+  const allNavigation = [...navigation, ...(isAdmin ? adminNavigation : [])]
 
   return (
     <>
@@ -46,7 +49,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
           </button>
         </div>
       <nav className="flex-1 space-y-1 px-3 py-4">
-        {navigation.map((item) => {
+        {allNavigation.map((item) => {
           const isActive = location.pathname === item.href
           return (
             <Link

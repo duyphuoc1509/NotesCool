@@ -8,11 +8,14 @@ public record TaskDto(
     Guid Id,
     string Title,
     string? Description,
+    bool IsFavorite,
     TaskStatus Status,
     DateTimeOffset? DueDate,
     DateTimeOffset CreatedAt,
     DateTimeOffset? UpdatedAt
 );
+
+public record SetTaskFavoriteRequest(bool IsFavorite);
 
 public record CreateTaskRequest(
     [Required(ErrorMessage = "Title is required")]
