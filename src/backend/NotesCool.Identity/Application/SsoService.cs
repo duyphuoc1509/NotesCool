@@ -133,6 +133,6 @@ public sealed class SsoService
             throw new AccountInactiveException(user.Status);
         }
 
-        return _jwtTokenGenerator.CreateToken(user);
+        return _jwtTokenGenerator.CreateToken(user, await _userManager.GetRolesAsync(user));
     }
 }

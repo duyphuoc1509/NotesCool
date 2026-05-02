@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging;
 using NotesCool.Identity.Infrastructure;
+using NotesCool.Shared.Auth;
 
 namespace NotesCool.Identity.Extensions;
 
@@ -36,51 +37,38 @@ public class IdentityDataSeeder
     private async Task SeedInternalAsync()
     {
         // Seed Roles
-        if (!await _roleManager.RoleExistsAsync("admin"))
+        if (!await _roleManager.RoleExistsAsync(SystemRoles.Admin))
         {
-            var roleResult = await _roleManager.CreateAsync(new IdentityRole("admin"));
+            var roleResult = await _roleManager.CreateAsync(new IdentityRole(SystemRoles.Admin));
             if (!roleResult.Succeeded)
             {
-                throw new Exception($"Failed to seed 'admin' role: {string.Join(", ", roleResult.Errors.Select(e => e.Description))}");
+                throw new Exception($"Failed to seed '{SystemRoles.Admin}' role: {string.Join(", ", roleResult.Errors.Select(e => e.Description))}");
             }
         }
 
         // Seed Admin User
-        var adminUser = await _userManager.FindByNameAsync("admin");
+        var adminUser = await _userManager.FindByNameAsync("admin@notescool.com");
         if (adminUser == null)
         {
             adminUser = new ApplicationUser
             {
-                UserName = "admin",
-                Email = "admin",
-                NormalizedEmail = "ADMIN",
+                UserName = "admin@notescool.com",
+                Email = "admin@notescool.com",
+                NormalizedEmail = "ADMIN@NOTESCOOL.COM",
+                DisplayName = "Administrator",
                 EmailConfirmed = true
             };
 
-            // Temporarily bypass validators (including email format validation)
-            var originalValidators = _userManager.UserValidators.ToList();
-            _userManager.UserValidators.Clear();
-            
-            try
+            var result = await _userManager.CreateAsync(adminUser, "P@ssword123!");
+            if (!result.Succeeded)
             {
-                var result = await _userManager.CreateAsync(adminUser, "P@ssword123!");
-                if (!result.Succeeded)
-                {
-                    throw new Exception($"Failed to seed 'admin' user: {string.Join(", ", result.Errors.Select(e => e.Description))}");
-                }
-
-                var roleResult = await _userManager.AddToRoleAsync(adminUser, "admin");
-                if (!roleResult.Succeeded)
-                {
-                    throw new Exception($"Failed to assign 'admin' role to user: {string.Join(", ", roleResult.Errors.Select(e => e.Description))}");
-                }
+                throw new Exception($"Failed to seed 'admin' user: {string.Join(", ", result.Errors.Select(e => e.Description))}");
             }
-            finally
+
+            var roleResult = await _userManager.AddToRoleAsync(adminUser, SystemRoles.Admin);
+            if (!roleResult.Succeeded)
             {
-                foreach (var v in originalValidators)
-                {
-                    _userManager.UserValidators.Add(v);
-                }
+                throw new Exception($"Failed to assign '{SystemRoles.Admin}' role to user: {string.Join(", ", roleResult.Errors.Select(e => e.Description))}");
             }
         }
     }

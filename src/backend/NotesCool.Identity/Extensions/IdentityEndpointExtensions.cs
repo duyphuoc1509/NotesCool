@@ -1,8 +1,10 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using NotesCool.Identity.Application;
 using NotesCool.Identity.Contracts;
+using NotesCool.Shared.Auth;
 
 namespace NotesCool.Identity.Extensions;
 
@@ -47,6 +49,33 @@ public static class IdentityEndpointExtensions
         });
 
         accountGroup.MapPost("logout", () => Results.NoContent()).RequireAuthorization();
+
+        var adminGroup = builder.MapGroup("api/admin/users").WithTags("Admin User Management");
+
+        adminGroup.MapGet("", async (AccountService service) =>
+        {
+            var users = await service.GetUsersAsync();
+            return Results.Ok(users);
+        });
+
+        adminGroup.MapPut("{id}/status", async (string id, UpdateUserStatusRequest request, ICurrentUser currentUser, AccountService service) =>
+        {
+            try
+            {
+                var result = await service.UpdateUserStatusAsync(id, request, currentUser.UserId);
+                return Results.Ok(result);
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return Results.NotFound(new { error = ex.Message });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Results.BadRequest(new { error = ex.Message });
+            }
+        });
+
+        adminGroup.RequireAuthorization(policy => policy.RequireRole(SystemRoles.Admin));
 
         var ssoGroup = builder.MapGroup("api/auth/sso").WithTags("SSO");
 
