@@ -55,9 +55,9 @@ function DashboardPage() {
       {/* Welcome & Quick Actions */}
       <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
         <h1 className="text-2xl font-bold tracking-tight text-gray-950 sm:text-3xl">
-          Hi, {user?.fullName?.split(' ')[0] ?? 'Admin'}
+          Hi, {user?.displayName ?? user?.fullName?.split(' ')[0] ?? 'Admin'}
         </h1>
-        <p className="mt-1 text-sm text-gray-500">What would you like to do today?</p>
+        <p className="mt-1 text-sm text-gray-500">Welcome back! Ready to organize your day?</p>
         
         <div className="mt-6 grid grid-cols-2 gap-4">
           <button
