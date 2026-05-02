@@ -27,6 +27,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\..\src\backend\NotesCool.Tasks\NotesCool.Tasks.csproj" />
     <ProjectReference Include="..\..\..\src\backend\NotesCool.Api\NotesCool.Api.csproj" />
+    <ProjectReference Include="..\..\..\src\backend\NotesCool.Reminders\NotesCool.Reminders.csproj" />
   </ItemGroup>
 
 </Project>

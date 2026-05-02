@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore.Storage;
 using NotesCool.Api.Auth;
 using NotesCool.Notes.Infrastructure;
 using NotesCool.Tasks.Infrastructure;
+using NotesCool.Reminders.Infrastructure;
 using AppIdentityDbContext = NotesCool.Identity.Infrastructure.IdentityDbContext;
 
 namespace NotesCool.Api.Extensions;
@@ -30,6 +31,7 @@ public static class DatabaseInitializer
         await EnsureContextColumnAsync<NotesDbContext>(sp, "notes", "IsFavorite", "boolean NOT NULL DEFAULT FALSE", logger, ct);
         await EnsureContextSchemaAsync<TasksDbContext>(sp, "Tasks", logger, ct);
         await EnsureContextColumnAsync<TasksDbContext>(sp, "Tasks", "IsFavorite", "boolean NOT NULL DEFAULT FALSE", logger, ct);
+        await EnsureContextSchemaAsync<RemindersDbContext>(sp, "ReminderItems", logger, ct);
     }
 
     private static async Task EnsureContextSchemaAsync<TContext>(
