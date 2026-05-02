@@ -8,13 +8,13 @@ import { QuickCreateSheet } from './components/QuickCreateSheet'
 import { LoginPage } from './pages/LoginPage'
 import { RegisterPage } from './pages/RegisterPage'
 import { SsoCallbackPage } from './pages/SsoCallbackPage'
-import { NotesPage } from './pages/NotesPage'
-import { TasksPage } from './pages/TasksPage'
+import { NotesPage } from './modules/notes'
+import { TasksPage } from './modules/tasks'
 import { useState, useEffect, type ReactNode } from 'react'
 import { useAuth } from './hooks/useAuth'
 import { FileText, CheckSquare, Clock } from 'lucide-react'
-import { useNotes } from './hooks/useNotes'
-import { useTasks } from './hooks/useTasks'
+import { useNotes } from './modules/notes'
+import { useTasks } from './modules/tasks'
 
 function Layout({ children }: { children: ReactNode }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)

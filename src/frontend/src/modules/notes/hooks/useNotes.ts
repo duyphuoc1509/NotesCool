@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
-import { notesService } from '../modules/notes'
-import type { Note, UseNotesOptions } from '../modules/notes'
+import { notesService } from '../services/notesService'
+import type { Note, UseNotesOptions } from '../types'
 
 export function useNotes({ page, pageSize, query }: UseNotesOptions) {
   const [notes, setNotes] = useState<Note[]>([])

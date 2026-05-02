@@ -2,17 +2,21 @@ import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useNotes } from './useNotes'
-import { notesService } from '../services/notesService'
-import type { Note } from '../types/note'
+import { notesService } from '../modules/notes'
+import type { Note } from '../modules/notes'
 
 // @ts-expect-error IS_REACT_ACT_ENVIRONMENT is used by React internals for act() support
 globalThis.IS_REACT_ACT_ENVIRONMENT = true
 
-vi.mock('../services/notesService', () => ({
-  notesService: {
-    search: vi.fn(),
-  },
-}))
+vi.mock('../modules/notes', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../modules/notes')>()
+  return {
+    ...actual,
+    notesService: {
+      search: vi.fn(),
+    },
+  }
+})
 
 type UseNotesResult = ReturnType<typeof useNotes>
 
@@ -56,8 +60,6 @@ describe('useNotes', () => {
 
     await act(async () => {
       root.render(<HookProbe onRender={(value) => renders.push(value)} />)
-      await Promise.resolve()
-      await Promise.resolve()
     })
 
     const latest = renders.at(-1)
@@ -74,8 +76,6 @@ describe('useNotes', () => {
 
     await act(async () => {
       root.render(<HookProbe onRender={(value) => renders.push(value)} />)
-      await Promise.resolve()
-      await Promise.resolve()
     })
 
     const latest = renders.at(-1)
