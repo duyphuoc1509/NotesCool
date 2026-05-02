@@ -10,6 +10,7 @@ import { RegisterPage } from './pages/RegisterPage'
 import { SsoCallbackPage } from './pages/SsoCallbackPage'
 import { NotesPage } from './pages/NotesPage'
 import { TasksPage } from './pages/TasksPage'
+import { AdminUsersPage } from './pages/AdminUsersPage'
 import { useState, useEffect, type ReactNode } from 'react'
 import { useAuth } from './hooks/useAuth'
 import { FileText, CheckSquare, Clock } from 'lucide-react'
@@ -175,6 +176,16 @@ function AppRoutes() {
           <ProtectedRoute>
             <Layout>
               <TasksPage />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/users"
+        element={
+          <ProtectedRoute requireAdmin>
+            <Layout>
+              <AdminUsersPage />
             </Layout>
           </ProtectedRoute>
         }
