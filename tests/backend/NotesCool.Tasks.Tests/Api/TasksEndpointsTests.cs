@@ -4,17 +4,16 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using FluentAssertions;
-using Microsoft.AspNetCore.Mvc.Testing;
-using Xunit;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using NotesCool.Shared.Auth;
+using NotesCool.Shared.Common;
 using NotesCool.Tasks.Contracts;
 using NotesCool.Tasks.Domain;
 using NotesCool.Tasks.Infrastructure;
-using Microsoft.AspNetCore.TestHost;
+using Xunit;
 
 using TaskStatus = NotesCool.Tasks.Domain.TaskStatus;
 
@@ -24,16 +23,18 @@ public class TasksEndpointsTests : IClassFixture<WebApplicationFactory<Program>>
 {
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
+        PropertyNameCaseInsensitive = true,
         Converters = { new JsonStringEnumConverter() }
     };
 
     private readonly HttpClient _client;
+    private readonly WebApplicationFactory<Program> _factory;
 
     public TasksEndpointsTests(WebApplicationFactory<Program> factory)
     {
-        _client = factory.WithWebHostBuilder(builder =>
+        _factory = factory.WithWebHostBuilder(builder =>
         {
-            builder.ConfigureTestServices(services =>
+            builder.ConfigureServices(services =>
             {
                 var descriptor = services.SingleOrDefault(d => d.ServiceType == typeof(DbContextOptions<TasksDbContext>));
                 if (descriptor != null)
@@ -41,27 +42,22 @@ public class TasksEndpointsTests : IClassFixture<WebApplicationFactory<Program>>
                     services.Remove(descriptor);
                 }
 
-                services.AddDbContext<TasksDbContext>(options =>
-                {
-                    options.UseInMemoryDatabase("InMemoryTasksDb");
-                });
-                
+                services.AddDbContext<TasksDbContext>(options => options.UseInMemoryDatabase("InMemoryTasksDb"));
                 services.AddAuthentication("Test")
-                    .AddScheme<AuthenticationSchemeOptions, TestAuthHandler>("Test", options => { });
+                    .AddScheme<AuthenticationSchemeOptions, TestAuthHandler>("Test", _ => { });
                 services.AddScoped<ICurrentUser, TestCurrentUser>();
             });
-        }).CreateClient();
+        });
+
+        _client = _factory.CreateClient();
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Test");
     }
 
     [Fact]
     public async Task GetTasks_WithoutAuthentication_ReturnsUnauthorized()
     {
-        using var unauthenticatedClient = _client;
-        unauthenticatedClient.DefaultRequestHeaders.Authorization = null;
-
+        using var unauthenticatedClient = _factory.CreateClient();
         var response = await unauthenticatedClient.GetAsync("/api/tasks");
-
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
@@ -71,17 +67,18 @@ public class TasksEndpointsTests : IClassFixture<WebApplicationFactory<Program>>
         var response = await _client.GetAsync("/api/tasks");
         response.StatusCode.Should().Be(HttpStatusCode.OK);
     }
-    
+
     [Fact]
     public async Task CreateTask_ReturnsOk()
     {
         var request = new CreateTaskRequest("Test Task", "Desc", null);
         var response = await _client.PostAsJsonAsync("/api/tasks", request);
         response.StatusCode.Should().Be(HttpStatusCode.Created);
-        
+
         var task = await response.Content.ReadFromJsonAsync<TaskDto>(JsonOptions);
         task.Should().NotBeNull();
         task!.Title.Should().Be("Test Task");
+        task.IsFavorite.Should().BeFalse();
         task.Status.Should().Be(TaskStatus.Todo);
     }
 
@@ -100,6 +97,44 @@ public class TasksEndpointsTests : IClassFixture<WebApplicationFactory<Program>>
         var updatedTask = await statusResponse.Content.ReadFromJsonAsync<TaskDto>(JsonOptions);
         updatedTask.Should().NotBeNull();
         updatedTask!.Status.Should().Be(TaskStatus.InReview);
+    }
+
+    [Fact]
+    public async Task SetFavorite_ReturnsUpdatedTask()
+    {
+        var createResponse = await _client.PostAsJsonAsync("/api/tasks", new CreateTaskRequest("Fav Task", "Desc", null));
+        createResponse.StatusCode.Should().Be(HttpStatusCode.Created);
+
+        var createdTask = await createResponse.Content.ReadFromJsonAsync<TaskDto>(JsonOptions);
+        createdTask.Should().NotBeNull();
+
+        var favoriteResponse = await _client.PatchAsJsonAsync($"/api/tasks/{createdTask!.Id}/favorite", new { isFavorite = true });
+        favoriteResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var updatedTask = await favoriteResponse.Content.ReadFromJsonAsync<TaskDto>(JsonOptions);
+        updatedTask.Should().NotBeNull();
+        updatedTask!.IsFavorite.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task GetTasks_WithArchivedStatus_ReturnsArchivedTasks()
+    {
+        using var scope = _factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<TasksDbContext>();
+
+        var archivedTask = new TaskItem("Archived Task", "Desc", null, "test-user-id");
+        archivedTask.ChangeStatus(TaskStatus.Archived);
+        archivedTask.Archive();
+
+        dbContext.Tasks.Add(archivedTask);
+        await dbContext.SaveChangesAsync();
+
+        var response = await _client.GetAsync("/api/tasks?status=Archived");
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var payload = await response.Content.ReadFromJsonAsync<PagedResult<TaskDto>>(JsonOptions);
+        payload.Should().NotBeNull();
+        payload!.Items.Should().ContainSingle(t => t.Id == archivedTask.Id && t.Status == TaskStatus.Archived);
     }
 }
 

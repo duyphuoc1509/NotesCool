@@ -24,7 +24,14 @@ public class TasksService
         int pageSize,
         CancellationToken cancellationToken = default)
     {
-        var query = _dbContext.Tasks
+        IQueryable<TaskItem> query = _dbContext.Tasks;
+
+        if (status == TaskStatus.Archived)
+        {
+            query = query.IgnoreQueryFilters();
+        }
+
+        query = query
             .AsNoTracking()
             .Where(t => t.OwnerId == ownerId);
 
@@ -43,6 +50,7 @@ public class TasksService
                 t.Id,
                 t.Title,
                 t.Description,
+                t.IsFavorite,
                 t.Status,
                 t.DueDate,
                 t.CreatedAt,
@@ -93,6 +101,17 @@ public class TasksService
         return MapToDto(task);
     }
 
+    public async Task<TaskDto> SetTaskFavoriteAsync(Guid id, bool isFavorite, string ownerId, CancellationToken cancellationToken = default)
+    {
+        var task = await GetTaskEntityAsync(id, ownerId, cancellationToken);
+
+        task.SetFavorite(isFavorite);
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
+
+        return MapToDto(task);
+    }
+
     public async Task DeleteTaskAsync(Guid id, string ownerId, CancellationToken cancellationToken = default)
     {
         var task = await GetTaskEntityAsync(id, ownerId, cancellationToken);
@@ -105,6 +124,7 @@ public class TasksService
     private async Task<TaskItem> GetTaskEntityAsync(Guid id, string ownerId, CancellationToken cancellationToken)
     {
         var task = await _dbContext.Tasks
+            .IgnoreQueryFilters()
             .FirstOrDefaultAsync(t => t.Id == id && t.OwnerId == ownerId, cancellationToken);
             
         if (task == null)
@@ -119,6 +139,7 @@ public class TasksService
             task.Id,
             task.Title,
             task.Description,
+            task.IsFavorite,
             task.Status,
             task.DueDate,
             task.CreatedAt,

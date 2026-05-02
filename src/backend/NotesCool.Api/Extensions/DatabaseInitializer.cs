@@ -27,7 +27,9 @@ public static class DatabaseInitializer
         await EnsureContextSchemaAsync<AppIdentityDbContext>(sp, "AspNetUsers", logger, ct);
         await EnsureContextSchemaAsync<AuthDbContext>(sp, "user_accounts", logger, ct);
         await EnsureContextSchemaAsync<NotesDbContext>(sp, "notes", logger, ct);
+        await EnsureContextColumnAsync<NotesDbContext>(sp, "notes", "IsFavorite", "boolean NOT NULL DEFAULT FALSE", logger, ct);
         await EnsureContextSchemaAsync<TasksDbContext>(sp, "Tasks", logger, ct);
+        await EnsureContextColumnAsync<TasksDbContext>(sp, "Tasks", "IsFavorite", "boolean NOT NULL DEFAULT FALSE", logger, ct);
     }
 
     private static async Task EnsureContextSchemaAsync<TContext>(
@@ -66,6 +68,38 @@ public static class DatabaseInitializer
         {
             // Don't fail startup; surface the error so it shows up in container logs.
             logger.LogError(ex, "Failed to ensure schema for {Context}.", typeof(TContext).Name);
+        }
+    }
+
+    private static async Task EnsureContextColumnAsync<TContext>(
+        IServiceProvider sp,
+        string tableName,
+        string columnName,
+        string columnDefinition,
+        ILogger logger,
+        CancellationToken ct) where TContext : DbContext
+    {
+        var ctx = sp.GetRequiredService<TContext>();
+        var providerName = ctx.Database.ProviderName ?? string.Empty;
+
+        if (!providerName.Contains("Npgsql", StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        try
+        {
+            if (!await TableExistsAsync(ctx, tableName, ct))
+            {
+                return;
+            }
+
+            await ctx.Database.ExecuteSqlRawAsync($"ALTER TABLE \"{tableName}\" ADD COLUMN IF NOT EXISTS \"{columnName}\" {columnDefinition};", ct);
+            logger.LogInformation("Ensured column {Column} exists on table {Table} for {Context}.", columnName, tableName, typeof(TContext).Name);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Failed to ensure column {Column} on table {Table} for {Context}.", columnName, tableName, typeof(TContext).Name);
         }
     }
 
