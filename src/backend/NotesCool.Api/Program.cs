@@ -14,6 +14,11 @@ builder.Services.AddShared(builder.Configuration, builder.Environment);
 builder.Services.AddNotesModule(builder.Configuration);
 builder.Services.AddTasksModule(builder.Configuration);
 
+builder.Services.ConfigureHttpJsonOptions(options =>
+{
+    options.SerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
+});
+
 var app = builder.Build();
 
 var forwardedHeadersOptions = new ForwardedHeadersOptions
