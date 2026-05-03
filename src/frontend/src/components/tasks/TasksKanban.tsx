@@ -1,5 +1,5 @@
 import { useState, type DragEvent } from 'react'
-import { Calendar, MoreVertical } from 'lucide-react'
+import { Bell, Calendar, MoreVertical } from 'lucide-react'
 import type { TaskDto, TaskStatus } from '../../types/task'
 import { cn } from '../../utils/cn'
 
@@ -171,9 +171,16 @@ export function TasksKanban({ tasks, isLoading, error, onStatusChange, onTaskCli
 
                   {task.description ? <p className="line-clamp-2 text-xs text-gray-500">{task.description}</p> : null}
 
-                  <div className="mt-1 flex items-center gap-1.5 text-xs font-medium text-gray-500">
-                    <Calendar className="h-3.5 w-3.5 text-gray-400" />
-                    <span>{formatDate(task.dueDate)}</span>
+                  <div className="mt-1 flex flex-wrap items-center gap-2 text-xs font-medium text-gray-500">
+                    <span className="inline-flex items-center gap-1.5">
+                      <Calendar className="h-3.5 w-3.5 text-gray-400" />
+                      {formatDate(task.dueDate)}
+                    </span>
+                    {task.reminders && task.reminders.length > 0 ? (
+                      <span className="inline-flex items-center gap-1 text-indigo-600">
+                        <Bell className="h-3.5 w-3.5" /> {task.reminders.length}
+                      </span>
+                    ) : null}
                   </div>
                 </article>
               ))

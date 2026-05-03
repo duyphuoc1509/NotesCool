@@ -1,4 +1,4 @@
-import { Calendar, Pencil, Trash2, CheckCircle2 } from 'lucide-react'
+import { Bell, Calendar, Pencil, Trash2, CheckCircle2 } from 'lucide-react'
 import type { TaskDto, TaskStatus } from '../../types/task'
 import { cn } from '../../utils/cn'
 
@@ -104,6 +104,11 @@ export function TasksList({
                     <span className="inline-flex items-center gap-1 text-xs text-gray-500">
                       <Calendar className="h-3.5 w-3.5" /> {formatDate(task.dueDate)}
                     </span>
+                    {task.reminders && task.reminders.length > 0 ? (
+                      <span className="inline-flex items-center gap-1 text-xs text-indigo-600 font-medium">
+                        <Bell className="h-3.5 w-3.5" /> {task.reminders.length}
+                      </span>
+                    ) : null}
                   </div>
                   <h3 className="mt-2 text-base font-semibold text-gray-950">{task.title}</h3>
                   {task.description ? <p className="mt-1 text-sm text-gray-600">{task.description}</p> : null}
