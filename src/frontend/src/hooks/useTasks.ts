@@ -1,7 +1,19 @@
 import { useState, useEffect, useCallback } from 'react'
 import axios from 'axios'
-import type { TaskDto, TaskStatus, TasksFilter, CreateTaskRequest, UpdateTaskRequest } from '../types/task'
+import type {
+  TaskDto,
+  TaskStatus,
+  TasksFilter,
+  CreateTaskRequest,
+  UpdateTaskRequest,
+  ReminderDto,
+} from '../types/task'
 import { tasksService } from '../services/tasksService'
+import { remindersService } from '../services/remindersService'
+
+function mergeTaskReminders(items: TaskDto[], taskId: string, reminders: ReminderDto[]): TaskDto[] {
+  return items.map((task) => (task.id === taskId ? { ...task, reminders } : task))
+}
 
 export function useTasks(initialFilter: TasksFilter = {}) {
   const [tasks, setTasks] = useState<TaskDto[]>([])
@@ -15,7 +27,22 @@ export function useTasks(initialFilter: TasksFilter = {}) {
     setError(null)
     try {
       const data = await tasksService.getTasks(filter.status, filter.page, filter.pageSize)
-      setTasks(data.items)
+      const itemsWithReminders = await Promise.all(
+        data.items.map(async (task) => {
+          if (!task.dueDate) {
+            return { ...task, reminders: [] }
+          }
+
+          try {
+            const reminders = await remindersService.getReminders(task.id)
+            return { ...task, reminders }
+          } catch {
+            return { ...task, reminders: [] }
+          }
+        }),
+      )
+
+      setTasks(itemsWithReminders)
       setTotalCount(data.totalCount)
     } catch (err) {
       if (axios.isAxiosError(err)) {
@@ -34,8 +61,19 @@ export function useTasks(initialFilter: TasksFilter = {}) {
 
   const handleCreateTask = async (payload: CreateTaskRequest) => {
     try {
-      const newTask = await tasksService.createTask(payload)
-      fetchTasks()
+      const { reminders, ...taskPayload } = payload
+      const newTask = await tasksService.createTask(taskPayload)
+
+      if (reminders?.length && newTask.dueDate) {
+        const createdReminders = await remindersService.upsertReminders(newTask.id, {
+          taskTitle: newTask.title,
+          dueDateUtc: newTask.dueDate,
+          reminders,
+        })
+        newTask.reminders = createdReminders
+      }
+
+      await fetchTasks()
       return newTask
     } catch (err) {
       if (axios.isAxiosError(err)) {
@@ -49,10 +87,22 @@ export function useTasks(initialFilter: TasksFilter = {}) {
 
   const handleUpdateTask = async (id: string, payload: UpdateTaskRequest) => {
     const previousTasks = [...tasks]
-    setTasks(prev => prev.map(t => t.id === id ? { ...t, ...payload } : t))
-    
+    const { reminders, ...taskPayload } = payload
+    setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, ...taskPayload } : t)))
+
     try {
-      const updated = await tasksService.updateTask(id, payload)
+      const updated = await tasksService.updateTask(id, taskPayload)
+
+      if (reminders && updated.dueDate) {
+        const updatedReminders = await remindersService.upsertReminders(id, {
+          taskTitle: updated.title,
+          dueDateUtc: updated.dueDate,
+          reminders,
+        })
+        updated.reminders = updatedReminders
+        setTasks((prev) => mergeTaskReminders(prev, id, updatedReminders))
+      }
+
       return updated
     } catch (err) {
       setTasks(previousTasks)
@@ -88,9 +138,12 @@ export function useTasks(initialFilter: TasksFilter = {}) {
 
   const handleDeleteTask = async (id: string) => {
     const previousTasks = [...tasks]
-    setTasks(prev => prev.filter(t => t.id !== id))
+    setTasks((prev) => prev.filter((t) => t.id !== id))
 
     try {
+      await remindersService.deleteReminders(id).catch(() => {
+        // best-effort: reminder cancellation is not blocking
+      })
       await tasksService.deleteTask(id)
     } catch (err) {
       setTasks(previousTasks)

@@ -6,6 +6,7 @@ using NotesCool.Notes.Infrastructure;
 using NotesCool.Identity.Extensions;
 using NotesCool.Tasks.Contracts;
 using NotesCool.Api.Identity;
+using NotesCool.Reminders.Contracts;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -13,6 +14,7 @@ builder.Services.AddIdentityModule(builder.Configuration);
 builder.Services.AddShared(builder.Configuration, builder.Environment);
 builder.Services.AddNotesModule(builder.Configuration);
 builder.Services.AddTasksModule(builder.Configuration);
+builder.Services.AddRemindersModule(builder.Configuration);
 
 builder.Services.ConfigureHttpJsonOptions(options =>
 {
@@ -68,6 +70,7 @@ app.MapRegistrationEndpoints();
 app.MapIdentityEndpoints();
 app.MapApiEndpoints();
 app.MapTasksEndpoints();
+app.MapReminderEndpoints();
 app.MapSsoEndpoints();
 app.MapGoogleSsoEndpoints();
 

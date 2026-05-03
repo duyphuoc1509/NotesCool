@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import type { FormEvent } from 'react'
-import { LayoutGrid, List, Loader2, Plus, RefreshCw } from 'lucide-react'
+import { Bell, LayoutGrid, List, Loader2, Plus, RefreshCw } from 'lucide-react'
 import { useTasks } from '../hooks/useTasks'
 import type { TaskDto, TaskStatus } from '../types/task'
 import { cn } from '../utils/cn'
@@ -29,9 +29,17 @@ interface TaskFormState {
   title: string
   description: string
   dueDate: string
+  reminderOffsets: number[]
 }
 
-const emptyForm: TaskFormState = { title: '', description: '', dueDate: '' }
+const REMINDER_OPTIONS = [
+  { value: 5, label: '5 min before' },
+  { value: 15, label: '15 min before' },
+  { value: 60, label: '1 hour before' },
+  { value: 1440, label: '1 day before' },
+] as const
+
+const emptyForm: TaskFormState = { title: '', description: '', dueDate: '', reminderOffsets: [] }
 
 function toDateInputValue(value?: string | null) {
   return value ? value.slice(0, 10) : ''
@@ -73,6 +81,7 @@ export function TasksPage() {
       title: task.title,
       description: task.description ?? '',
       dueDate: toDateInputValue(task.dueDate),
+      reminderOffsets: task.reminders?.map((reminder) => reminder.offsetMinutes) ?? [],
     })
     setFormError(null)
   }
@@ -91,6 +100,11 @@ export function TasksPage() {
       return
     }
 
+    if (form.reminderOffsets.length > 0 && !form.dueDate) {
+      setFormError('Due date is required to create reminders.')
+      return
+    }
+
     setSubmitting(true)
     setFormError(null)
 
@@ -99,6 +113,7 @@ export function TasksPage() {
         title,
         description: form.description.trim() || undefined,
         dueDate: toIsoDate(form.dueDate),
+        reminders: form.reminderOffsets.map((offsetMinutes) => ({ offsetMinutes })),
       }
       if (editingTask) {
         await updateTask(editingTask.id, payload)
@@ -241,6 +256,42 @@ export function TasksPage() {
                 className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100"
               />
             </label>
+
+            <div className="block">
+              <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
+                <Bell className="h-4 w-4 text-indigo-600" /> Reminders
+              </div>
+              <p className="mt-1 text-xs text-gray-500">
+                Syncs to native calendar in Phase 1. Requires due date.
+              </p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {REMINDER_OPTIONS.map((option) => {
+                  const selected = form.reminderOffsets.includes(option.value)
+                  return (
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() =>
+                        setForm((current) => ({
+                          ...current,
+                          reminderOffsets: selected
+                            ? current.reminderOffsets.filter((value) => value !== option.value)
+                            : [...current.reminderOffsets, option.value].sort((a, b) => a - b),
+                        }))
+                      }
+                      className={cn(
+                        'rounded-full border px-3 py-1.5 text-xs font-semibold transition',
+                        selected
+                          ? 'border-indigo-600 bg-indigo-50 text-indigo-700'
+                          : 'border-gray-300 bg-white text-gray-700 hover:border-indigo-300 hover:text-indigo-700',
+                      )}
+                    >
+                      {option.label}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
           </div>
 
           {formError ? <p className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-700">{formError}</p> : null}

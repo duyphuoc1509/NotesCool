@@ -27,6 +27,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NotesCool.Identity", "src\b
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NotesCool.Identity.Tests", "tests\backend\NotesCool.Identity.Tests\NotesCool.Identity.Tests.csproj", "{280CB1EB-9064-428A-9D03-E9872C600175}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NotesCool.Reminders", "src\backend\NotesCool.Reminders\NotesCool.Reminders.csproj", "{E7D8DE73-E4C3-44F4-8787-0C0A794614CF}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -68,6 +70,10 @@ Global
 		{280CB1EB-9064-428A-9D03-E9872C600175}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{280CB1EB-9064-428A-9D03-E9872C600175}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{280CB1EB-9064-428A-9D03-E9872C600175}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E7D8DE73-E4C3-44F4-8787-0C0A794614CF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E7D8DE73-E4C3-44F4-8787-0C0A794614CF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E7D8DE73-E4C3-44F4-8787-0C0A794614CF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E7D8DE73-E4C3-44F4-8787-0C0A794614CF}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{6F239963-8D41-4FF2-AD9A-61CDD20CC06F} = {4B99F4F4-89FC-4E23-9133-1A23072E6F49}
@@ -80,5 +86,6 @@ Global
 		{4A42581A-2791-4CD1-A40F-EE6140F0547B} = {DAE85266-EC4D-4541-A81C-8854655F069F}
 		{31EF81D1-D192-4A0B-A81A-9C2B61CA0C62} = {6F239963-8D41-4FF2-AD9A-61CDD20CC06F}
 		{280CB1EB-9064-428A-9D03-E9872C600175} = {DAE85266-EC4D-4541-A81C-8854655F069F}
+		{E7D8DE73-E4C3-44F4-8787-0C0A794614CF} = {6F239963-8D41-4FF2-AD9A-61CDD20CC06F}
 	EndGlobalSection
 EndGlobal
