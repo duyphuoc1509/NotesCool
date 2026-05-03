@@ -336,6 +336,7 @@ export function NotesPage() {
           )}
         >
           <NoteForm
+            key={isCreating ? 'new-note' : selectedNote?.id ?? 'empty-note'}
             note={isCreating ? null : selectedNote}
             isNew={isCreating}
             onSave={handleSave}
