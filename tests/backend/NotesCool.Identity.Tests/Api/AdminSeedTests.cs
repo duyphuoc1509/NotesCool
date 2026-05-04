@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using NotesCool.Identity.Extensions;
 using NotesCool.Identity.Infrastructure;
 using NotesCool.Shared.Auth;
 using Xunit;
@@ -39,6 +40,38 @@ public class AdminSeedTests : IClassFixture<WebApplicationFactory<Program>>
 
         var isInRole = await userManager.IsInRoleAsync(user, SystemRoles.Admin);
         isInRole.Should().BeTrue("admin user should be in admin role");
+    }
+
+    [Fact]
+    public async Task Seed_ShouldRepairLegacyAdminUserAndAssignAdminRole()
+    {
+        var app = CreateApp($"IdentityDb-{Guid.NewGuid()}");
+
+        await using var scope = app.Services.CreateAsyncScope();
+        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+        var seeder = scope.ServiceProvider.GetRequiredService<IdentityDataSeeder>();
+
+        var adminUser = await userManager.FindByEmailAsync("admin@notescool.com");
+        adminUser.Should().NotBeNull();
+
+        adminUser!.UserName = "admin";
+        adminUser.EmailConfirmed = false;
+        adminUser.DisplayName = string.Empty;
+
+        var removeRoleResult = await userManager.RemoveFromRoleAsync(adminUser, SystemRoles.Admin);
+        removeRoleResult.Succeeded.Should().BeTrue();
+
+        var updateResult = await userManager.UpdateAsync(adminUser);
+        updateResult.Succeeded.Should().BeTrue();
+
+        await seeder.SeedAsync();
+
+        var repairedAdmin = await userManager.FindByEmailAsync("admin@notescool.com");
+        repairedAdmin.Should().NotBeNull();
+        repairedAdmin!.UserName.Should().Be("admin@notescool.com");
+        repairedAdmin.EmailConfirmed.Should().BeTrue();
+        repairedAdmin.DisplayName.Should().Be("Administrator");
+        (await userManager.IsInRoleAsync(repairedAdmin, SystemRoles.Admin)).Should().BeTrue();
     }
 
     private WebApplicationFactory<Program> CreateApp(string identityDbName)
