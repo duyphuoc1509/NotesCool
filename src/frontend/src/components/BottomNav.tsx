@@ -1,6 +1,7 @@
-import { Home, FileText, CheckSquare, Settings, Plus } from 'lucide-react'
+import { Home, FileText, CheckSquare, Settings, Plus, Users } from 'lucide-react'
 import { Link, useLocation } from 'react-router-dom'
 import { cn } from '../utils/cn'
+import { useAuth } from '../hooks/useAuth'
 
 const navigation = [
   { name: 'Home', icon: Home, href: '/' },
@@ -9,17 +10,22 @@ const navigation = [
   { name: 'Settings', icon: Settings, href: '/settings' },
 ]
 
+const adminNavigation = [{ name: 'Users', icon: Users, href: '/users' }]
+
 interface BottomNavProps {
   onQuickCreate: () => void
 }
 
 export function BottomNav({ onQuickCreate }: BottomNavProps) {
   const location = useLocation()
+  const { isAdmin } = useAuth()
+
+  const allNavigation = [...navigation, ...(isAdmin ? adminNavigation : [])]
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-gray-200 bg-white/80 backdrop-blur-md lg:hidden">
       <div className="flex items-center justify-around px-2 py-1">
-        {navigation.map((item) => {
+        {allNavigation.map((item) => {
           const isActive = location.pathname === item.href
           return (
             <Link

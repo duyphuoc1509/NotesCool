@@ -42,7 +42,7 @@ function Layout({ children }: { children: ReactNode }) {
 }
 
 function DashboardPage() {
-  const { user } = useAuth()
+  const { user, isAdmin } = useAuth()
   const navigate = useNavigate()
   
   // Quick fetch for dashboard preview
@@ -86,6 +86,25 @@ function DashboardPage() {
           </button>
         </div>
       </section>
+
+      {isAdmin ? (
+        <section className="rounded-2xl border border-emerald-100 bg-emerald-50 p-5 shadow-sm">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700">Admin</p>
+              <h2 className="mt-1 text-lg font-bold text-emerald-950">User management</h2>
+              <p className="mt-1 text-sm text-emerald-800">Manage user accounts, roles, and access status.</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => navigate('/users')}
+              className="inline-flex items-center justify-center rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-500"
+            >
+              Manage users
+            </button>
+          </div>
+        </section>
+      ) : null}
 
       <div className="grid gap-8 md:grid-cols-2">
         {/* Today Tasks */}
