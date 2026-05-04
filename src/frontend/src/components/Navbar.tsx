@@ -1,5 +1,7 @@
 import { Bell, LogOut, Menu, Search } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
+import { LanguageSwitcher } from './LanguageSwitcher'
+import { useTranslation } from 'react-i18next'
 
 interface NavbarProps {
   onMenuClick: () => void
@@ -7,6 +9,7 @@ interface NavbarProps {
 
 export function Navbar({ onMenuClick }: NavbarProps) {
   const { logout } = useAuth()
+  const { t } = useTranslation()
 
   return (
     <header className="flex h-16 items-center justify-between border-b border-gray-200 bg-white px-4 md:px-8">
@@ -25,11 +28,14 @@ export function Navbar({ onMenuClick }: NavbarProps) {
           <input
             type="text"
             className="block w-full rounded-md border-0 py-1.5 pl-9 md:pl-10 pr-3 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 text-xs md:text-sm sm:leading-6"
-            placeholder="Search..."
+            placeholder={t('nav.searchPlaceholder')}
           />
         </div>
       </div>
       <div className="flex items-center space-x-2 md:space-x-4">
+        <div className="hidden sm:block">
+          <LanguageSwitcher />
+        </div>
         <button className="hidden rounded-full p-1 text-gray-400 hover:text-gray-500 sm:block" type="button">
           <Bell className="h-6 w-6" />
         </button>
@@ -39,7 +45,7 @@ export function Navbar({ onMenuClick }: NavbarProps) {
           type="button"
         >
           <LogOut className="h-3.5 w-3.5 md:h-4 md:w-4" />
-          <span className="hidden xs:inline">Logout</span>
+          <span className="hidden xs:inline">{t('nav.logout')}</span>
         </button>
       </div>
     </header>

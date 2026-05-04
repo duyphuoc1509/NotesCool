@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import axios from 'axios'
-import { useAuth } from '../contexts/useAuth'
+import { useAuth } from '../hooks/useAuth'
+import { useTranslation } from 'react-i18next'
 import { useSsoProviders } from '../hooks/useSsoProviders'
 import { API_BASE_URL } from '../constants/env'
 import type { ApiErrorResponse } from '../services/auth'
@@ -40,6 +41,7 @@ function extractErrorMessage(error: unknown): string {
 }
 
 export function LoginPage() {
+  const { t } = useTranslation()
   const { login, isLoading, isAuthenticated } = useAuth()
   const { providers, isLoading: isLoadingProviders } = useSsoProviders()
   const location = useLocation()
@@ -108,8 +110,8 @@ export function LoginPage() {
     <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
       <div className="w-full max-w-md rounded-2xl border border-gray-200 bg-white p-8 shadow-sm">
         <p className="text-sm font-semibold uppercase tracking-wide text-indigo-600">NotesCool CMS</p>
-        <h1 className="mt-3 text-3xl font-bold tracking-tight text-gray-950">Sign in</h1>
-        <p className="mt-2 text-sm text-gray-600">Access your workspace securely.</p>
+        <h1 className="mt-3 text-3xl font-bold tracking-tight text-gray-950">{t('auth.login')}</h1>
+        <p className="mt-2 text-sm text-gray-600">{t('dashboard.welcome')}</p>
 
         <div className="mt-8 space-y-3" aria-live="polite">
           {isLoadingProviders ? (

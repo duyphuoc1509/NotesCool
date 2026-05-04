@@ -2,15 +2,17 @@ import { LogOut, LayoutDashboard, FileText, CheckSquare, Settings, Users, X } fr
 import { Link, useLocation } from 'react-router-dom'
 import { cn } from '../utils/cn'
 import { useAuth } from '../hooks/useAuth'
+import { useTranslation } from 'react-i18next'
+import { LanguageSwitcher } from './LanguageSwitcher'
 
 const navigation = [
-  { name: 'Dashboard', icon: LayoutDashboard, href: '/' },
-  { name: 'Notes', icon: FileText, href: '/notes' },
-  { name: 'Tasks', icon: CheckSquare, href: '/tasks' },
-  { name: 'Settings', icon: Settings, href: '/settings' },
+  { name: 'nav.dashboard', icon: LayoutDashboard, href: '/' },
+  { name: 'nav.notes', icon: FileText, href: '/notes' },
+  { name: 'nav.tasks', icon: CheckSquare, href: '/tasks' },
+  { name: 'nav.settings', icon: Settings, href: '/settings' },
 ]
 
-const adminNavigation = [{ name: 'Users', icon: Users, href: '/users' }]
+const adminNavigation = [{ name: 'nav.users', icon: Users, href: '/users' }]
 
 interface SidebarProps {
   isOpen?: boolean
@@ -20,6 +22,7 @@ interface SidebarProps {
 export function Sidebar({ isOpen, onClose }: SidebarProps) {
   const location = useLocation()
   const { user, logout, isAdmin } = useAuth()
+  const { t } = useTranslation()
 
   const allNavigation = [...navigation, ...(isAdmin ? adminNavigation : [])]
 
@@ -68,28 +71,31 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                   isActive ? 'text-indigo-600' : 'text-gray-400 group-hover:text-gray-500'
                 )}
               />
-              {item.name}
+              {t(item.name)}
             </Link>
           )
         })}
       </nav>
       <div className="border-t border-gray-200 p-4">
+        <div className="mb-4 lg:hidden">
+          <LanguageSwitcher />
+        </div>
         <div className="flex items-center space-x-3">
           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-100 text-xs font-semibold text-indigo-600 uppercase">
             {user?.fullName?.charAt(0) ?? user?.email?.charAt(0) ?? 'A'}
           </div>
           <div className="flex-1 overflow-hidden">
             <p className="truncate text-sm font-medium text-gray-900">
-              {user?.fullName ?? 'Admin User'}
+              {user?.fullName ?? t('user.adminUserFallback')}
             </p>
             <p className="truncate text-xs text-gray-500">
-              {user?.email ?? 'admin@notescool.com'}
+              {user?.email ?? t('user.adminEmailFallback')}
             </p>
           </div>
           <button
             onClick={() => logout()}
             className="rounded-md p-1.5 text-gray-400 hover:bg-gray-50 hover:text-gray-500 transition"
-            title="Sign out"
+            title={t('nav.signOut')}
           >
             <LogOut className="h-5 w-5" />
           </button>

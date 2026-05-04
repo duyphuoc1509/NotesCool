@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import axios from 'axios'
-import { useAuth } from '../contexts/useAuth'
+import { useAuth } from '../hooks/useAuth'
+import { useTranslation } from 'react-i18next'
 import type { ApiErrorResponse } from '../services/auth'
 
 function extractErrorMessage(error: unknown): string {
@@ -17,6 +18,7 @@ function extractErrorMessage(error: unknown): string {
 }
 
 export function RegisterPage() {
+  const { t } = useTranslation()
   const { register, isLoading } = useAuth()
   const location = useLocation()
 
@@ -64,8 +66,8 @@ export function RegisterPage() {
     <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
       <div className="w-full max-w-md rounded-2xl border border-gray-200 bg-white p-8 shadow-sm">
         <p className="text-sm font-semibold uppercase tracking-wide text-indigo-600">NotesCool CMS</p>
-        <h1 className="mt-3 text-3xl font-bold tracking-tight text-gray-950">Create account</h1>
-        <p className="mt-2 text-sm text-gray-600">Register to start managing notes and tasks.</p>
+        <h1 className="mt-3 text-3xl font-bold tracking-tight text-gray-950">{t('auth.register')}</h1>
+        <p className="mt-2 text-sm text-gray-600">{t('dashboard.welcome')}</p>
 
         <form className="mt-8 space-y-5" onSubmit={handleSubmit} noValidate>
           <div>

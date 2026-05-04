@@ -1,6 +1,7 @@
 import { X, FileText, CheckSquare } from 'lucide-react'
 import { cn } from '../utils/cn'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 
 interface QuickCreateSheetProps {
   isOpen: boolean
@@ -9,6 +10,7 @@ interface QuickCreateSheetProps {
 
 export function QuickCreateSheet({ isOpen, onClose }: QuickCreateSheetProps) {
   const navigate = useNavigate()
+  const { t } = useTranslation()
 
   if (!isOpen) return null
 
@@ -32,7 +34,7 @@ export function QuickCreateSheet({ isOpen, onClose }: QuickCreateSheetProps) {
         <div className="mx-auto mb-6 h-1.5 w-12 rounded-full bg-slate-200" onClick={onClose} />
         
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-bold text-slate-900">Create New</h2>
+          <h2 className="text-xl font-bold text-slate-900">{t('common.createNew')}</h2>
           <button 
             onClick={onClose}
             className="rounded-full p-2 text-slate-400 hover:bg-slate-50 hover:text-slate-600"
@@ -49,7 +51,7 @@ export function QuickCreateSheet({ isOpen, onClose }: QuickCreateSheetProps) {
             <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600">
               <FileText className="h-6 w-6" />
             </div>
-            <span className="font-semibold text-slate-900">New Note</span>
+            <span className="font-semibold text-slate-900">{t('common.createNote')}</span>
           </button>
 
           <button
@@ -59,7 +61,7 @@ export function QuickCreateSheet({ isOpen, onClose }: QuickCreateSheetProps) {
             <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-rose-50 text-rose-600">
               <CheckSquare className="h-6 w-6" />
             </div>
-            <span className="font-semibold text-slate-900">New Task</span>
+            <span className="font-semibold text-slate-900">{t('common.createTask')}</span>
           </button>
         </div>
       </div>

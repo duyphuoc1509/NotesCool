@@ -1,4 +1,5 @@
 import { Bell, Calendar, Pencil, Trash2, CheckCircle2, Star } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import type { TaskDto, TaskStatus } from '../../types/task'
 import { cn } from '../../utils/cn'
 
@@ -11,14 +12,7 @@ const nextStatus: Record<TaskStatus, TaskStatus> = {
   InReview: 'Done'
 }
 
-const statusLabel: Record<TaskStatus, string> = {
-  Todo: 'To do',
-  InProgress: 'In progress',
-  Done: 'Done',
-  Blocked: 'Blocked / Cancelled',
-  Archived: 'Archived',
-  InReview: 'In Review'
-}
+// statusLabel is now inside the component to access t()
 
 function statusClasses(status: TaskStatus) {
   return cn(
@@ -32,8 +26,8 @@ function statusClasses(status: TaskStatus) {
   )
 }
 
-function formatDate(value?: string | null) {
-  if (!value) return 'No due date'
+function formatDate(value?: string | null, noDueDateLabel = 'No due date') {
+  if (!value) return noDueDateLabel
   return new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric', year: 'numeric' }).format(new Date(value))
 }
 
@@ -62,27 +56,36 @@ export function TasksList({
   onArchive,
   onRefresh
 }: TasksListProps) {
+  const { t } = useTranslation()
+  const statusLabel: Record<TaskStatus, string> = {
+    Todo: t('tasks.statusTodo'),
+    InProgress: t('tasks.statusInProgress'),
+    Done: t('tasks.statusDone'),
+    Blocked: t('tasks.statusBlocked'),
+    Archived: t('tasks.statusArchived'),
+    InReview: t('tasks.statusInReview'),
+  }
   return (
     <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm md:p-6">
       <div className="flex items-center justify-between border-b border-gray-100 pb-4">
         <div>
-          <h2 className="text-lg font-semibold text-gray-950">Task list</h2>
-          <p className="text-sm text-gray-500">{totalCount} total matching task(s)</p>
+          <h2 className="text-lg font-semibold text-gray-950">{t('tasks.taskList')}</h2>
+          <p className="text-sm text-gray-500">{t('tasks.totalMatchingTasks', { count: totalCount })}</p>
         </div>
       </div>
 
       {error ? (
         <div className="mt-6 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-          <p className="font-semibold">Could not load tasks</p>
+          <p className="font-semibold">{t('tasks.couldNotLoad')}</p>
           <p className="mt-1">{error}</p>
           <button type="button" onClick={onRefresh} className="mt-3 font-semibold text-red-800 underline">
-            Retry
+            {t('tasks.retry')}
           </button>
         </div>
       ) : null}
 
       {isLoading ? (
-        <div className="mt-6 space-y-3" aria-label="Loading tasks">
+        <div className="mt-6 space-y-3" aria-label={t('tasks.loading')}>
           {Array.from({ length: 4 }).map((_, index) => (
             <div key={index} className="h-24 animate-pulse rounded-xl bg-gray-100" />
           ))}
@@ -90,9 +93,9 @@ export function TasksList({
       ) : !error && tasks.length === 0 ? (
         <div className="mt-6 rounded-xl border border-dashed border-gray-300 p-8 text-center">
           <CheckCircle2 className="mx-auto h-10 w-10 text-gray-300" />
-          <h3 className="mt-3 text-base font-semibold text-gray-950">No tasks found</h3>
+          <h3 className="mt-3 text-base font-semibold text-gray-950">{t('tasks.noTasksFound')}</h3>
           <p className="mt-1 text-sm text-gray-500">
-            Create your first task or switch filters to see other statuses.
+            {t('tasks.noTasksFoundDesc')}
           </p>
         </div>
       ) : (
@@ -105,11 +108,11 @@ export function TasksList({
                     <span className={statusClasses(task.status)}>{statusLabel[task.status] || task.status}</span>
                     {task.isFavorite ? (
                       <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700">
-                        <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" /> Favorite
+                        <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" /> {t('tasks.favorite')}
                       </span>
                     ) : null}
                     <span className="inline-flex items-center gap-1 text-xs text-gray-500">
-                      <Calendar className="h-3.5 w-3.5" /> {formatDate(task.dueDate)}
+                      <Calendar className="h-3.5 w-3.5" /> {formatDate(task.dueDate, t('tasks.noDueDate'))}
                     </span>
                     {task.reminders && task.reminders.length > 0 ? (
                       <span className="inline-flex items-center gap-1 text-xs text-indigo-600 font-medium">
@@ -128,7 +131,7 @@ export function TasksList({
                     onClick={() => void onStatusChange(task, nextStatus[task.status])}
                     className="rounded-lg bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-100 disabled:opacity-60"
                   >
-                    Move to {statusLabel[nextStatus[task.status]]}
+                    {t('tasks.moveTo', { status: statusLabel[nextStatus[task.status]] })}
                   </button>
                   <button
                     type="button"
@@ -142,14 +145,14 @@ export function TasksList({
                     )}
                   >
                     <Star className={cn('h-3.5 w-3.5', task.isFavorite && 'fill-amber-400 text-amber-400')} />
-                    {task.isFavorite ? 'Unfavorite' : 'Favorite'}
+                    {task.isFavorite ? t('tasks.unfavorite') : t('tasks.favorite')}
                   </button>
                   <button
                     type="button"
                     onClick={() => onEdit(task)}
                     className="inline-flex items-center gap-1 rounded-lg bg-gray-100 px-3 py-2 text-xs font-semibold text-gray-700 transition hover:bg-gray-200"
                   >
-                    <Pencil className="h-3.5 w-3.5" /> Edit
+                    <Pencil className="h-3.5 w-3.5" /> {t('tasks.edit')}
                   </button>
                   <button
                     type="button"
@@ -157,7 +160,7 @@ export function TasksList({
                     onClick={() => void onArchive(task)}
                     className="inline-flex items-center gap-1 rounded-lg bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 transition hover:bg-red-100 disabled:opacity-60"
                   >
-                    <Trash2 className="h-3.5 w-3.5" /> Archive
+                    <Trash2 className="h-3.5 w-3.5" /> {t('tasks.archive')}
                   </button>
                 </div>
               </div>
