@@ -8,6 +8,7 @@ COPY src/backend/NotesCool.Api/NotesCool.Api.csproj src/backend/NotesCool.Api/
 COPY src/backend/NotesCool.Shared/NotesCool.Shared.csproj src/backend/NotesCool.Shared/
 COPY src/backend/NotesCool.Notes/NotesCool.Notes.csproj src/backend/NotesCool.Notes/
 COPY src/backend/NotesCool.Tasks/NotesCool.Tasks.csproj src/backend/NotesCool.Tasks/
+COPY src/backend/NotesCool.Reminders/NotesCool.Reminders.csproj src/backend/NotesCool.Reminders/
 COPY tests/backend/NotesCool.Notes.Tests/NotesCool.Notes.Tests.csproj tests/backend/NotesCool.Notes.Tests/
 COPY tests/backend/NotesCool.Tasks.Tests/NotesCool.Tasks.Tests.csproj tests/backend/NotesCool.Tasks.Tests/
 COPY src/backend/NotesCool.Identity/NotesCool.Identity.csproj src/backend/NotesCool.Identity/
