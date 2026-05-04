@@ -136,6 +136,25 @@ export function useTasks(initialFilter: TasksFilter = {}) {
     }
   }
 
+  const handleSetFavorite = async (id: string, isFavorite: boolean) => {
+    const previousTasks = [...tasks]
+    setTasks((prev) => prev.map((task) => (task.id === id ? { ...task, isFavorite } : task)))
+
+    try {
+      const updated = await tasksService.setFavorite(id, { isFavorite })
+      setTasks((prev) => prev.map((task) => (task.id === id ? updated : task)))
+      return updated
+    } catch (err) {
+      setTasks(previousTasks)
+      if (axios.isAxiosError(err)) {
+        setError(err.response?.data?.message || err.message)
+      } else {
+        setError('Failed to update favorite task')
+      }
+      throw err
+    }
+  }
+
   const handleDeleteTask = async (id: string) => {
     const previousTasks = [...tasks]
     setTasks((prev) => prev.filter((t) => t.id !== id))
@@ -171,6 +190,7 @@ export function useTasks(initialFilter: TasksFilter = {}) {
     createTask: handleCreateTask,
     updateTask: handleUpdateTask,
     changeTaskStatus: handleChangeStatus,
+    setTaskFavorite: handleSetFavorite,
     deleteTask: handleDeleteTask
   }
 }

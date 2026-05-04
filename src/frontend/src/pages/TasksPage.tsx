@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import type { FormEvent } from 'react'
-import { Bell, LayoutGrid, List, Loader2, Plus, RefreshCw } from 'lucide-react'
+import { Bell, LayoutGrid, List, Loader2, Plus, RefreshCw, Star } from 'lucide-react'
 import { useTasks } from '../hooks/useTasks'
 import type { TaskDto, TaskStatus } from '../types/task'
 import { cn } from '../utils/cn'
@@ -62,6 +62,7 @@ export function TasksPage() {
     createTask,
     updateTask,
     changeTaskStatus,
+    setTaskFavorite,
     deleteTask,
   } = useTasks({ page: 1, pageSize: 100 }) // Increased pageSize for Kanban
   const [form, setForm] = useState<TaskFormState>(emptyForm)
@@ -74,6 +75,8 @@ export function TasksPage() {
     if (!filter.status) return 'All active tasks'
     return statusLabel[filter.status] || filter.status
   }, [filter.status])
+
+  const favoriteCount = useMemo(() => tasks.filter((task) => task.isFavorite).length, [tasks])
 
   const startEdit = (task: TaskDto) => {
     setEditingTask(task)
@@ -146,6 +149,15 @@ export function TasksPage() {
     }
   }
 
+  const handleFavoriteToggle = async (task: TaskDto) => {
+    setActionTaskId(task.id)
+    try {
+      await setTaskFavorite(task.id, !task.isFavorite)
+    } finally {
+      setActionTaskId(null)
+    }
+  }
+
   return (
     <div className="mx-auto flex max-w-7xl flex-col gap-4 md:gap-6">
       <section className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm md:p-6">
@@ -155,6 +167,9 @@ export function TasksPage() {
             <h1 className="mt-2 text-3xl font-bold tracking-tight text-gray-950">{pageTitle}</h1>
             <p className="mt-2 text-sm text-gray-500">
               Manage your work using Kanban or List views. Drag-and-drop support coming soon.
+            </p>
+            <p className="mt-2 inline-flex items-center gap-1 text-sm text-amber-600">
+              <Star className="h-4 w-4 fill-amber-400 text-amber-400" /> {favoriteCount} favorite task{favoriteCount === 1 ? '' : 's'}
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -324,6 +339,7 @@ export function TasksPage() {
               isLoading={isLoading}
               error={error}
               onStatusChange={handleStatusChange}
+              onFavoriteToggle={handleFavoriteToggle}
               onTaskClick={startEdit}
             />
           ) : (
@@ -334,6 +350,7 @@ export function TasksPage() {
               totalCount={totalCount}
               actionTaskId={actionTaskId}
               onStatusChange={handleStatusChange}
+              onFavoriteToggle={handleFavoriteToggle}
               onEdit={startEdit}
               onArchive={handleArchive}
               onRefresh={refresh}

@@ -2,6 +2,7 @@ import api from './api'
 import type {
   ChangeTaskStatusRequest,
   CreateTaskRequest,
+  SetTaskFavoriteRequest,
   TaskDto,
   TaskStatus,
   UpdateTaskRequest,
@@ -39,6 +40,11 @@ export const tasksService = {
 
   async changeTaskStatus(id: string, payload: ChangeTaskStatusRequest): Promise<TaskDto> {
     const { data } = await api.patch<TaskDto>(`${TASKS_BASE_PATH}/${id}/status`, payload)
+    return data
+  },
+
+  async setFavorite(id: string, payload: SetTaskFavoriteRequest): Promise<TaskDto> {
+    const { data } = await api.patch<TaskDto>(`${TASKS_BASE_PATH}/${id}/favorite`, payload)
     return data
   },
 

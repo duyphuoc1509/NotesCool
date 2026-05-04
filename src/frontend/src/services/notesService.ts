@@ -28,6 +28,11 @@ export const notesService = {
     return data
   },
 
+  async setFavorite(id: string, isFavorite: boolean): Promise<Note> {
+    const { data } = await api.patch<Note>(`/api/notes/${id}/favorite`, { isFavorite })
+    return data
+  },
+
   async archive(id: string): Promise<void> {
     await api.delete(`/api/notes/${id}`)
   },

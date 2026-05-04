@@ -22,6 +22,7 @@ export interface TaskDto {
   dueDate?: string
   createdAt: string
   updatedAt?: string
+  isFavorite?: boolean
   reminders?: ReminderDto[]
 }
 
@@ -41,6 +42,10 @@ export interface UpdateTaskRequest {
 
 export interface ChangeTaskStatusRequest {
   status: TaskStatus
+}
+
+export interface SetTaskFavoriteRequest {
+  isFavorite: boolean
 }
 
 export interface PagedResult<T> {
