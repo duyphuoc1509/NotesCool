@@ -16,6 +16,7 @@ import { useAuth } from './hooks/useAuth'
 import { FileText, CheckSquare, Clock } from 'lucide-react'
 import { useNotes } from './hooks/useNotes'
 import { useTasks } from './hooks/useTasks'
+import { useTranslation } from 'react-i18next'
 
 function Layout({ children }: { children: ReactNode }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
@@ -44,21 +45,22 @@ function Layout({ children }: { children: ReactNode }) {
 function DashboardPage() {
   const { user, isAdmin } = useAuth()
   const navigate = useNavigate()
+  const { t } = useTranslation()
   
   // Quick fetch for dashboard preview
   const { notes } = useNotes({ page: 1, pageSize: 3, query: '' })
   const { tasks } = useTasks({ page: 1, pageSize: 5 })
   
-  const todayTasks = tasks.filter(t => t.status !== 'Done' && t.status !== 'Archived').slice(0, 3)
+  const todayTasks = tasks.filter(task => task.status !== 'Done' && task.status !== 'Archived').slice(0, 3)
 
   return (
     <div className="mx-auto max-w-4xl space-y-8">
       {/* Welcome & Quick Actions */}
       <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
         <h1 className="text-2xl font-bold tracking-tight text-gray-950 sm:text-3xl">
-          Hi, {user?.displayName ?? user?.fullName?.split(' ')[0] ?? 'Admin'}
+          {t('dashboard.greeting', { name: user?.displayName ?? user?.fullName?.split(' ')[0] ?? t('user.adminFallback') })}
         </h1>
-        <p className="mt-1 text-sm text-gray-500">Welcome back! Ready to organize your day?</p>
+        <p className="mt-1 text-sm text-gray-500">{t('dashboard.welcome')}</p>
         
         <div className="mt-6 grid grid-cols-2 gap-4">
           <button
@@ -69,7 +71,7 @@ function DashboardPage() {
               <FileText className="h-5 w-5" />
             </div>
             <div className="text-left">
-              <div className="font-semibold text-indigo-900 text-sm md:text-base">New Note</div>
+              <div className="font-semibold text-indigo-900 text-sm md:text-base">{t('dashboard.newNote')}</div>
             </div>
           </button>
           
@@ -81,7 +83,7 @@ function DashboardPage() {
               <CheckSquare className="h-5 w-5" />
             </div>
             <div className="text-left">
-              <div className="font-semibold text-rose-900 text-sm md:text-base">New Task</div>
+              <div className="font-semibold text-rose-900 text-sm md:text-base">{t('dashboard.newTask')}</div>
             </div>
           </button>
         </div>
@@ -91,16 +93,16 @@ function DashboardPage() {
         <section className="rounded-2xl border border-emerald-100 bg-emerald-50 p-5 shadow-sm">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700">Admin</p>
-              <h2 className="mt-1 text-lg font-bold text-emerald-950">User management</h2>
-              <p className="mt-1 text-sm text-emerald-800">Manage user accounts, roles, and access status.</p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700">{t('dashboard.adminLabel')}</p>
+              <h2 className="mt-1 text-lg font-bold text-emerald-950">{t('dashboard.userManagement')}</h2>
+              <p className="mt-1 text-sm text-emerald-800">{t('dashboard.userManagementDescription')}</p>
             </div>
             <button
               type="button"
               onClick={() => navigate('/users')}
               className="inline-flex items-center justify-center rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-500"
             >
-              Manage users
+              {t('dashboard.manageUsers')}
             </button>
           </div>
         </section>
@@ -110,16 +112,16 @@ function DashboardPage() {
         {/* Today Tasks */}
         <section className="flex flex-col gap-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-bold text-gray-900">Today's Tasks</h2>
-            <button onClick={() => navigate('/tasks')} className="text-sm font-medium text-indigo-600 hover:text-indigo-700">See all</button>
+            <h2 className="text-lg font-bold text-gray-900">{t('dashboard.todaysTasks')}</h2>
+            <button onClick={() => navigate('/tasks')} className="text-sm font-medium text-indigo-600 hover:text-indigo-700">{t('dashboard.seeAll')}</button>
           </div>
           
           <div className="flex-1 rounded-2xl border border-gray-200 bg-white p-2 shadow-sm">
             {todayTasks.length === 0 ? (
               <div className="flex h-full flex-col items-center justify-center py-8 text-center">
                 <CheckSquare className="mb-2 h-8 w-8 text-gray-300" />
-                <p className="text-sm font-medium text-gray-900">All caught up!</p>
-                <p className="text-xs text-gray-500">No pending tasks for today.</p>
+                <p className="text-sm font-medium text-gray-900">{t('dashboard.allCaughtUp')}</p>
+                <p className="text-xs text-gray-500">{t('dashboard.noPendingTasks')}</p>
               </div>
             ) : (
               <ul className="divide-y divide-gray-100">
@@ -129,7 +131,7 @@ function DashboardPage() {
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-medium text-gray-900">{task.title}</p>
                       {task.dueDate && (
-                        <p className="mt-1 text-xs text-gray-500">Due {new Date(task.dueDate).toLocaleDateString()}</p>
+                        <p className="mt-1 text-xs text-gray-500">{t('dashboard.due', { date: new Date(task.dueDate).toLocaleDateString() })}</p>
                       )}
                     </div>
                   </li>
@@ -142,23 +144,23 @@ function DashboardPage() {
         {/* Recent Notes */}
         <section className="flex flex-col gap-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-bold text-gray-900">Recent Notes</h2>
-            <button onClick={() => navigate('/notes')} className="text-sm font-medium text-indigo-600 hover:text-indigo-700">See all</button>
+            <h2 className="text-lg font-bold text-gray-900">{t('dashboard.recentNotes')}</h2>
+            <button onClick={() => navigate('/notes')} className="text-sm font-medium text-indigo-600 hover:text-indigo-700">{t('dashboard.seeAll')}</button>
           </div>
           
           <div className="flex-1 space-y-3">
             {notes.length === 0 ? (
               <div className="rounded-2xl border border-gray-200 bg-white py-8 text-center shadow-sm">
                 <FileText className="mx-auto mb-2 h-8 w-8 text-gray-300" />
-                <p className="text-sm font-medium text-gray-900">No notes yet</p>
+                <p className="text-sm font-medium text-gray-900">{t('dashboard.noNotesYet')}</p>
               </div>
             ) : (
               notes.map(note => (
                 <div key={note.id} className="flex flex-col gap-2 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm transition hover:border-indigo-200 cursor-pointer" onClick={() => navigate('/notes')}>
-                  <h3 className="font-semibold text-gray-900 truncate">{note.title || 'Untitled Note'}</h3>
+                  <h3 className="font-semibold text-gray-900 truncate">{note.title || t('dashboard.untitledNote')}</h3>
                   <div className="flex items-center text-xs text-gray-500">
                     <Clock className="mr-1 h-3 w-3" />
-                    <span>Updated recently</span>
+                    <span>{t('dashboard.updatedRecently')}</span>
                   </div>
                 </div>
               ))

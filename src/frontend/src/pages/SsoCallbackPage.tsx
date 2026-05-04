@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { authService, type SsoCallbackPayload, getStoredSession } from '../services/auth'
 import { useAuth } from '../hooks/useAuth'
+import { useTranslation } from 'react-i18next'
 
 /**
  * Module-level map to track in-flight or completed session code exchanges.
@@ -14,6 +15,7 @@ import { useAuth } from '../hooks/useAuth'
 const sessionCodeCache = new Map<string, ReturnType<typeof authService.exchangeSsoSession>>()
 
 export function SsoCallbackPage() {
+  const { t } = useTranslation()
   const location = useLocation()
   const navigate = useNavigate()
   const { completeSsoLogin, isAuthenticated } = useAuth()
@@ -127,7 +129,7 @@ export function SsoCallbackPage() {
     <div className="flex h-screen w-full items-center justify-center bg-gray-50">
       <div className="flex flex-col items-center space-y-4">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-indigo-600 border-t-transparent"></div>
-        <p className="text-sm font-medium text-gray-600">Completing sign in...</p>
+        <p className="text-sm font-medium text-gray-600">{t('auth.completingSignIn')}</p>
       </div>
     </div>
   )

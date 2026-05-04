@@ -1,15 +1,10 @@
 import { useState, type DragEvent } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Bell, Calendar, MoreVertical, Star } from 'lucide-react'
 import type { TaskDto, TaskStatus } from '../../types/task'
 import { cn } from '../../utils/cn'
 
-const COLUMNS: { id: TaskStatus; label: string }[] = [
-  { id: 'Todo', label: 'Todo' },
-  { id: 'InProgress', label: 'In Progress' },
-  { id: 'InReview', label: 'In Review' },
-  { id: 'Done', label: 'Done' },
-  { id: 'Blocked', label: 'Blocked / Cancelled' },
-]
+// COLUMNS is now inside the component to access t()
 
 interface TasksKanbanProps {
   tasks: TaskDto[]
@@ -20,19 +15,27 @@ interface TasksKanbanProps {
   onTaskClick: (task: TaskDto) => void
 }
 
-function formatDate(value?: string | null) {
-  if (!value) return 'No due date'
+function formatDate(value?: string | null, noDueDateLabel = 'No due date') {
+  if (!value) return noDueDateLabel
   return new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric' }).format(new Date(value))
 }
 
 export function TasksKanban({ tasks, isLoading, error, onStatusChange, onFavoriteToggle, onTaskClick }: TasksKanbanProps) {
+  const { t } = useTranslation()
+  const COLUMNS: { id: TaskStatus; label: string }[] = [
+    { id: 'Todo', label: t('tasks.statusTodo') },
+    { id: 'InProgress', label: t('tasks.statusInProgress') },
+    { id: 'InReview', label: t('tasks.statusInReview') },
+    { id: 'Done', label: t('tasks.statusDone') },
+    { id: 'Blocked', label: t('tasks.statusBlocked') },
+  ]
   const [movingTaskId, setMovingTaskId] = useState<string | null>(null)
   const [draggingOverColumn, setDraggingOverColumn] = useState<TaskStatus | null>(null)
 
   if (error) {
     return (
       <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-        <p className="font-semibold">Could not load tasks</p>
+        <p className="font-semibold">{t('tasks.couldNotLoad')}</p>
         <p className="mt-1">{error}</p>
       </div>
     )
@@ -131,7 +134,7 @@ export function TasksKanban({ tasks, isLoading, error, onStatusChange, onFavorit
                 'flex h-32 flex-col items-center justify-center rounded-lg border-2 border-dashed text-gray-400 transition-colors',
                 draggingOverColumn === column.id ? 'border-indigo-300 bg-indigo-50' : 'border-gray-200',
               )}>
-                <span className="text-sm">Drop tasks here</span>
+                <span className="text-sm">{t('tasks.dropTasksHere')}</span>
               </div>
             ) : (
               tasksByColumn[column.id]?.map((task) => (
@@ -158,7 +161,7 @@ export function TasksKanban({ tasks, isLoading, error, onStatusChange, onFavorit
                           'rounded-md p-1 transition',
                           task.isFavorite ? 'text-amber-400 hover:bg-amber-50' : 'text-gray-300 hover:bg-gray-100 hover:text-gray-500'
                         )}
-                        title={task.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+                        title={task.isFavorite ? t('notes.removeFromFavorites') : t('notes.addToFavorites')}
                       >
                         <Star className={cn('h-4 w-4', task.isFavorite && 'fill-amber-400')} />
                       </button>
@@ -191,7 +194,7 @@ export function TasksKanban({ tasks, isLoading, error, onStatusChange, onFavorit
                   <div className="mt-1 flex flex-wrap items-center gap-2 text-xs font-medium text-gray-500">
                     <span className="inline-flex items-center gap-1.5">
                       <Calendar className="h-3.5 w-3.5 text-gray-400" />
-                      {formatDate(task.dueDate)}
+                      {formatDate(task.dueDate, t('tasks.noDueDate'))}
                     </span>
                     {task.reminders && task.reminders.length > 0 ? (
                       <span className="inline-flex items-center gap-1 text-indigo-600">

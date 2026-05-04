@@ -6,6 +6,7 @@ import type { Note } from '../types/note'
 import { NoteCard } from '../components/notes/NoteCard'
 import { NoteForm } from '../components/notes/NoteForm'
 import { cn } from '../utils/cn'
+import { useTranslation } from 'react-i18next'
 
 const PAGE_SIZE = 20
 
@@ -45,12 +46,14 @@ function EmptyState({
   filterTab: FilterTab
   onCreateNote: () => void
 }) {
+  const { t } = useTranslation()
+
   if (query) {
     return (
       <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
         <Search className="mb-4 h-12 w-12 text-slate-300" />
-        <h3 className="text-base font-semibold text-slate-800">No results found</h3>
-        <p className="mt-1 text-sm text-slate-500">Try a different keyword or clear the search.</p>
+        <h3 className="text-base font-semibold text-slate-800">{t('notes.noResults')}</h3>
+        <p className="mt-1 text-sm text-slate-500">{t('notes.noResultsDesc')}</p>
       </div>
     )
   }
@@ -59,8 +62,8 @@ function EmptyState({
     return (
       <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
         <Star className="mb-4 h-12 w-12 text-slate-300" />
-        <h3 className="text-base font-semibold text-slate-800">No favorite notes yet</h3>
-        <p className="mt-1 text-sm text-slate-500">Star a note to find it here quickly.</p>
+        <h3 className="text-base font-semibold text-slate-800">{t('notes.noFavorites')}</h3>
+        <p className="mt-1 text-sm text-slate-500">{t('notes.noFavoritesDesc')}</p>
       </div>
     )
   }
@@ -69,8 +72,8 @@ function EmptyState({
     return (
       <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
         <Archive className="mb-4 h-12 w-12 text-slate-300" />
-        <h3 className="text-base font-semibold text-slate-800">Nothing archived yet</h3>
-        <p className="mt-1 text-sm text-slate-500">Archived notes will appear here.</p>
+        <h3 className="text-base font-semibold text-slate-800">{t('notes.noArchived')}</h3>
+        <p className="mt-1 text-sm text-slate-500">{t('notes.noArchivedDesc')}</p>
       </div>
     )
   }
@@ -80,9 +83,9 @@ function EmptyState({
       <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-indigo-50">
         <FileText className="h-8 w-8 text-indigo-400" />
       </div>
-      <h3 className="text-lg font-semibold text-slate-900">You don&apos;t have any notes yet.</h3>
+      <h3 className="text-lg font-semibold text-slate-900">{t('notes.emptyStateTitle')}</h3>
       <p className="mt-2 max-w-xs text-sm text-slate-500">
-        Create your first note to capture ideas, tasks, and reminders.
+        {t('notes.emptyStateDesc')}
       </p>
       <button
         type="button"
@@ -90,7 +93,7 @@ function EmptyState({
         className="mt-6 inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-indigo-700"
       >
         <Plus className="h-4 w-4" />
-        Create note
+        {t('notes.createNote')}
       </button>
     </div>
   )
@@ -108,6 +111,7 @@ export function NotesPage() {
   // Mobile: show list or editor
   const [mobileScreen, setMobileScreen] = useState<'list' | 'editor'>('list')
   const [actionError, setActionError] = useState<string | null>(null)
+  const { t } = useTranslation()
 
   const { notes, totalCount, loading, error, refetch } = useNotes({ page: 1, pageSize: PAGE_SIZE, query })
   const searchInputRef = useRef<HTMLInputElement>(null)
@@ -167,7 +171,7 @@ export function NotesPage() {
         }
         refetch()
       } catch {
-        setActionError('Unable to save note. Please try again.')
+        setActionError(t('notes.saveError'))
       }
     },
     [refetch]
@@ -183,7 +187,7 @@ export function NotesPage() {
         }
         refetch()
       } catch {
-        setActionError('Unable to archive note. Please try again.')
+        setActionError(t('notes.archiveError'))
       }
     },
     [selectedNote, closeEditor, refetch]
@@ -206,16 +210,16 @@ export function NotesPage() {
         }
         refetch()
       } catch {
-        setActionError('Unable to update favorite note. Please try again.')
+        setActionError(t('notes.favoriteError'))
       }
     },
     [refetch, selectedNote]
   )
 
   const filterTabs: { key: FilterTab; label: string; icon: typeof BookOpen }[] = [
-    { key: 'all', label: 'All Notes', icon: BookOpen },
-    { key: 'favorites', label: 'Favorites', icon: Star },
-    { key: 'archived', label: 'Archived', icon: Archive },
+    { key: 'all', label: t('notes.allNotes'), icon: BookOpen },
+    { key: 'favorites', label: t('notes.favorites'), icon: Star },
+    { key: 'archived', label: t('notes.archived'), icon: Archive },
   ]
 
   return (
@@ -258,7 +262,7 @@ export function NotesPage() {
                       setQuery('')
                     }
                   }}
-                  placeholder="Search notes..."
+                  placeholder={t('notes.searchPlaceholder')}
                   className="h-11 w-full rounded-xl border border-slate-300 bg-white pl-10 pr-4 text-sm text-slate-900 placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
                 />
               </form>
@@ -269,7 +273,7 @@ export function NotesPage() {
                 className="hidden h-11 items-center gap-1 rounded-xl bg-indigo-600 px-3 text-sm font-semibold text-white transition hover:bg-indigo-700 lg:flex"
               >
                 <Plus className="h-4 w-4" />
-                New
+                {t('notes.new')}
               </button>
             </div>
 
@@ -297,8 +301,8 @@ export function NotesPage() {
           <div className="px-4 py-2 text-xs text-slate-500">
             {!loading && !error && (
               <span>
-                {displayedNotes.length} {displayedNotes.length === 1 ? 'note' : 'notes'}
-                {totalCount > PAGE_SIZE && ` (${totalCount} total)`}
+                {t('notes.noteCount', { count: displayedNotes.length })}
+                {totalCount > PAGE_SIZE && ` ${t('notes.totalCount', { total: totalCount })}`}
               </span>
             )}
           </div>
@@ -307,14 +311,14 @@ export function NotesPage() {
           <div className="flex-1 space-y-2 overflow-y-auto px-3 pb-24 sm:px-4 lg:pb-4">
             {error ? (
               <div className="mt-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-4 text-sm text-rose-700">
-                <p className="font-semibold">Unable to load notes.</p>
+                <p className="font-semibold">{t('notes.unableToLoad')}</p>
                 <p className="mt-1">{error}</p>
                 <button
                   type="button"
                   onClick={() => void refetch()}
                   className="mt-3 rounded-xl bg-rose-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-rose-700"
                 >
-                  Retry
+                  {t('notes.retry')}
                 </button>
               </div>
             ) : loading ? (
@@ -324,7 +328,7 @@ export function NotesPage() {
                 <NoteCardSkeleton />
                 <div className="flex items-center justify-center py-4 text-xs text-slate-400">
                   <Loader2 className="mr-2 h-3 w-3 animate-spin" />
-                  Loading notes...
+                  {t('notes.loading')}
                 </div>
               </>
             ) : displayedNotes.length === 0 ? (
@@ -372,7 +376,7 @@ export function NotesPage() {
           'fixed bottom-24 right-4 z-30 flex h-14 w-14 items-center justify-center rounded-full bg-indigo-600 text-white shadow-lg transition hover:bg-indigo-700 focus:outline-none focus:ring-4 focus:ring-indigo-500/30 sm:right-6 lg:hidden',
           mobileScreen === 'editor' && 'hidden'
         )}
-        aria-label="Create new note"
+        aria-label={t('notes.createNote')}
       >
         <Plus className="h-7 w-7" />
       </button>
