@@ -4,6 +4,7 @@ using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
 using Microsoft.IdentityModel.Tokens;
+using NotesCool.Identity.Application;
 using NotesCool.Shared.Security;
 
 namespace NotesCool.Api.Contracts;
@@ -16,7 +17,7 @@ public static class AuthEndpoints
     {
         var group = app.MapGroup("/api/auth").WithTags("Auth");
 
-        group.MapPost("/login", (LoginRequest request, IRefreshTokenStore refreshTokens, IConfiguration configuration, ISecurityAuditService audit, HttpContext http) =>
+        group.MapPost("/login", async (LoginRequest request, IRefreshTokenStore refreshTokens, AccountService accountService, IConfiguration configuration, ISecurityAuditService audit, HttpContext http) =>
         {
             if (string.IsNullOrWhiteSpace(request.Email) || string.IsNullOrWhiteSpace(request.Password))
             {
@@ -24,12 +25,39 @@ public static class AuthEndpoints
                 return Results.BadRequest(new { message = "Email and password are required." });
             }
 
-            var userId = request.Email.Trim().ToLowerInvariant();
-            var response = CreateTokenResponse(userId, request.Email.Trim(), refreshTokens, configuration);
-            
-            audit.LogAuthEvent(SecurityAuditEvents.LoginSuccess, userId, request.Email.Trim(), http.Connection.RemoteIpAddress?.ToString(), http.Request.Headers.UserAgent);
-            
-            return Results.Ok(response);
+            try
+            {
+                var identityRequest = new NotesCool.Identity.Contracts.LoginRequest(request.Email.Trim(), request.Password);
+                var identityResponse = await accountService.LoginAsync(identityRequest);
+
+                var userId = identityResponse.User.Id;
+                var email = identityResponse.User.Email;
+                var refreshToken = refreshTokens.Issue(userId, email);
+
+                var expiresAt = new DateTimeOffset(DateTime.SpecifyKind(identityResponse.ExpiresAtUtc, DateTimeKind.Utc));
+                var expiresInSeconds = (int)Math.Max(0, (expiresAt - DateTimeOffset.UtcNow).TotalSeconds);
+
+                var user = new AuthUserResponse(
+                    identityResponse.User.Id,
+                    identityResponse.User.Email,
+                    identityResponse.User.DisplayName,
+                    identityResponse.User.Status,
+                    identityResponse.User.Roles.ToArray());
+
+                audit.LogAuthEvent(SecurityAuditEvents.LoginSuccess, userId, email, http.Connection.RemoteIpAddress?.ToString(), http.Request.Headers.UserAgent);
+
+                return Results.Ok(new AuthResponse(identityResponse.AccessToken, refreshToken, "Bearer", expiresInSeconds, expiresAt, user));
+            }
+            catch (UnauthorizedAccessException)
+            {
+                audit.LogAuthEvent(SecurityAuditEvents.LoginFailed, "unknown", request.Email?.Trim(), http.Connection.RemoteIpAddress?.ToString(), http.Request.Headers.UserAgent, new { reason = "invalid_credentials" });
+                return Results.Unauthorized();
+            }
+            catch (AccountInactiveException)
+            {
+                audit.LogAuthEvent(SecurityAuditEvents.LoginFailed, "unknown", request.Email?.Trim(), http.Connection.RemoteIpAddress?.ToString(), http.Request.Headers.UserAgent, new { reason = "account_inactive" });
+                return Results.Json(new { message = "Account is not active." }, statusCode: 403);
+            }
         });
 
         group.MapPost("/refresh", (RefreshTokenRequest request, IRefreshTokenStore refreshTokens, IConfiguration configuration, ISecurityAuditService audit, HttpContext http) =>
@@ -100,7 +128,15 @@ public sealed record AuthResponse(
     string RefreshToken,
     string TokenType,
     int AccessTokenExpiresInSeconds,
-    DateTimeOffset AccessTokenExpiresAtUtc);
+    DateTimeOffset AccessTokenExpiresAtUtc,
+    AuthUserResponse? User = null);
+
+public sealed record AuthUserResponse(
+    string Id,
+    string Email,
+    string DisplayName,
+    string Status,
+    string[] Roles);
 
 public sealed record RefreshTokenSession(string UserId, string Email, DateTimeOffset CreatedAtUtc, DateTimeOffset ExpiresAtUtc, bool IsRevoked);
 
