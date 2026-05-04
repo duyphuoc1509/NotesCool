@@ -46,8 +46,11 @@ public class IdentityDataSeeder
             }
         }
 
-        // Seed Admin User
-        var adminUser = await _userManager.FindByNameAsync("admin@notescool.com");
+        // Seed / repair Admin User
+        var adminUser = await _userManager.FindByEmailAsync("admin@notescool.com")
+            ?? await _userManager.FindByNameAsync("admin@notescool.com")
+            ?? await _userManager.FindByNameAsync("admin");
+
         if (adminUser == null)
         {
             adminUser = new ApplicationUser
@@ -64,7 +67,29 @@ public class IdentityDataSeeder
             {
                 throw new Exception($"Failed to seed 'admin' user: {string.Join(", ", result.Errors.Select(e => e.Description))}");
             }
+        }
 
+        if (!string.Equals(adminUser.Email, "admin@notescool.com", StringComparison.OrdinalIgnoreCase)
+            || !string.Equals(adminUser.UserName, "admin@notescool.com", StringComparison.OrdinalIgnoreCase)
+            || !adminUser.EmailConfirmed
+            || string.IsNullOrWhiteSpace(adminUser.DisplayName))
+        {
+            adminUser.Email = "admin@notescool.com";
+            adminUser.UserName = "admin@notescool.com";
+            adminUser.NormalizedEmail = "ADMIN@NOTESCOOL.COM";
+            adminUser.NormalizedUserName = "ADMIN@NOTESCOOL.COM";
+            adminUser.DisplayName = string.IsNullOrWhiteSpace(adminUser.DisplayName) ? "Administrator" : adminUser.DisplayName;
+            adminUser.EmailConfirmed = true;
+
+            var updateResult = await _userManager.UpdateAsync(adminUser);
+            if (!updateResult.Succeeded)
+            {
+                throw new Exception($"Failed to normalize seeded 'admin' user: {string.Join(", ", updateResult.Errors.Select(e => e.Description))}");
+            }
+        }
+
+        if (!await _userManager.IsInRoleAsync(adminUser, SystemRoles.Admin))
+        {
             var roleResult = await _userManager.AddToRoleAsync(adminUser, SystemRoles.Admin);
             if (!roleResult.Succeeded)
             {

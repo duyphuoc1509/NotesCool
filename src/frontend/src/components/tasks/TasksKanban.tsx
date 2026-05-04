@@ -1,5 +1,5 @@
 import { useState, type DragEvent } from 'react'
-import { Bell, Calendar, MoreVertical } from 'lucide-react'
+import { Bell, Calendar, MoreVertical, Star } from 'lucide-react'
 import type { TaskDto, TaskStatus } from '../../types/task'
 import { cn } from '../../utils/cn'
 
@@ -16,6 +16,7 @@ interface TasksKanbanProps {
   isLoading: boolean
   error: string | null
   onStatusChange: (task: TaskDto, newStatus: TaskStatus) => Promise<void>
+  onFavoriteToggle: (task: TaskDto) => Promise<void>
   onTaskClick: (task: TaskDto) => void
 }
 
@@ -24,7 +25,7 @@ function formatDate(value?: string | null) {
   return new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric' }).format(new Date(value))
 }
 
-export function TasksKanban({ tasks, isLoading, error, onStatusChange, onTaskClick }: TasksKanbanProps) {
+export function TasksKanban({ tasks, isLoading, error, onStatusChange, onFavoriteToggle, onTaskClick }: TasksKanbanProps) {
   const [movingTaskId, setMovingTaskId] = useState<string | null>(null)
   const [draggingOverColumn, setDraggingOverColumn] = useState<TaskStatus | null>(null)
 
@@ -146,26 +147,42 @@ export function TasksKanban({ tasks, isLoading, error, onStatusChange, onTaskCli
                 >
                   <div className="flex items-start justify-between gap-2">
                     <h4 className="line-clamp-2 text-sm font-medium leading-snug text-gray-900">{task.title}</h4>
-                    <div className="relative">
-                      <select
-                        value={task.status}
-                        onChange={(event) => {
+                    <div className="flex items-start gap-1">
+                      <button
+                        type="button"
+                        onClick={(event) => {
                           event.stopPropagation()
-                          void handleStatusChange(task, event.target.value as TaskStatus)
+                          void onFavoriteToggle(task)
                         }}
-                        onClick={(event) => event.stopPropagation()}
-                        className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
-                        title="Change status"
+                        className={cn(
+                          'rounded-md p-1 transition',
+                          task.isFavorite ? 'text-amber-400 hover:bg-amber-50' : 'text-gray-300 hover:bg-gray-100 hover:text-gray-500'
+                        )}
+                        title={task.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
                       >
-                        {COLUMNS.map((status) => (
-                          <option key={status.id} value={status.id}>
-                            {status.label}
-                          </option>
-                        ))}
-                      </select>
-                      <button type="button" className="-mr-1 p-1 text-gray-400 transition hover:text-indigo-600">
-                        <MoreVertical className="h-4 w-4" />
+                        <Star className={cn('h-4 w-4', task.isFavorite && 'fill-amber-400')} />
                       </button>
+                      <div className="relative">
+                        <select
+                          value={task.status}
+                          onChange={(event) => {
+                            event.stopPropagation()
+                            void handleStatusChange(task, event.target.value as TaskStatus)
+                          }}
+                          onClick={(event) => event.stopPropagation()}
+                          className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                          title="Change status"
+                        >
+                          {COLUMNS.map((status) => (
+                            <option key={status.id} value={status.id}>
+                              {status.label}
+                            </option>
+                          ))}
+                        </select>
+                        <button type="button" className="-mr-1 p-1 text-gray-400 transition hover:text-indigo-600">
+                          <MoreVertical className="h-4 w-4" />
+                        </button>
+                      </div>
                     </div>
                   </div>
 

@@ -196,6 +196,22 @@ export function NotesPage() {
     [handleArchive]
   )
 
+  const handleFavoriteToggle = useCallback(
+    async (note: Note) => {
+      setActionError(null)
+      try {
+        const updated = await notesService.setFavorite(note.id, !note.isFavorite)
+        if (selectedNote?.id === note.id) {
+          setSelectedNote(updated)
+        }
+        refetch()
+      } catch {
+        setActionError('Unable to update favorite note. Please try again.')
+      }
+    },
+    [refetch, selectedNote]
+  )
+
   const filterTabs: { key: FilterTab; label: string; icon: typeof BookOpen }[] = [
     { key: 'all', label: 'All Notes', icon: BookOpen },
     { key: 'favorites', label: 'Favorites', icon: Star },
@@ -320,6 +336,7 @@ export function NotesPage() {
                   note={note}
                   isActive={selectedNote?.id === note.id}
                   onSelect={openNote}
+                  onFavoriteToggle={(n) => void handleFavoriteToggle(n)}
                   onArchive={(n) => void handleArchive(n.id)}
                 />
               ))
@@ -336,6 +353,7 @@ export function NotesPage() {
           )}
         >
           <NoteForm
+            key={isCreating ? 'new-note' : selectedNote?.id ?? 'empty-note'}
             note={isCreating ? null : selectedNote}
             isNew={isCreating}
             onSave={handleSave}

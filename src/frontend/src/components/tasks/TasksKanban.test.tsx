@@ -35,6 +35,7 @@ describe('TasksKanban', () => {
           error={null}
           onStatusChange={vi.fn()}
           onTaskClick={vi.fn()}
+          onFavoriteToggle={vi.fn()}
         />
       )
     })
@@ -53,6 +54,7 @@ describe('TasksKanban', () => {
           error={null}
           onStatusChange={onStatusChange}
           onTaskClick={vi.fn()}
+          onFavoriteToggle={vi.fn()}
         />
       )
     })

@@ -6,6 +6,7 @@ interface NoteCardProps {
   note: Note
   isActive?: boolean
   onSelect: (note: Note) => void
+  onFavoriteToggle: (note: Note) => void
   onArchive: (note: Note) => void
 }
 
@@ -27,7 +28,7 @@ function formatUpdatedAt(dateValue: string) {
   return `Updated ${updatedAt.toLocaleDateString()}`
 }
 
-export function NoteCard({ note, isActive = false, onSelect, onArchive }: NoteCardProps) {
+export function NoteCard({ note, isActive = false, onSelect, onFavoriteToggle, onArchive }: NoteCardProps) {
   const tags = note.tags?.filter(Boolean) ?? []
   const preview = note.content.trim() || 'No additional content yet.'
 
@@ -54,7 +55,21 @@ export function NoteCard({ note, isActive = false, onSelect, onArchive }: NoteCa
           <div className="min-w-0 flex-1">
             <div className="flex items-start justify-between gap-2">
               <h3 className="line-clamp-1 text-base font-semibold text-slate-900">{note.title || 'Untitled note'}</h3>
-              {note.isFavorite ? <Star className="mt-0.5 h-4 w-4 shrink-0 fill-amber-400 text-amber-400" /> : null}
+              <button
+                type="button"
+                onClick={(event) => {
+                  event.stopPropagation()
+                  onFavoriteToggle(note)
+                }}
+                className={cn(
+                  'mt-0.5 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg transition',
+                  note.isFavorite ? 'text-amber-400 hover:bg-amber-50' : 'text-slate-300 hover:bg-slate-100 hover:text-slate-500'
+                )}
+                aria-label={note.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+                title={note.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+              >
+                <Star className={cn('h-4 w-4', note.isFavorite && 'fill-amber-400')} />
+              </button>
             </div>
 
             <p className="mt-1 line-clamp-2 text-sm leading-6 text-slate-600">{preview}</p>
