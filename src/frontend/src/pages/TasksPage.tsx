@@ -6,24 +6,7 @@ import type { TaskDto, TaskStatus } from '../types/task'
 import { cn } from '../utils/cn'
 import { TasksKanban } from '../components/tasks/TasksKanban'
 import { TasksList } from '../components/tasks/TasksList'
-
-const statusOptions: Array<{ value: TaskStatus | 'all'; label: string }> = [
-  { value: 'all', label: 'All active' },
-  { value: 'Todo', label: 'To do' },
-  { value: 'InProgress', label: 'In progress' },
-  { value: 'InReview', label: 'In review' },
-  { value: 'Done', label: 'Done' },
-  { value: 'Blocked', label: 'Blocked / Cancelled' },
-]
-
-const statusLabel: Record<string, string> = {
-  Todo: 'To do',
-  InProgress: 'In progress',
-  InReview: 'In review',
-  Done: 'Done',
-  Blocked: 'Blocked / Cancelled',
-  Archived: 'Archived',
-}
+import { useTranslation } from 'react-i18next'
 
 interface TaskFormState {
   title: string
@@ -31,13 +14,6 @@ interface TaskFormState {
   dueDate: string
   reminderOffsets: number[]
 }
-
-const REMINDER_OPTIONS = [
-  { value: 5, label: '5 min before' },
-  { value: 15, label: '15 min before' },
-  { value: 60, label: '1 hour before' },
-  { value: 1440, label: '1 day before' },
-] as const
 
 const emptyForm: TaskFormState = { title: '', description: '', dueDate: '', reminderOffsets: [] }
 
@@ -50,7 +26,33 @@ function toIsoDate(value: string) {
 }
 
 export function TasksPage() {
+  const { t } = useTranslation()
   const [viewMode, setViewMode] = useState<'list' | 'kanban'>('kanban')
+
+  const statusOptions: Array<{ value: TaskStatus | 'all'; label: string }> = [
+    { value: 'all', label: t('tasks.statusAll') },
+    { value: 'Todo', label: t('tasks.statusTodo') },
+    { value: 'InProgress', label: t('tasks.statusInProgress') },
+    { value: 'InReview', label: t('tasks.statusInReview') },
+    { value: 'Done', label: t('tasks.statusDone') },
+    { value: 'Blocked', label: t('tasks.statusBlocked') },
+  ]
+
+  const statusLabel: Record<string, string> = {
+    Todo: t('tasks.statusTodo'),
+    InProgress: t('tasks.statusInProgress'),
+    InReview: t('tasks.statusInReview'),
+    Done: t('tasks.statusDone'),
+    Blocked: t('tasks.statusBlocked'),
+    Archived: t('tasks.statusArchived'),
+  }
+
+  const REMINDER_OPTIONS = [
+    { value: 5, label: t('tasks.reminder5min') },
+    { value: 15, label: t('tasks.reminder15min') },
+    { value: 60, label: t('tasks.reminder1hour') },
+    { value: 1440, label: t('tasks.reminder1day') },
+  ] as const
   const {
     tasks,
     isLoading,
@@ -72,9 +74,9 @@ export function TasksPage() {
   const [formError, setFormError] = useState<string | null>(null)
 
   const pageTitle = useMemo(() => {
-    if (!filter.status) return 'All active tasks'
+    if (!filter.status) return t('tasks.pageTitleActive')
     return statusLabel[filter.status] || filter.status
-  }, [filter.status])
+  }, [filter.status, t, statusLabel])
 
   const favoriteCount = useMemo(() => tasks.filter((task) => task.isFavorite).length, [tasks])
 
@@ -99,12 +101,12 @@ export function TasksPage() {
     event.preventDefault()
     const title = form.title.trim()
     if (!title) {
-      setFormError('Title is required.')
+      setFormError(t('tasks.errorTitleRequired'))
       return
     }
 
     if (form.reminderOffsets.length > 0 && !form.dueDate) {
-      setFormError('Due date is required to create reminders.')
+      setFormError(t('tasks.errorDueDateRequired'))
       return
     }
 
@@ -125,7 +127,7 @@ export function TasksPage() {
       }
       resetForm()
     } catch {
-      setFormError('Unable to save task. Please check the fields and try again.')
+      setFormError(t('tasks.errorSaveTask'))
     } finally {
       setSubmitting(false)
     }
@@ -163,13 +165,13 @@ export function TasksPage() {
       <section className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm md:p-6">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
-            <p className="text-sm font-semibold uppercase tracking-wide text-indigo-600">Tasks</p>
+            <p className="text-sm font-semibold uppercase tracking-wide text-indigo-600">{t('tasks.sectionLabel')}</p>
             <h1 className="mt-2 text-3xl font-bold tracking-tight text-gray-950">{pageTitle}</h1>
             <p className="mt-2 text-sm text-gray-500">
-              Manage your work using Kanban or List views. Drag-and-drop support coming soon.
+              {t('tasks.subtitle')}
             </p>
             <p className="mt-2 inline-flex items-center gap-1 text-sm text-amber-600">
-              <Star className="h-4 w-4 fill-amber-400 text-amber-400" /> {favoriteCount} favorite task{favoriteCount === 1 ? '' : 's'}
+              <Star className="h-4 w-4 fill-amber-400 text-amber-400" /> {t('tasks.favoriteCount', { count: favoriteCount })}
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -181,7 +183,7 @@ export function TasksPage() {
                   viewMode === 'kanban' ? 'bg-indigo-50 text-indigo-700' : 'text-gray-500 hover:bg-gray-50'
                 )}
               >
-                <LayoutGrid className="h-4 w-4" /> Kanban
+                <LayoutGrid className="h-4 w-4" /> {t('tasks.viewKanban')}
               </button>
               <button
                 onClick={() => setViewMode('list')}
@@ -190,7 +192,7 @@ export function TasksPage() {
                   viewMode === 'list' ? 'bg-indigo-50 text-indigo-700' : 'text-gray-500 hover:bg-gray-50'
                 )}
               >
-                <List className="h-4 w-4" /> List
+                <List className="h-4 w-4" /> {t('tasks.viewList')}
               </button>
             </div>
             <button
@@ -198,7 +200,7 @@ export function TasksPage() {
               onClick={refresh}
               className="inline-flex items-center justify-center gap-2 rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
             >
-              <RefreshCw className="h-4 w-4" /> Refresh
+              <RefreshCw className="h-4 w-4" /> {t('tasks.refresh')}
             </button>
           </div>
         </div>
@@ -233,24 +235,24 @@ export function TasksPage() {
           <div className="flex items-center gap-2">
             <Plus className="h-5 w-5 text-indigo-600" />
             <h2 className="text-lg font-semibold text-gray-950">
-              {editingTask ? 'Edit task' : 'Create task'}
+              {editingTask ? t('tasks.formTitleEdit') : t('tasks.formTitleCreate')}
             </h2>
           </div>
 
           <div className="mt-5 space-y-4">
             <label className="block">
-              <span className="text-sm font-medium text-gray-700">Title</span>
+              <span className="text-sm font-medium text-gray-700">{t('tasks.fieldTitle')}</span>
               <input
                 value={form.title}
                 onChange={(event) => setForm((current) => ({ ...current, title: event.target.value }))}
                 maxLength={200}
                 className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100"
-                placeholder="Prepare weekly plan"
+                placeholder={t('tasks.fieldTitlePlaceholder')}
               />
             </label>
 
             <label className="block">
-              <span className="text-sm font-medium text-gray-700">Description</span>
+              <span className="text-sm font-medium text-gray-700">{t('tasks.fieldDescription')}</span>
               <textarea
                 value={form.description}
                 onChange={(event) =>
@@ -258,12 +260,12 @@ export function TasksPage() {
                 }
                 rows={4}
                 className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100"
-                placeholder="Add details, acceptance notes, or reminders"
+                placeholder={t('tasks.fieldDescriptionPlaceholder')}
               />
             </label>
 
             <label className="block">
-              <span className="text-sm font-medium text-gray-700">Due date</span>
+              <span className="text-sm font-medium text-gray-700">{t('tasks.fieldDueDate')}</span>
               <input
                 type="date"
                 value={form.dueDate}
@@ -274,10 +276,10 @@ export function TasksPage() {
 
             <div className="block">
               <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
-                <Bell className="h-4 w-4 text-indigo-600" /> Reminders
+                <Bell className="h-4 w-4 text-indigo-600" /> {t('tasks.fieldReminders')}
               </div>
               <p className="mt-1 text-xs text-gray-500">
-                Syncs to native calendar in Phase 1. Requires due date.
+                {t('tasks.remindersHelp')}
               </p>
               <div className="mt-3 flex flex-wrap gap-2">
                 {REMINDER_OPTIONS.map((option) => {
@@ -318,7 +320,7 @@ export function TasksPage() {
               className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-              {editingTask ? 'Save changes' : 'Create task'}
+              {editingTask ? t('tasks.saveChanges') : t('tasks.formTitleCreate')}
             </button>
             {editingTask ? (
               <button
@@ -326,7 +328,7 @@ export function TasksPage() {
                 onClick={resetForm}
                 className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
               >
-                Cancel
+                {t('tasks.cancel')}
               </button>
             ) : null}
           </div>

@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Archive, ChevronLeft, MoreVertical, Star, Trash2, Tag, Loader2, Check } from 'lucide-react'
 import type { Note } from '../../types/note'
 import { cn } from '../../utils/cn'
@@ -13,6 +14,7 @@ interface NoteFormProps {
 }
 
 export function NoteForm({ note, onSave, onArchive, onDelete, onClose, isNew = false }: NoteFormProps) {
+  const { t } = useTranslation()
   // Use state with initial values from note. 
   // We will use a "key" prop in the parent to force a re-mount when the note changes.
   const [title, setTitle] = useState(note?.title ?? '')
@@ -102,8 +104,8 @@ export function NoteForm({ note, onSave, onArchive, onDelete, onClose, isNew = f
           <Star className="h-8 w-8" />
         </div>
         <div>
-          <h3 className="text-lg font-semibold text-slate-900">Select a note to view</h3>
-          <p className="mt-1 text-sm text-slate-500">Choose a note from the list on the left to view its content, or create a new one.</p>
+          <h3 className="text-lg font-semibold text-slate-900">{t('notes.selectToView')}</h3>
+          <p className="mt-1 text-sm text-slate-500">{t('notes.selectToViewDesc')}</p>
         </div>
       </div>
     )
@@ -116,7 +118,7 @@ export function NoteForm({ note, onSave, onArchive, onDelete, onClose, isNew = f
           <button
             onClick={onClose}
             className="flex h-10 w-10 items-center justify-center rounded-xl text-slate-500 transition hover:bg-slate-100 lg:hidden"
-            aria-label="Back to list"
+            aria-label={t('notes.backToList')}
           >
             <ChevronLeft className="h-6 w-6" />
           </button>
@@ -125,17 +127,17 @@ export function NoteForm({ note, onSave, onArchive, onDelete, onClose, isNew = f
             {saveStatus === 'saving' && (
               <span className="flex items-center gap-1.5">
                 <Loader2 className="h-3 w-3 animate-spin" />
-                Saving...
+                {t('notes.saving')}
               </span>
             )}
             {saveStatus === 'saved' && (
               <span className="flex items-center gap-1.5 text-emerald-600">
                 <Check className="h-3 w-3" />
-                Saved
+                {t('notes.saved')}
               </span>
             )}
             {saveStatus === 'error' && (
-              <span className="text-rose-500">Error saving</span>
+              <span className="text-rose-500">{t('notes.errorSaving')}</span>
             )}
           </div>
         </div>
@@ -147,7 +149,7 @@ export function NoteForm({ note, onSave, onArchive, onDelete, onClose, isNew = f
               "flex h-10 w-10 items-center justify-center rounded-xl transition",
               isFavorite ? "text-amber-400 hover:bg-amber-50" : "text-slate-400 hover:bg-slate-100"
             )}
-            title={isFavorite ? "Remove from favorites" : "Add to favorites"}
+            title={isFavorite ? t('notes.removeFromFavorites') : t('notes.addToFavorites')}
           >
             <Star className={cn("h-5 w-5", isFavorite && "fill-amber-400")} />
           </button>
@@ -174,11 +176,11 @@ export function NoteForm({ note, onSave, onArchive, onDelete, onClose, isNew = f
                         className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-sm text-slate-700 transition hover:bg-slate-50"
                       >
                         <Archive className="h-4 w-4" />
-                        Archive Note
+                        {t('notes.archiveNote')}
                       </button>
                       <button
                         onClick={() => {
-                          if (confirm('Are you sure you want to delete this note permanently?')) {
+                          if (confirm(t('notes.deleteConfirm'))) {
                             void onDelete(note.id)
                           }
                           setIsMenuOpen(false)
@@ -186,7 +188,7 @@ export function NoteForm({ note, onSave, onArchive, onDelete, onClose, isNew = f
                         className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-sm text-rose-600 transition hover:bg-rose-50"
                       >
                         <Trash2 className="h-4 w-4" />
-                        Delete Permanently
+                        {t('notes.deletePermanently')}
                       </button>
                     </>
                   )}
@@ -201,7 +203,7 @@ export function NoteForm({ note, onSave, onArchive, onDelete, onClose, isNew = f
         <div className="mx-auto max-w-4xl space-y-6">
           <input
             type="text"
-            placeholder="Note title"
+            placeholder={t('notes.noteTitlePlaceholder')}
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             className="w-full border-none bg-transparent p-0 text-3xl font-bold text-slate-900 placeholder:text-slate-300 focus:outline-none focus:ring-0"
@@ -225,7 +227,7 @@ export function NoteForm({ note, onSave, onArchive, onDelete, onClose, isNew = f
             ))}
             <input
               type="text"
-              placeholder="Add tag..."
+              placeholder={t('notes.addTag')}
               value={tagInput}
               onChange={(e) => setTagInput(e.target.value)}
               onKeyDown={handleAddTag}
@@ -234,7 +236,7 @@ export function NoteForm({ note, onSave, onArchive, onDelete, onClose, isNew = f
           </div>
 
           <textarea
-            placeholder="Start writing..."
+            placeholder={t('notes.startWriting')}
             value={content}
             onChange={(e) => setContent(e.target.value)}
             className="min-h-[400px] w-full resize-none border-none bg-transparent p-0 text-lg leading-relaxed text-slate-700 placeholder:text-slate-300 focus:outline-none focus:ring-0"

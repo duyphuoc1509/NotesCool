@@ -2,15 +2,16 @@ import { Home, FileText, CheckSquare, Settings, Plus, Users } from 'lucide-react
 import { Link, useLocation } from 'react-router-dom'
 import { cn } from '../utils/cn'
 import { useAuth } from '../hooks/useAuth'
+import { useTranslation } from 'react-i18next'
 
 const navigation = [
-  { name: 'Home', icon: Home, href: '/' },
-  { name: 'Notes', icon: FileText, href: '/notes' },
-  { name: 'Tasks', icon: CheckSquare, href: '/tasks' },
-  { name: 'Settings', icon: Settings, href: '/settings' },
+  { name: 'nav.home', icon: Home, href: '/' },
+  { name: 'nav.notes', icon: FileText, href: '/notes' },
+  { name: 'nav.tasks', icon: CheckSquare, href: '/tasks' },
+  { name: 'nav.settings', icon: Settings, href: '/settings' },
 ]
 
-const adminNavigation = [{ name: 'Users', icon: Users, href: '/users' }]
+const adminNavigation = [{ name: 'nav.users', icon: Users, href: '/users' }]
 
 interface BottomNavProps {
   onQuickCreate: () => void
@@ -19,6 +20,7 @@ interface BottomNavProps {
 export function BottomNav({ onQuickCreate }: BottomNavProps) {
   const location = useLocation()
   const { isAdmin } = useAuth()
+  const { t } = useTranslation()
 
   const allNavigation = [...navigation, ...(isAdmin ? adminNavigation : [])]
 
@@ -37,7 +39,7 @@ export function BottomNav({ onQuickCreate }: BottomNavProps) {
               )}
             >
               <item.icon className={cn('h-5 w-5', isActive ? 'text-indigo-600' : 'text-gray-400')} />
-              <span className="mt-1 text-[10px] font-medium">{item.name}</span>
+              <span className="mt-1 text-[10px] font-medium">{t(item.name)}</span>
             </Link>
           )
         })}

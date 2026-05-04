@@ -46,8 +46,12 @@ public class IdentityDataSeeder
             }
         }
 
-        // Seed / repair Admin User
-        var adminUser = await _userManager.FindByEmailAsync("admin@notescool.com")
+        const string canonicalAdminEmail = "admin@notescool.local";
+
+        // Seed / repair Admin User — search across all known historical emails/usernames
+        var adminUser = await _userManager.FindByEmailAsync(canonicalAdminEmail)
+            ?? await _userManager.FindByEmailAsync("admin@notescool.com")
+            ?? await _userManager.FindByNameAsync(canonicalAdminEmail)
             ?? await _userManager.FindByNameAsync("admin@notescool.com")
             ?? await _userManager.FindByNameAsync("admin");
 
@@ -55,31 +59,34 @@ public class IdentityDataSeeder
         {
             adminUser = new ApplicationUser
             {
-                UserName = "admin@notescool.com",
-                Email = "admin@notescool.com",
-                NormalizedEmail = "ADMIN@NOTESCOOL.COM",
+                UserName = canonicalAdminEmail,
+                Email = canonicalAdminEmail,
+                NormalizedEmail = canonicalAdminEmail.ToUpperInvariant(),
                 DisplayName = "Administrator",
-                EmailConfirmed = true
+                EmailConfirmed = true,
+                Status = AccountStatus.Active
             };
 
-            var result = await _userManager.CreateAsync(adminUser, "P@ssword123!");
+            var result = await _userManager.CreateAsync(adminUser, "Admin@123");
             if (!result.Succeeded)
             {
                 throw new Exception($"Failed to seed 'admin' user: {string.Join(", ", result.Errors.Select(e => e.Description))}");
             }
         }
 
-        if (!string.Equals(adminUser.Email, "admin@notescool.com", StringComparison.OrdinalIgnoreCase)
-            || !string.Equals(adminUser.UserName, "admin@notescool.com", StringComparison.OrdinalIgnoreCase)
+        if (!string.Equals(adminUser.Email, canonicalAdminEmail, StringComparison.OrdinalIgnoreCase)
+            || !string.Equals(adminUser.UserName, canonicalAdminEmail, StringComparison.OrdinalIgnoreCase)
             || !adminUser.EmailConfirmed
+            || adminUser.Status != AccountStatus.Active
             || string.IsNullOrWhiteSpace(adminUser.DisplayName))
         {
-            adminUser.Email = "admin@notescool.com";
-            adminUser.UserName = "admin@notescool.com";
-            adminUser.NormalizedEmail = "ADMIN@NOTESCOOL.COM";
-            adminUser.NormalizedUserName = "ADMIN@NOTESCOOL.COM";
+            adminUser.Email = canonicalAdminEmail;
+            adminUser.UserName = canonicalAdminEmail;
+            adminUser.NormalizedEmail = canonicalAdminEmail.ToUpperInvariant();
+            adminUser.NormalizedUserName = canonicalAdminEmail.ToUpperInvariant();
             adminUser.DisplayName = string.IsNullOrWhiteSpace(adminUser.DisplayName) ? "Administrator" : adminUser.DisplayName;
             adminUser.EmailConfirmed = true;
+            adminUser.Status = AccountStatus.Active;
 
             var updateResult = await _userManager.UpdateAsync(adminUser);
             if (!updateResult.Succeeded)
