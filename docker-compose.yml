@@ -36,6 +36,8 @@ services:
       - SSO_MICROSOFT_REDIRECT_URLS=${SSO_MICROSOFT_REDIRECT_URLS:-https://localhost:10001/auth/callback/microsoft}
     ports:
       - "10002:10002"
+    networks:
+      - dokploy-network
 
   frontend:
     build:
@@ -48,3 +50,7 @@ services:
       - "10001:80"
     depends_on:
       - backend
+
+networks:
+  dokploy-network:
+    external: true
