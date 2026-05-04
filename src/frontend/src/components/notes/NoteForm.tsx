@@ -27,23 +27,39 @@ export function NoteForm({ note, onSave, onArchive, onDelete, onClose, isNew = f
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const isFirstRender = useRef(true)
 
+  const normalizedValues = useCallback(() => ({
+    title: title.trim(),
+    content: content.trim(),
+    isFavorite,
+    tags,
+  }), [title, content, isFavorite, tags])
+
+  const hasNoteChanged = useCallback(() => {
+    const values = normalizedValues()
+
+    return (
+      values.title !== (note?.title ?? '').trim() ||
+      values.content !== (note?.content ?? '').trim() ||
+      values.isFavorite !== (note?.isFavorite ?? false) ||
+      JSON.stringify(values.tags) !== JSON.stringify(note?.tags ?? [])
+    )
+  }, [note, normalizedValues])
+
   const handleManualSave = useCallback(async () => {
-    if (!title.trim() && !content.trim()) return
+    const values = normalizedValues()
+
+    if (!values.title && !values.content) return
+    if (!hasNoteChanged()) return
     
     setSaveStatus('saving')
     try {
-      await onSave(note?.id, {
-        title: title.trim(),
-        content: content.trim(),
-        isFavorite,
-        tags
-      })
+      await onSave(note?.id, values)
       setSaveStatus('saved')
       setTimeout(() => setSaveStatus('idle'), 2000)
     } catch {
       setSaveStatus('error')
     }
-  }, [note, title, content, isFavorite, tags, onSave]) // note instead of note?.id to satisfy compiler/memoization lint
+  }, [note?.id, normalizedValues, hasNoteChanged, onSave])
 
   // Auto-save logic
   useEffect(() => {
@@ -54,15 +70,7 @@ export function NoteForm({ note, onSave, onArchive, onDelete, onClose, isNew = f
     }
 
     if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current)
-    
-    // Check if anything actually changed
-    const isSame = 
-      title === (note?.title ?? '') &&
-      content === (note?.content ?? '') &&
-      isFavorite === (note?.isFavorite ?? false) &&
-      JSON.stringify(tags) === JSON.stringify(note?.tags ?? [])
-
-    if (isSame) return
+    if (!hasNoteChanged()) return
 
     saveTimeoutRef.current = setTimeout(() => {
       void handleManualSave()
@@ -71,7 +79,7 @@ export function NoteForm({ note, onSave, onArchive, onDelete, onClose, isNew = f
     return () => {
       if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current)
     }
-  }, [title, content, isFavorite, tags, handleManualSave, note])
+  }, [handleManualSave, hasNoteChanged])
 
   const handleAddTag = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && tagInput.trim()) {
