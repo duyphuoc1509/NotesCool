@@ -12,7 +12,7 @@ public class IdentityDataSeeder
     private readonly ILogger<IdentityDataSeeder> _logger;
 
     public IdentityDataSeeder(
-        UserManager<ApplicationUser> userManager, 
+        UserManager<ApplicationUser> userManager,
         RoleManager<IdentityRole> roleManager,
         ILogger<IdentityDataSeeder> logger)
     {
@@ -46,22 +46,24 @@ public class IdentityDataSeeder
             }
         }
 
-        const string canonicalAdminEmail = "admin@notescool.local";
+        if (!await _roleManager.RoleExistsAsync(SystemRoles.User))
+        {
+            var roleResult = await _roleManager.CreateAsync(new IdentityRole(SystemRoles.User));
+            if (!roleResult.Succeeded)
+            {
+                throw new Exception($"Failed to seed '{SystemRoles.User}' role: {string.Join(", ", roleResult.Errors.Select(e => e.Description))}");
+            }
+        }
 
-        // Seed / repair Admin User — search across all known historical emails/usernames
-        var adminUser = await _userManager.FindByEmailAsync(canonicalAdminEmail)
-            ?? await _userManager.FindByEmailAsync("admin@notescool.com")
-            ?? await _userManager.FindByNameAsync(canonicalAdminEmail)
-            ?? await _userManager.FindByNameAsync("admin@notescool.com")
-            ?? await _userManager.FindByNameAsync("admin");
+        var adminUser = await _userManager.FindByNameAsync("admin");
 
         if (adminUser == null)
         {
             adminUser = new ApplicationUser
             {
-                UserName = canonicalAdminEmail,
-                Email = canonicalAdminEmail,
-                NormalizedEmail = canonicalAdminEmail.ToUpperInvariant(),
+                UserName = "admin",
+                Email = "admin",
+                NormalizedEmail = "ADMIN",
                 DisplayName = "Administrator",
                 EmailConfirmed = true,
                 Status = AccountStatus.Active
@@ -71,27 +73,6 @@ public class IdentityDataSeeder
             if (!result.Succeeded)
             {
                 throw new Exception($"Failed to seed 'admin' user: {string.Join(", ", result.Errors.Select(e => e.Description))}");
-            }
-        }
-
-        if (!string.Equals(adminUser.Email, canonicalAdminEmail, StringComparison.OrdinalIgnoreCase)
-            || !string.Equals(adminUser.UserName, canonicalAdminEmail, StringComparison.OrdinalIgnoreCase)
-            || !adminUser.EmailConfirmed
-            || adminUser.Status != AccountStatus.Active
-            || string.IsNullOrWhiteSpace(adminUser.DisplayName))
-        {
-            adminUser.Email = canonicalAdminEmail;
-            adminUser.UserName = canonicalAdminEmail;
-            adminUser.NormalizedEmail = canonicalAdminEmail.ToUpperInvariant();
-            adminUser.NormalizedUserName = canonicalAdminEmail.ToUpperInvariant();
-            adminUser.DisplayName = string.IsNullOrWhiteSpace(adminUser.DisplayName) ? "Administrator" : adminUser.DisplayName;
-            adminUser.EmailConfirmed = true;
-            adminUser.Status = AccountStatus.Active;
-
-            var updateResult = await _userManager.UpdateAsync(adminUser);
-            if (!updateResult.Succeeded)
-            {
-                throw new Exception($"Failed to normalize seeded 'admin' user: {string.Join(", ", updateResult.Errors.Select(e => e.Description))}");
             }
         }
 

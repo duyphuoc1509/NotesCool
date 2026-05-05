@@ -24,14 +24,8 @@ public static class IdentityDataSeederExtensions
             }
 
             // Create admin user if not exists
-            var adminEmail = "admin@notescool.local";
+            var adminEmail = "admin";
             var adminUser = await userManager.FindByEmailAsync(adminEmail);
-            
-            if (adminUser == null)
-            {
-                // Fallback to searching by username
-                adminUser = await userManager.FindByNameAsync("admin");
-            }
 
             if (adminUser == null)
             {
