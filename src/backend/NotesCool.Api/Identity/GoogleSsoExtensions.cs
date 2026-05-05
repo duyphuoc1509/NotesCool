@@ -18,6 +18,7 @@ using NotesCool.Api.Configuration;
 using NotesCool.Identity.Application.Abstractions;
 using NotesCool.Identity.Contracts;
 using NotesCool.Identity.Infrastructure;
+using NotesCool.Shared.Auth;
 using NotesCool.Shared.Security;
 
 namespace NotesCool.Api.Identity;
@@ -54,7 +55,7 @@ public static class GoogleSsoExtensions
                 SameSite = SameSiteMode.Lax,
                 Expires = DateTimeOffset.UtcNow.AddMinutes(15)
             };
-            
+
             httpContext.Response.Cookies.Append("sso_state", state, cookieOptions);
             httpContext.Response.Cookies.Append("sso_nonce", nonce, cookieOptions);
 
@@ -153,7 +154,7 @@ public static class GoogleSsoExtensions
             }
 
             var jwtToken = handler.ReadJwtToken(idToken);
-            
+
             // Validate nonce if present in ID token
             var nonceClaim = jwtToken.Claims.FirstOrDefault(c => c.Type == "nonce")?.Value;
             if (!string.IsNullOrEmpty(nonceClaim) && nonceClaim != savedNonce)
@@ -208,14 +209,15 @@ public static class GoogleSsoExtensions
                 return Results.BadRequest(new SsoErrorResponse("account_inactive", $"Account is {appUser.Status}."));
             }
 
-            // Generate token using the Identity module's JWT generator (same signing key, same claims)
-            var authResponse = tokenGenerator.CreateToken(appUser);
+            // Generate token using the Identity module's JWT generator (same signing key, same claims as DB roles)
+            var roles = await userManager.GetRolesAsync(appUser);
+            var authResponse = tokenGenerator.CreateToken(appUser, roles);
             var refreshToken = refreshTokens.Issue(appUser.Id, appUser.Email ?? string.Empty);
 
             audit.LogAuthEvent(SecurityAuditEvents.SsoCallback, appUser.Id, appUser.Email, httpContext.Connection.RemoteIpAddress?.ToString(), httpContext.Request.Headers.UserAgent, new { status = "success", provider = "Google" });
 
             // Build SsoTokenResponse that the session-exchange endpoint expects
-            var ssoUser = new SsoUserResponse(appUser.Id, appUser.Email, appUser.DisplayName, "User",
+            var ssoUser = new SsoUserResponse(appUser.Id, appUser.Email, appUser.DisplayName, ResolvePrimarySsoRole(roles),
                 new[] { new LinkedSsoProviderResponse("Google", subject, email, DateTimeOffset.UtcNow) });
             var authTokenResponse = new SsoTokenResponse(authResponse.AccessToken, "Bearer", 900, refreshToken, ssoUser);
             var sessionCode = store.CreatePendingSession(authTokenResponse);
@@ -224,6 +226,24 @@ public static class GoogleSsoExtensions
         });
 
         return app;
+    }
+
+    private static string ResolvePrimarySsoRole(IList<string> roles)
+    {
+        if (roles is null || roles.Count == 0)
+        {
+            return SystemRoles.User;
+        }
+
+        foreach (var r in roles)
+        {
+            if (string.Equals(r, SystemRoles.Admin, StringComparison.OrdinalIgnoreCase))
+            {
+                return SystemRoles.Admin;
+            }
+        }
+
+        return roles[0];
     }
 
     private static string GetRedirectUri(SsoProviderOptions options, HttpContext httpContext, ILogger logger)

@@ -13,22 +13,9 @@ public static class AuthDataSeederExtensions
 
         try
         {
-            var adminEmail = "admin@notescool.local";
-            var exists = await dbContext.Users.AnyAsync(u => u.Email == adminEmail || u.Email == "admin");
-            
+            var exists = await dbContext.Users.AnyAsync(u => u.Email == "admin");
             if (!exists)
             {
-                var admin = new UserAccount
-                {
-                    Email = adminEmail,
-                    PasswordHash = PasswordHasher.Hash("Admin@123"),
-                    Status = UserAccountStatuses.Active,
-                    CreatedAt = DateTimeOffset.UtcNow
-                };
-
-                dbContext.Users.Add(admin);
-                
-                // Also add shorthand "admin" username if system allows it as email string
                 var adminShort = new UserAccount
                 {
                     Email = "admin",
