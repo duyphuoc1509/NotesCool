@@ -28,6 +28,13 @@ public class ProjectMember : Entity
         Touch();
     }
 
+    public void Reactivate(ProjectRole role)
+    {
+        Role = role;
+        IsActive = true;
+        Touch();
+    }
+
     public void Deactivate()
     {
         IsActive = false;

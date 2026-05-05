@@ -72,6 +72,7 @@ app.MapRegistrationEndpoints();
 app.MapIdentityEndpoints();
 app.MapApiEndpoints();
 app.MapTasksEndpoints();
+app.MapProjectsEndpoints();
 app.MapReminderEndpoints();
 app.MapSsoEndpoints();
 app.MapGoogleSsoEndpoints();
