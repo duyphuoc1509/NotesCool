@@ -10,8 +10,6 @@ namespace NotesCool.Api.Contracts;
 
 public static class AuthEndpoints
 {
-    private const int AccessTokenExpiresInSeconds = 900;
-
     public static IEndpointRouteBuilder MapAuthEndpoints(this IEndpointRouteBuilder app)
     {
         var group = app.MapGroup("/api/auth").WithTags("Auth");
@@ -118,7 +116,7 @@ public sealed record RefreshTokenRequest(string RefreshToken);
 
 /// <summary>
 /// Access tokens are bearer JWTs that remain valid until AccessTokenExpiresAtUtc
-/// (AccessTokenExpiresInSeconds seconds after issuance). Logout revokes only the
+/// (see <see cref="AuthResponse.AccessTokenExpiresInSeconds" />). Logout revokes only the
 /// current refresh token/session, so clients should discard the access token locally.
 /// </summary>
 public sealed record AuthResponse(
