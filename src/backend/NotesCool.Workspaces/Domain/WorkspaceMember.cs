@@ -6,7 +6,7 @@ public sealed class WorkspaceMember
 {
     private WorkspaceMember() { }
 
-    internal WorkspaceMember(string workspaceId, string userId, WorkspaceRole role)
+    internal WorkspaceMember(Guid workspaceId, string userId, WorkspaceRole role)
     {
         WorkspaceId = workspaceId;
         UserId = userId;
@@ -14,7 +14,7 @@ public sealed class WorkspaceMember
         JoinedAtUtc = DateTime.UtcNow;
     }
 
-    public string WorkspaceId { get; private set; } = string.Empty;
+    public Guid WorkspaceId { get; private set; }
     public string UserId { get; private set; } = string.Empty;
     public WorkspaceRole Role { get; private set; }
     public DateTime JoinedAtUtc { get; private set; }

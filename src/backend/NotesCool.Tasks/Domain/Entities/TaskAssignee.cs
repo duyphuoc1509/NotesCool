@@ -25,4 +25,10 @@ public class TaskAssignee : Entity
         IsActive = false;
         Touch();
     }
+
+    public void Reactivate()
+    {
+        IsActive = true;
+        Touch();
+    }
 }

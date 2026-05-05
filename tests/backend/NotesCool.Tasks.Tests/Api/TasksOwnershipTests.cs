@@ -5,7 +5,6 @@ using System.Security.Claims;
 using FluentAssertions;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
@@ -30,11 +29,12 @@ public class TasksOwnershipTests : IClassFixture<WebApplicationFactory<Program>>
     {
         _factory = factory.WithWebHostBuilder(builder =>
         {
+            builder.UseEnvironment("Testing");
             builder.ConfigureTestServices(services =>
             {
                 var descriptor = services.SingleOrDefault(d => d.ServiceType == typeof(DbContextOptions<TasksDbContext>));
                 if (descriptor != null) services.Remove(descriptor);
-                services.AddDbContext<TasksDbContext>(options => options.UseInMemoryDatabase("InMemoryTasksOwnershipDb"));
+                services.AddDbContext<TasksDbContext>(options => options.UseInMemoryDatabase("InMemoryTasksOwnershipDb" + Guid.NewGuid()));
                 services.AddAuthentication("Test").AddScheme<AuthenticationSchemeOptions, DynamicTestAuthHandler>("Test", options => { });
                 services.AddScoped<ICurrentUser, CurrentUser>();
             });
@@ -42,55 +42,63 @@ public class TasksOwnershipTests : IClassFixture<WebApplicationFactory<Program>>
     }
 
     [Fact]
-    public async Task GetTask_WhenNotOwner_ReturnsNotFound()
+    public async Task GetTask_WhenNotProjectMember_ReturnsBadRequest()
     {
+        var project = await SeedProjectGraphAsync();
+
         var clientA = CreateClient("user-a");
-        var createResponse = await clientA.PostAsJsonAsync("/api/tasks", new CreateTaskRequest("Task A", "Desc A", null));
+        var createResponse = await clientA.PostAsJsonAsync($"/api/projects/{project.Id}/tasks", new CreateTaskRequest("Task A", "Desc A", TaskPriority.Medium, null));
         var task = await createResponse.Content.ReadFromJsonAsync<TaskDto>();
 
         var clientB = CreateClient("user-b");
         var getResponse = await clientB.GetAsync($"/api/tasks/{task!.Id}");
 
-        getResponse.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        getResponse.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
 
     [Fact]
-    public async Task UpdateTask_WhenNotOwner_ReturnsNotFound()
+    public async Task UpdateTask_WhenNotProjectMember_ReturnsBadRequest()
     {
+        var project = await SeedProjectGraphAsync();
+
         var clientA = CreateClient("user-a");
-        var createResponse = await clientA.PostAsJsonAsync("/api/tasks", new CreateTaskRequest("Task A", "Desc A", null));
+        var createResponse = await clientA.PostAsJsonAsync($"/api/projects/{project.Id}/tasks", new CreateTaskRequest("Task A", "Desc A", TaskPriority.Medium, null));
         var task = await createResponse.Content.ReadFromJsonAsync<TaskDto>();
 
         var clientB = CreateClient("user-b");
-        var updateResponse = await clientB.PutAsJsonAsync($"/api/tasks/{task!.Id}", new UpdateTaskRequest("Task A Updated", "Desc A Updated", null));
+        var updateResponse = await clientB.PutAsJsonAsync($"/api/tasks/{task!.Id}", new UpdateTaskRequest("Task A Updated", "Desc A Updated", TaskPriority.High, null));
 
-        updateResponse.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        updateResponse.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
 
     [Fact]
-    public async Task ChangeStatus_WhenNotOwner_ReturnsNotFound()
+    public async Task ChangeStatus_WhenNotProjectMember_ReturnsBadRequest()
     {
+        var project = await SeedProjectGraphAsync();
+
         var clientA = CreateClient("user-a");
-        var createResponse = await clientA.PostAsJsonAsync("/api/tasks", new CreateTaskRequest("Task A", "Desc A", null));
+        var createResponse = await clientA.PostAsJsonAsync($"/api/projects/{project.Id}/tasks", new CreateTaskRequest("Task A", "Desc A", TaskPriority.Medium, null));
         var task = await createResponse.Content.ReadFromJsonAsync<TaskDto>();
 
         var clientB = CreateClient("user-b");
         var statusResponse = await clientB.PatchAsJsonAsync($"/api/tasks/{task!.Id}/status", new ChangeTaskStatusRequest(TaskStatus.InProgress));
 
-        statusResponse.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        statusResponse.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
 
     [Fact]
-    public async Task ArchiveTask_WhenNotOwner_ReturnsNotFound()
+    public async Task DeleteTask_WhenNotProjectMember_ReturnsBadRequest()
     {
+        var project = await SeedProjectGraphAsync();
+
         var clientA = CreateClient("user-a");
-        var createResponse = await clientA.PostAsJsonAsync("/api/tasks", new CreateTaskRequest("Task A", "Desc A", null));
+        var createResponse = await clientA.PostAsJsonAsync($"/api/projects/{project.Id}/tasks", new CreateTaskRequest("Task A", "Desc A", TaskPriority.Medium, null));
         var task = await createResponse.Content.ReadFromJsonAsync<TaskDto>();
 
         var clientB = CreateClient("user-b");
         var deleteResponse = await clientB.DeleteAsync($"/api/tasks/{task!.Id}");
 
-        deleteResponse.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        deleteResponse.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
 
     private HttpClient CreateClient(string userId)
@@ -98,6 +106,22 @@ public class TasksOwnershipTests : IClassFixture<WebApplicationFactory<Program>>
         var client = _factory.CreateClient();
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Test", userId);
         return client;
+    }
+
+    private async Task<Project> SeedProjectGraphAsync()
+    {
+        using var scope = _factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<TasksDbContext>();
+
+        var workspace = new Workspace("Workspace", null, "user-a");
+        db.Workspaces.Add(workspace);
+        db.WorkspaceMembers.Add(new WorkspaceMember(workspace.Id, "user-a", WorkspaceRole.Member, "seed"));
+
+        var project = new Project(workspace.Id, "Project", null, "user-a");
+        db.Projects.Add(project);
+        db.ProjectMembers.Add(new ProjectMember(project.Id, "user-a", ProjectRole.Manager, "seed"));
+        await db.SaveChangesAsync();
+        return project;
     }
 }
 

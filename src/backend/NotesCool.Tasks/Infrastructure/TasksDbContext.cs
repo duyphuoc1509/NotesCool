@@ -82,6 +82,10 @@ public class TasksDbContext : DbContext
             entity.ToTable("TaskAssignees");
             entity.HasKey(e => e.Id);
             entity.HasIndex(e => new { e.TaskId, e.UserId }).IsUnique();
+            entity.HasOne<TaskItem>()
+                .WithMany(t => t.Assignees)
+                .HasForeignKey(e => e.TaskId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<TaskActivityLog>(entity =>

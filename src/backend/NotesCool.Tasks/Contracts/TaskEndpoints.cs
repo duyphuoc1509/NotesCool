@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Routing;
 using NotesCool.Shared.Auth;
 using NotesCool.Shared.Common;
 using NotesCool.Tasks.Application;
+using NotesCool.Tasks.Domain.Enums;
 using TaskStatus = NotesCool.Tasks.Domain.Enums.TaskStatus;
 
 namespace NotesCool.Tasks.Contracts;
@@ -13,26 +14,45 @@ public static class TaskEndpoints
 {
     public static IEndpointRouteBuilder MapTasksEndpoints(this IEndpointRouteBuilder builder)
     {
-        var group = builder.MapGroup("api/tasks")
+        var projectTasks = builder.MapGroup("api/projects/{projectId:guid}/tasks")
             .WithTags("Tasks")
             .RequireAuthorization();
 
-        group.MapGet("", async (
+        projectTasks.MapGet("", async (
+            [FromRoute] Guid projectId,
             [FromServices] TasksService service,
             [FromServices] ICurrentUser currentUser,
             [FromQuery] TaskStatus? status = null,
+            [FromQuery] TaskPriority? priority = null,
+            [FromQuery] string? assigneeId = null,
             [FromQuery] int page = 1,
             [FromQuery] int pageSize = 10,
             CancellationToken ct = default) =>
         {
-            var result = await service.GetTasksAsync(currentUser.UserId, status, page, pageSize, ct);
+            var result = await service.GetProjectTasksAsync(projectId, currentUser.UserId, status, priority, assigneeId, page, pageSize, ct);
             return Results.Ok(result);
         })
-        .WithSummary("Get tasks")
-        .WithDescription("Returns a paged result of tasks for the current user, optionally filtered by status.")
+        .WithSummary("Get tasks by project")
         .Produces<PagedResult<TaskDto>>();
 
-        group.MapGet("{id:guid}", async (
+        projectTasks.MapPost("", async (
+            [FromRoute] Guid projectId,
+            [FromBody] CreateTaskRequest request,
+            [FromServices] TasksService service,
+            [FromServices] ICurrentUser currentUser,
+            CancellationToken ct = default) =>
+        {
+            var result = await service.CreateTaskAsync(projectId, request, currentUser.UserId, ct);
+            return Results.Created($"api/tasks/{result.Id}", result);
+        })
+        .WithSummary("Create task")
+        .Produces<TaskDto>(StatusCodes.Status201Created);
+
+        var tasks = builder.MapGroup("api/tasks")
+            .WithTags("Tasks")
+            .RequireAuthorization();
+
+        tasks.MapGet("{id:guid}", async (
             [FromRoute] Guid id,
             [FromServices] TasksService service,
             [FromServices] ICurrentUser currentUser,
@@ -42,23 +62,9 @@ public static class TaskEndpoints
             return Results.Ok(result);
         })
         .WithSummary("Get task by ID")
-        .WithDescription("Returns a single task for the current user.")
         .Produces<TaskDto>();
 
-        group.MapPost("", async (
-            [FromBody] CreateTaskRequest request,
-            [FromServices] TasksService service,
-            [FromServices] ICurrentUser currentUser,
-            CancellationToken ct = default) =>
-        {
-            var result = await service.CreateTaskAsync(request, currentUser.UserId, ct);
-            return Results.Created($"api/tasks/{result.Id}", result);
-        })
-        .WithSummary("Create task")
-        .WithDescription("Creates a new task for the current user.")
-        .Produces<TaskDto>(StatusCodes.Status201Created);
-
-        group.MapPut("{id:guid}", async (
+        tasks.MapPut("{id:guid}", async (
             [FromRoute] Guid id,
             [FromBody] UpdateTaskRequest request,
             [FromServices] TasksService service,
@@ -69,10 +75,9 @@ public static class TaskEndpoints
             return Results.Ok(result);
         })
         .WithSummary("Update task")
-        .WithDescription("Updates a task's title, description, and due date.")
         .Produces<TaskDto>();
 
-        group.MapPatch("{id:guid}/status", async (
+        tasks.MapPatch("{id:guid}/status", async (
             [FromRoute] Guid id,
             [FromBody] ChangeTaskStatusRequest request,
             [FromServices] TasksService service,
@@ -83,10 +88,22 @@ public static class TaskEndpoints
             return Results.Ok(result);
         })
         .WithSummary("Change task status")
-        .WithDescription("Updates the status of a task.")
         .Produces<TaskDto>();
 
-        group.MapPatch("{id:guid}/favorite", async (
+        tasks.MapPatch("{id:guid}/priority", async (
+            [FromRoute] Guid id,
+            [FromBody] ChangeTaskPriorityRequest request,
+            [FromServices] TasksService service,
+            [FromServices] ICurrentUser currentUser,
+            CancellationToken ct = default) =>
+        {
+            var result = await service.ChangeTaskPriorityAsync(id, request, currentUser.UserId, ct);
+            return Results.Ok(result);
+        })
+        .WithSummary("Change task priority")
+        .Produces<TaskDto>();
+
+        tasks.MapPatch("{id:guid}/favorite", async (
             [FromRoute] Guid id,
             [FromBody] SetTaskFavoriteRequest request,
             [FromServices] TasksService service,
@@ -97,10 +114,9 @@ public static class TaskEndpoints
             return Results.Ok(result);
         })
         .WithSummary("Set task favorite")
-        .WithDescription("Updates favorite state for a task.")
         .Produces<TaskDto>();
 
-        group.MapDelete("{id:guid}", async (
+        tasks.MapDelete("{id:guid}", async (
             [FromRoute] Guid id,
             [FromServices] TasksService service,
             [FromServices] ICurrentUser currentUser,
@@ -110,8 +126,70 @@ public static class TaskEndpoints
             return Results.NoContent();
         })
         .WithSummary("Delete task")
-        .WithDescription("Deletes a task.")
         .Produces(StatusCodes.Status204NoContent);
+
+        tasks.MapGet("{taskId:guid}/subtasks", async (
+            [FromRoute] Guid taskId,
+            [FromServices] TasksService service,
+            [FromServices] ICurrentUser currentUser,
+            CancellationToken ct = default) =>
+        {
+            var result = await service.GetSubTasksAsync(taskId, currentUser.UserId, ct);
+            return Results.Ok(result);
+        })
+        .WithSummary("List subtasks")
+        .Produces<List<TaskDto>>();
+
+        tasks.MapPost("{taskId:guid}/subtasks", async (
+            [FromRoute] Guid taskId,
+            [FromBody] CreateTaskRequest request,
+            [FromServices] TasksService service,
+            [FromServices] ICurrentUser currentUser,
+            CancellationToken ct = default) =>
+        {
+            var result = await service.CreateSubTaskAsync(taskId, request, currentUser.UserId, ct);
+            return Results.Created($"api/tasks/{result.Id}", result);
+        })
+        .WithSummary("Create subtask")
+        .Produces<TaskDto>(StatusCodes.Status201Created);
+
+        tasks.MapPost("{taskId:guid}/assignees", async (
+            [FromRoute] Guid taskId,
+            [FromBody] AddTaskAssigneeRequest request,
+            [FromServices] TasksService service,
+            [FromServices] ICurrentUser currentUser,
+            CancellationToken ct = default) =>
+        {
+            await service.AssignUserAsync(taskId, request.UserId, currentUser.UserId, ct);
+            return Results.Ok();
+        })
+        .WithSummary("Assign user to task")
+        .Produces(StatusCodes.Status200OK);
+
+        tasks.MapDelete("{taskId:guid}/assignees/{userId}", async (
+            [FromRoute] Guid taskId,
+            [FromRoute] string userId,
+            [FromServices] TasksService service,
+            [FromServices] ICurrentUser currentUser,
+            CancellationToken ct = default) =>
+        {
+            await service.RemoveAssigneeAsync(taskId, userId, currentUser.UserId, ct);
+            return Results.NoContent();
+        })
+        .WithSummary("Remove assignee from task")
+        .Produces(StatusCodes.Status204NoContent);
+
+        tasks.MapGet("{taskId:guid}/activity-logs", async (
+            [FromRoute] Guid taskId,
+            [FromServices] TasksService service,
+            [FromServices] ICurrentUser currentUser,
+            CancellationToken ct = default) =>
+        {
+            var result = await service.GetActivityLogsAsync(taskId, currentUser.UserId, ct);
+            return Results.Ok(result);
+        })
+        .WithSummary("Get task activity logs")
+        .Produces<List<TaskActivityLogDto>>();
 
         return builder;
     }

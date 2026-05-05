@@ -29,7 +29,7 @@ public sealed class WorkspacesDbContext(DbContextOptions<WorkspacesDbContext> op
         {
             b.ToTable("workspace_members");
             b.HasKey(x => new { x.WorkspaceId, x.UserId });
-            b.Property(x => x.WorkspaceId).HasMaxLength(128).IsRequired();
+            b.Property(x => x.WorkspaceId).IsRequired();
             b.Property(x => x.UserId).HasMaxLength(128).IsRequired();
             b.Property(x => x.Role).HasConversion<int>();
         });

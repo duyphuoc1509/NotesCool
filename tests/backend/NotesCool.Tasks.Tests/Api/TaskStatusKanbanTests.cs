@@ -36,12 +36,12 @@ public class TaskStatusKanbanTests : IClassFixture<WebApplicationFactory<Program
     {
         _factory = factory.WithWebHostBuilder(builder =>
         {
+            builder.UseEnvironment("Testing");
             builder.ConfigureTestServices(services =>
             {
                 var descriptor = services.SingleOrDefault(d => d.ServiceType == typeof(DbContextOptions<TasksDbContext>));
                 if (descriptor != null) services.Remove(descriptor);
                 
-                // Ensure a fresh DB name for this test class
                 var dbName = "InMemoryTaskStatusDb_" + Guid.NewGuid().ToString();
                 services.AddDbContext<TasksDbContext>(options => options.UseInMemoryDatabase(dbName));
                 services.AddAuthentication("Test").AddScheme<AuthenticationSchemeOptions, DynamicTestAuthHandler>("Test", options => { });
@@ -61,11 +61,11 @@ public class TaskStatusKanbanTests : IClassFixture<WebApplicationFactory<Program
     public async Task ChangeStatus_ToInvalidValue_ReturnsBadRequest()
     {
         var client = CreateClient("kanban-user");
+        var project = await SeedProjectGraphAsync("kanban-user");
         
-        var createResponse = await client.PostAsJsonAsync("/api/tasks", new CreateTaskRequest("Test Task", "Desc", null));
+        var createResponse = await client.PostAsJsonAsync($"/api/projects/{project.Id}/tasks", new CreateTaskRequest("Test Task", "Desc"));
         var task = await createResponse.Content.ReadFromJsonAsync<TaskDto>(JsonOptions);
 
-        // Sending an invalid status enum (e.g. 99)
         var statusResponse = await client.PatchAsJsonAsync($"/api/tasks/{task!.Id}/status", new { status = 99 });
 
         statusResponse.StatusCode.Should().Be(HttpStatusCode.BadRequest);
@@ -77,9 +77,8 @@ public class TaskStatusKanbanTests : IClassFixture<WebApplicationFactory<Program
         using var scope = _factory.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<TasksDbContext>();
         
-        var legacyTask = new TaskItem(Guid.Empty, Guid.Empty, "Legacy",  null, TaskPriority.Medium,  null,  "kanban-user");
+        var legacyTask = new TaskItem(Guid.Empty, Guid.Empty, "Legacy", null, TaskPriority.Medium, null, "kanban-user");
         
-        // Use reflection to force an invalid status to simulate old DB row
         typeof(TaskItem).GetProperty("Status")!.SetValue(legacyTask, (TaskStatus)99);
         
         dbContext.Tasks.Add(legacyTask);
@@ -87,10 +86,41 @@ public class TaskStatusKanbanTests : IClassFixture<WebApplicationFactory<Program
 
         var client = CreateClient("kanban-user");
         
+        // This fails if TaskOwnership check kicks in since Guid.Empty project doesn't exist/no member.
+        // But for this compat test, we can seed a member for Guid.Empty project or just check domain property.
+        // Better: test domain property via UnitTest if needed, but here we test API.
+        // Let's seed project/member for it.
+        var workspace = new Workspace("WS", null, "kanban-user");
+        typeof(Workspace).GetProperty("Id")!.SetValue(workspace, Guid.Empty);
+        var project = new Project(Guid.Empty, "PR", null, "kanban-user");
+        typeof(Project).GetProperty("Id")!.SetValue(project, Guid.Empty);
+        
+        dbContext.Workspaces.Add(workspace);
+        dbContext.Projects.Add(project);
+        dbContext.WorkspaceMembers.Add(new WorkspaceMember(Guid.Empty, "kanban-user", WorkspaceRole.Member, "seed"));
+        dbContext.ProjectMembers.Add(new ProjectMember(Guid.Empty, "kanban-user", ProjectRole.Member, "seed"));
+        await dbContext.SaveChangesAsync();
+
         var getResponse = await client.GetAsync($"/api/tasks/{legacyTask.Id}");
         var task = await getResponse.Content.ReadFromJsonAsync<TaskDto>(JsonOptions);
 
         task.Should().NotBeNull();
-        task!.Status.Should().Be(TaskStatus.Todo, "EF Core ValueConverter should fall back to Todo for undefined statuses.");
+        task!.Status.Should().Be(TaskStatus.Todo);
+    }
+
+    private async Task<Project> SeedProjectGraphAsync(string userId)
+    {
+        using var scope = _factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<TasksDbContext>();
+
+        var workspace = new Workspace("Workspace", null, userId);
+        db.Workspaces.Add(workspace);
+        db.WorkspaceMembers.Add(new WorkspaceMember(workspace.Id, userId, WorkspaceRole.Member, "seed"));
+
+        var project = new Project(workspace.Id, "Project", null, userId);
+        db.Projects.Add(project);
+        db.ProjectMembers.Add(new ProjectMember(project.Id, userId, ProjectRole.Manager, "seed"));
+        await db.SaveChangesAsync();
+        return project;
     }
 }
