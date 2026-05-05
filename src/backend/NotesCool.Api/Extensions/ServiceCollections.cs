@@ -118,6 +118,7 @@ public static class ServiceCollections
 
         services.AddDbContext<TasksDbContext>(o => o.UseNpgsql(defaultConnectionString));
         services.AddScoped<TasksService>();
+        services.AddScoped<ProjectsService>();
         return services;
     }
 
