@@ -17,7 +17,54 @@
     "logout": "Logout",
     "signOut": "Sign out",
     "home": "Home",
-    "quickCreate": "Quick create"
+    "quickCreate": "Quick create",
+    "workspace": "Workspace"
+  },
+  "workspace": {
+    "title": "Workspace",
+    "subtitle": "Manage projects and collaborate with your team"
+  },
+  "projects": {
+    "search": "Search projects...",
+    "createNew": "Create Project",
+    "emptyTitle": "No projects found",
+    "emptyDesc": "Get started by creating a new project.",
+    "name": "Project Name",
+    "namePlaceholder": "e.g., Marketing Campaign",
+    "key": "Key",
+    "description": "Description",
+    "noDescription": "No description provided.",
+    "visibility": "Visibility",
+    "visibilityPrivate": "Private",
+    "visibilityPrivateDesc": "Only members can access this project",
+    "visibilityWorkspace": "Workspace",
+    "visibilityWorkspaceDesc": "Anyone in the workspace can view and join",
+    "members": "Members",
+    "notFound": "Project not found",
+    "notFoundDesc": "The project you are looking for does not exist or you do not have permission.",
+    "backToWorkspace": "Back to Workspace",
+    "tasksPlaceholder": "Task management for projects coming soon.",
+    "settingsPlaceholder": "Project settings coming soon.",
+    "tabs": {
+      "tasks": "Tasks",
+      "members": "Members",
+      "settings": "Settings"
+    },
+    "members.title": "Project Members",
+    "members.desc": "Manage who has access to this project and their roles.",
+    "members.add": "Add Member",
+    "members.user": "User",
+    "members.role": "Role",
+    "members.empty": "No members found.",
+    "members.addTitle": "Add Member to Project",
+    "members.selectUser": "Select Workspace User",
+    "members.searchUsers": "Search by name or email...",
+    "members.noUsers": "No available users found.",
+    "roles": {
+      "owner": "Owner",
+      "admin": "Admin",
+      "member": "Member"
+    }
   },
   "dashboard": {
     "greeting": "Hi, {{name}}",
@@ -148,7 +195,13 @@
     "createNote": "New Note",
     "createTask": "New Task",
     "createNew": "Create New",
-    "close": "Close"
+    "close": "Close",
+    "cancel": "Cancel",
+    "loading": "Loading...",
+    "creating": "Creating...",
+    "adding": "Adding...",
+    "actions": "Actions",
+    "remove": "Remove"
   },
   "auth": {
     "completingSignIn": "Completing sign in...",

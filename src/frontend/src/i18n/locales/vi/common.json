@@ -17,7 +17,54 @@
     "logout": "Đăng xuất",
     "signOut": "Đăng xuất",
     "home": "Trang chủ",
-    "quickCreate": "Tạo nhanh"
+    "quickCreate": "Tạo nhanh",
+    "workspace": "Không gian làm việc"
+  },
+  "workspace": {
+    "title": "Không gian làm việc",
+    "subtitle": "Quản lý dự án và cộng tác với nhóm của bạn"
+  },
+  "projects": {
+    "search": "Tìm kiếm dự án...",
+    "createNew": "Tạo dự án",
+    "emptyTitle": "Không tìm thấy dự án nào",
+    "emptyDesc": "Bắt đầu bằng cách tạo một dự án mới.",
+    "name": "Tên dự án",
+    "namePlaceholder": "VD: Chiến dịch Marketing",
+    "key": "Mã",
+    "description": "Mô tả",
+    "noDescription": "Chưa có mô tả.",
+    "visibility": "Chế độ hiển thị",
+    "visibilityPrivate": "Riêng tư",
+    "visibilityPrivateDesc": "Chỉ các thành viên mới có thể truy cập dự án này",
+    "visibilityWorkspace": "Không gian làm việc",
+    "visibilityWorkspaceDesc": "Bất kỳ ai trong không gian làm việc đều có thể xem và tham gia",
+    "members": "Thành viên",
+    "notFound": "Không tìm thấy dự án",
+    "notFoundDesc": "Dự án bạn đang tìm kiếm không tồn tại hoặc bạn không có quyền truy cập.",
+    "backToWorkspace": "Quay lại Không gian làm việc",
+    "tasksPlaceholder": "Tính năng quản lý công việc cho dự án sắp ra mắt.",
+    "settingsPlaceholder": "Cài đặt dự án sắp ra mắt.",
+    "tabs": {
+      "tasks": "Công việc",
+      "members": "Thành viên",
+      "settings": "Cài đặt"
+    },
+    "members.title": "Thành viên dự án",
+    "members.desc": "Quản lý những người có quyền truy cập vào dự án này và vai trò của họ.",
+    "members.add": "Thêm thành viên",
+    "members.user": "Người dùng",
+    "members.role": "Vai trò",
+    "members.empty": "Không tìm thấy thành viên nào.",
+    "members.addTitle": "Thêm thành viên vào dự án",
+    "members.selectUser": "Chọn người dùng từ không gian làm việc",
+    "members.searchUsers": "Tìm theo tên hoặc email...",
+    "members.noUsers": "Không tìm thấy người dùng khả dụng.",
+    "roles": {
+      "owner": "Chủ sở hữu",
+      "admin": "Quản trị viên",
+      "member": "Thành viên"
+    }
   },
   "dashboard": {
     "greeting": "Chào, {{name}}",
@@ -148,7 +195,13 @@
     "createNote": "Ghi chú mới",
     "createTask": "Công việc mới",
     "createNew": "Tạo mới",
-    "close": "Đóng"
+    "close": "Đóng",
+    "cancel": "Hủy",
+    "loading": "Đang tải...",
+    "creating": "Đang tạo...",
+    "adding": "Đang thêm...",
+    "actions": "Thao tác",
+    "remove": "Xóa"
   },
   "auth": {
     "completingSignIn": "Đang hoàn tất đăng nhập...",

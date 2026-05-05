@@ -11,6 +11,8 @@ import { SsoCallbackPage } from './pages/SsoCallbackPage'
 import { NotesPage } from './pages/NotesPage'
 import { TasksPage } from './pages/TasksPage'
 import { AdminUsersPage } from './pages/AdminUsersPage'
+import { WorkspacePage } from './pages/WorkspacePage'
+import { ProjectDetailPage } from './pages/ProjectDetailPage'
 import { useState, useEffect, type ReactNode } from 'react'
 import { useAuth } from './hooks/useAuth'
 import { FileText, CheckSquare, Clock } from 'lucide-react'
@@ -207,6 +209,26 @@ function AppRoutes() {
           <ProtectedRoute requireAdmin>
             <Layout>
               <AdminUsersPage />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/workspace"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <WorkspacePage />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/projects/:id"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <ProjectDetailPage />
             </Layout>
           </ProtectedRoute>
         }
