@@ -216,7 +216,7 @@ public class AccountEndpointsTests : IClassFixture<WebApplicationFactory<Program
         return _factory.WithWebHostBuilder(builder =>
         {
             builder.UseEnvironment("Testing");
-            builder.ConfigureTestServices(services =>
+            builder.ConfigureServices(services =>
             {
                 ReplaceDbContext<IdentityDbContext>(services, identityDbName);
                 ReplaceDbContext<NotesCool.Notes.Infrastructure.NotesDbContext>(services, notesDbName);
