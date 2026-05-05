@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Routing;
 using NotesCool.Shared.Auth;
 using NotesCool.Shared.Common;
 using NotesCool.Tasks.Application;
-using TaskStatus = NotesCool.Tasks.Domain.TaskStatus;
+using TaskStatus = NotesCool.Tasks.Domain.Enums.TaskStatus;
 
 namespace NotesCool.Tasks.Contracts;
 

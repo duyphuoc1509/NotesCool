@@ -1,6 +1,5 @@
 using System.ComponentModel.DataAnnotations;
-using NotesCool.Tasks.Domain;
-using TaskStatus = NotesCool.Tasks.Domain.TaskStatus;
+using TaskStatus = NotesCool.Tasks.Domain.Enums.TaskStatus;
 
 namespace NotesCool.Tasks.Contracts;
 

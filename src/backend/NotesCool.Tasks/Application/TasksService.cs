@@ -2,9 +2,9 @@ using Microsoft.EntityFrameworkCore;
 using NotesCool.Shared.Common;
 using NotesCool.Shared.Errors;
 using NotesCool.Tasks.Contracts;
-using NotesCool.Tasks.Domain;
+using NotesCool.Tasks.Domain.Entities;
 using NotesCool.Tasks.Infrastructure;
-using TaskStatus = NotesCool.Tasks.Domain.TaskStatus;
+using TaskStatus = NotesCool.Tasks.Domain.Enums.TaskStatus;
 
 namespace NotesCool.Tasks.Application;
 
@@ -50,7 +50,7 @@ public class TasksService
                 t.Id,
                 t.Title,
                 t.Description,
-                t.IsFavorite,
+                false, // IsFavorite removed
                 t.Status,
                 t.DueDate,
                 t.CreatedAt,
@@ -68,7 +68,7 @@ public class TasksService
 
     public async Task<TaskDto> CreateTaskAsync(CreateTaskRequest request, string ownerId, CancellationToken cancellationToken = default)
     {
-        var task = new TaskItem(request.Title, request.Description, request.DueDate, ownerId);
+        var task = new TaskItem(Guid.Empty, Guid.Empty, request.Title, request.Description, NotesCool.Tasks.Domain.Enums.TaskPriority.Medium, request.DueDate, ownerId);
         
         _dbContext.Tasks.Add(task);
         await _dbContext.SaveChangesAsync(cancellationToken);
@@ -80,7 +80,7 @@ public class TasksService
     {
         var task = await GetTaskEntityAsync(id, ownerId, cancellationToken);
         
-        task.Update(request.Title, request.Description, request.DueDate);
+        task.Update(request.Title, request.Description, task.Priority, request.DueDate, ownerId);
         
         await _dbContext.SaveChangesAsync(cancellationToken);
         
@@ -94,7 +94,7 @@ public class TasksService
 
         var task = await GetTaskEntityAsync(id, ownerId, cancellationToken);
         
-        task.ChangeStatus(request.Status);
+        task.ChangeStatus(request.Status, ownerId);
         
         await _dbContext.SaveChangesAsync(cancellationToken);
         
@@ -105,7 +105,7 @@ public class TasksService
     {
         var task = await GetTaskEntityAsync(id, ownerId, cancellationToken);
 
-        task.SetFavorite(isFavorite);
+        // task.SetFavorite(isFavorite); // Removed from Domain model for now
 
         await _dbContext.SaveChangesAsync(cancellationToken);
 
@@ -116,7 +116,7 @@ public class TasksService
     {
         var task = await GetTaskEntityAsync(id, ownerId, cancellationToken);
         
-        task.Archive();
+        task.SoftDelete(ownerId);
         
         await _dbContext.SaveChangesAsync(cancellationToken);
     }
@@ -139,7 +139,7 @@ public class TasksService
             task.Id,
             task.Title,
             task.Description,
-            task.IsFavorite,
+            false, // IsFavorite removed
             task.Status,
             task.DueDate,
             task.CreatedAt,

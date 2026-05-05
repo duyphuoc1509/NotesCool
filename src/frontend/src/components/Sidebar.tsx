@@ -7,6 +7,7 @@ import { LanguageSwitcher } from './LanguageSwitcher'
 
 const navigation = [
   { name: 'nav.dashboard', icon: LayoutDashboard, href: '/' },
+  { name: 'nav.workspaces', icon: LayoutGrid, href: '/workspaces' },
   { name: 'nav.notes', icon: FileText, href: '/notes' },
   { name: 'nav.tasks', icon: CheckSquare, href: '/tasks' },
   { name: 'nav.workspace', icon: Briefcase, href: '/workspace' },
