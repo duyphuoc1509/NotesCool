@@ -6,6 +6,7 @@ using Microsoft.IdentityModel.Tokens;
 using NotesCool.Identity.Application.Abstractions;
 using NotesCool.Identity.Contracts;
 using NotesCool.Identity.Infrastructure;
+using NotesCool.Shared.Auth;
 
 namespace NotesCool.Identity.Infrastructure;
 
@@ -23,7 +24,10 @@ public sealed class JwtTokenGenerator : IJwtTokenGenerator
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtOptions.SigningKey));
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
         var expires = DateTime.UtcNow.AddMinutes(_jwtOptions.ExpiresInMinutes);
-        var resolvedRoles = (roles ?? Array.Empty<string>()).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
+        var resolvedRoles = (roles ?? Array.Empty<string>())
+            .Select(SystemRoles.Normalize)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
 
         var claims = new List<Claim>
         {

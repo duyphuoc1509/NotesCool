@@ -45,4 +45,28 @@ public static class SystemRoles
 {
     public const string User = "User";
     public const string Admin = "Admin";
+
+    /// <summary>
+    /// Maps legacy or case-variant role names (e.g. <c>admin</c> from old seed data) to
+    /// <see cref="Admin"/> / <see cref="User"/> so JWTs and policies stay aligned with <c>RequireRole("Admin")</c>.
+    /// </summary>
+    public static string Normalize(string role)
+    {
+        if (string.IsNullOrEmpty(role))
+        {
+            return role;
+        }
+
+        if (role.Equals(Admin, StringComparison.OrdinalIgnoreCase))
+        {
+            return Admin;
+        }
+
+        if (role.Equals(User, StringComparison.OrdinalIgnoreCase))
+        {
+            return User;
+        }
+
+        return role;
+    }
 }

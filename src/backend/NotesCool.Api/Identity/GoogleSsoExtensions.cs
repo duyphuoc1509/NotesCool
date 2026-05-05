@@ -237,13 +237,13 @@ public static class GoogleSsoExtensions
 
         foreach (var r in roles)
         {
-            if (string.Equals(r, SystemRoles.Admin, StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(SystemRoles.Normalize(r), SystemRoles.Admin, StringComparison.Ordinal))
             {
                 return SystemRoles.Admin;
             }
         }
 
-        return roles[0];
+        return SystemRoles.Normalize(roles[0]);
     }
 
     private static string GetRedirectUri(SsoProviderOptions options, HttpContext httpContext, ILogger logger)

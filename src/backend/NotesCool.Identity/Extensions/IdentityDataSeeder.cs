@@ -41,6 +41,8 @@ public class IdentityDataSeeder
 
     private async Task SeedInternalAsync()
     {
+        await CanonicalizeBuiltInRoleNamesAsync();
+
         if (!await _roleManager.RoleExistsAsync(SystemRoles.Admin))
         {
             var roleResult = await _roleManager.CreateAsync(new IdentityRole(SystemRoles.Admin));
@@ -178,5 +180,44 @@ public class IdentityDataSeeder
         }
 
         _logger.LogInformation("Migrated legacy admin account to {Email}.", SeededAdminEmail);
+    }
+
+    /// <summary>
+    /// Old deployments stored AspNetRoles.Name as lowercase <c>admin</c>; authorization uses <see cref="SystemRoles.Admin"/>.
+    /// Identity resolves roles by normalized name, but JWT echoed the stored Name — normalize to canonical casing.
+    /// </summary>
+    private async Task CanonicalizeBuiltInRoleNamesAsync()
+    {
+        await CanonicalizeRoleNameAsync(SystemRoles.Admin);
+        await CanonicalizeRoleNameAsync(SystemRoles.User);
+    }
+
+    private async Task CanonicalizeRoleNameAsync(string canonicalName)
+    {
+        var role = await _roleManager.FindByNameAsync(canonicalName);
+        if (role is null)
+        {
+            return;
+        }
+
+        if (string.Equals(role.Name, canonicalName, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        var oldName = role.Name;
+        role.Name = canonicalName;
+        var update = await _roleManager.UpdateAsync(role);
+        if (!update.Succeeded)
+        {
+            _logger.LogWarning(
+                "Could not rename role from '{Old}' to '{Canonical}': {Errors}",
+                oldName,
+                canonicalName,
+                string.Join(", ", update.Errors.Select(e => e.Description)));
+            return;
+        }
+
+        _logger.LogInformation("Renamed identity role from '{Old}' to '{Canonical}'.", oldName, canonicalName);
     }
 }
