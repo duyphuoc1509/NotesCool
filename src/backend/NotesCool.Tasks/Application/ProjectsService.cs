@@ -45,6 +45,11 @@ public sealed class ProjectsService(TasksDbContext db, WorkspacesDbContext works
             .FirstOrDefaultAsync(m => m.WorkspaceId == workspaceId && m.UserId == userId, ct)
             ?? throw new ApiException("access_denied", "You are not a member of this workspace.");
 
+        if (workspaceMember.Role == NotesCool.Workspaces.Domain.WorkspaceRole.Viewer)
+        {
+            throw new ApiException("access_denied", "Workspace Viewer cannot create projects.");
+        }
+
         var project = new Project(workspaceId, request.Name, request.Description, userId);
         db.Projects.Add(project);
 

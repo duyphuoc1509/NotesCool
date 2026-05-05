@@ -24,7 +24,14 @@ public static class DatabaseInitializer
     {
         await using var scope = services.CreateAsyncScope();
         var sp = scope.ServiceProvider;
+        var env = sp.GetRequiredService<IHostEnvironment>();
         var logger = sp.GetRequiredService<ILoggerFactory>().CreateLogger("DatabaseInitializer");
+
+        // Skip DB bootstrap in test environment to avoid noise from missing postgres.
+        if (env.IsEnvironment("Testing"))
+        {
+            return;
+        }
 
         // Order matters: identity tables must exist before IdentityDataSeeder runs.
         await EnsureContextSchemaAsync<AppIdentityDbContext>(sp, "AspNetUsers", logger, ct, applyMigrationsIfAvailable: false);

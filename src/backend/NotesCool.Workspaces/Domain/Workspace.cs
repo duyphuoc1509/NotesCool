@@ -103,5 +103,6 @@ public enum WorkspaceRole
 {
     Member,
     Admin,
-    Owner
+    Owner,
+    Viewer
 }

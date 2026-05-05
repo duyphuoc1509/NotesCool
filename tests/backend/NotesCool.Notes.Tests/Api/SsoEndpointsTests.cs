@@ -25,14 +25,15 @@ public class SsoEndpointsTests : IClassFixture<WebApplicationFactory<Program>>
     {
         _factory = factory.WithWebHostBuilder(builder =>
         {
+            builder.UseEnvironment("Testing");
             builder.ConfigureTestServices(services =>
             {
                 services.AddSingleton<SsoStore>();
                 services.Configure<SsoOptions>(options =>
                 {
                     options.Providers.Clear();
-                    options.Providers.Add(new SsoProviderOptions { Name = "google", Enabled = true, ClientId = "test-client", ClientSecret = "test-secret", Authority = "https://accounts.example.com", CallbackPath = "/api/auth/sso/callback", RedirectUrls = ["http://localhost"] });
-                    options.Providers.Add(new SsoProviderOptions { Name = "github", Enabled = true, ClientId = "test-client", ClientSecret = "test-secret", Authority = "https://accounts.example.com", CallbackPath = "/api/auth/sso/callback", RedirectUrls = ["http://localhost"] });
+                    options.Providers.Add(new SsoProviderOptions { Name = "google", Enabled = true, ClientId = "test-client", ClientSecret = "test-secret", Authority = "https://accounts.example.com", CallbackPath = "/api/auth/sso/callback", RedirectUri = "https://localhost:10001/auth/callback/google", RedirectUrls = ["https://localhost/auth/callback/google"] });
+                    options.Providers.Add(new SsoProviderOptions { Name = "github", Enabled = true, ClientId = "test-client", ClientSecret = "test-secret", Authority = "https://accounts.example.com", CallbackPath = "/api/auth/sso/callback", RedirectUri = "https://localhost:10001/auth/callback/github", RedirectUrls = ["https://localhost/auth/callback/github"] });
                 });
                 var dbName = $"IdentityDb-{Guid.NewGuid()}";
                 var optionsDescriptor = services.SingleOrDefault(d => d.ServiceType == typeof(DbContextOptions<IdentityDbContext>));

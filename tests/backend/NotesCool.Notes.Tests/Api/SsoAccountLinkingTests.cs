@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using NotesCool.Api.Configuration;
 using NotesCool.Api.Identity;
 using NotesCool.Identity.Infrastructure;
 using NotesCool.Shared.Auth;
@@ -23,6 +24,7 @@ public class SsoAccountLinkingTests : IClassFixture<WebApplicationFactory<Progra
     {
         _factory = factory.WithWebHostBuilder(builder =>
         {
+            builder.UseEnvironment("Testing");
             builder.ConfigureTestServices(services =>
             {
                 var dbName = $"IdentityDb-{Guid.NewGuid()}";
@@ -31,6 +33,36 @@ public class SsoAccountLinkingTests : IClassFixture<WebApplicationFactory<Progra
                 var contextDescriptor = services.SingleOrDefault(d => d.ServiceType == typeof(IdentityDbContext));
                 if (contextDescriptor is not null) services.Remove(contextDescriptor);
                 services.AddDbContext<IdentityDbContext>(options => options.UseInMemoryDatabase(dbName));
+
+                services.PostConfigure<SsoOptions>(options =>
+                {
+                    options.Providers.Clear();
+                    options.Providers.AddRange(
+                    [
+                        new SsoProviderOptions
+                        {
+                            Name = "Google",
+                            Enabled = true,
+                            ClientId = "test-google-client",
+                            ClientSecret = "test-google-secret",
+                            Authority = "https://accounts.google.com",
+                            CallbackPath = "/signin-google",
+                            RedirectUri = "https://localhost:10001/auth/callback/google",
+                            RedirectUrls = ["https://localhost/auth/callback/google"]
+                        },
+                        new SsoProviderOptions
+                        {
+                            Name = "GitHub",
+                            Enabled = true,
+                            ClientId = "test-github-client",
+                            ClientSecret = "test-github-secret",
+                            Authority = "https://github.com",
+                            CallbackPath = "/signin-github",
+                            RedirectUri = "https://localhost:10001/auth/callback/github",
+                            RedirectUrls = ["https://localhost/auth/callback/github"]
+                        }
+                    ]);
+                });
 
                 services.AddAuthentication(options =>
                 {

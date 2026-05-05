@@ -27,6 +27,7 @@ public class NotesOwnershipTests : IClassFixture<WebApplicationFactory<Program>>
     {
         _factory = factory.WithWebHostBuilder(builder =>
         {
+            builder.UseEnvironment("Testing");
             builder.ConfigureTestServices(services =>
             {
                 var descriptor = services.SingleOrDefault(d => d.ServiceType == typeof(DbContextOptions<NotesDbContext>));
