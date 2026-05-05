@@ -14,10 +14,11 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using NotesCool.Shared.Auth;
 using NotesCool.Tasks.Contracts;
-using NotesCool.Tasks.Domain;
+using NotesCool.Tasks.Domain.Entities;
+using NotesCool.Tasks.Domain.Enums;
 using NotesCool.Tasks.Infrastructure;
 using Xunit;
-using TaskStatus = NotesCool.Tasks.Domain.TaskStatus;
+using TaskStatus = NotesCool.Tasks.Domain.Enums.TaskStatus;
 
 namespace NotesCool.Tasks.Tests.Api;
 

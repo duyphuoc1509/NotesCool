@@ -1,7 +1,8 @@
 using FluentAssertions;
-using NotesCool.Tasks.Domain;
+using NotesCool.Tasks.Domain.Entities;
+using NotesCool.Tasks.Domain.Enums;
 using Xunit;
-using TaskStatus = NotesCool.Tasks.Domain.TaskStatus;
+using TaskStatus = NotesCool.Tasks.Domain.Enums.TaskStatus;
 
 namespace NotesCool.Tasks.Tests.Domain;
 
@@ -11,7 +12,7 @@ public class TaskItemTests
     public void Constructor_ShouldCreateTask_WhenValidArguments()
     {
         var dueDate = DateTimeOffset.UtcNow.AddDays(2);
-        var task = new TaskItem("Test Task", "Description", dueDate, "owner1");
+        var task = new TaskItem(Guid.Empty, Guid.Empty, "Test Task",  "Description", TaskPriority.Medium,  dueDate,  "owner1");
 
         task.OwnerId.Should().Be("owner1");
         task.Title.Should().Be("Test Task");
@@ -26,7 +27,7 @@ public class TaskItemTests
     [InlineData(null)]
     public void Constructor_ShouldThrowException_WhenTitleIsInvalid(string title)
     {
-        var action = () => new TaskItem(title!, "Description", null, "owner1");
+        var action = () => new TaskItem(Guid.Empty, Guid.Empty, title!, "Description", TaskPriority.Medium, null, "owner1");
 
         action.Should().Throw<ArgumentException>().WithMessage("Title is required*");
     }
@@ -34,9 +35,9 @@ public class TaskItemTests
     [Fact]
     public void ChangeStatus_ShouldUpdateStatus()
     {
-        var task = new TaskItem("Title", "Description", null, "owner1");
+        var task = new TaskItem(Guid.Empty, Guid.Empty, "Title",  "Description", TaskPriority.Medium,  null,  "owner1");
 
-        task.ChangeStatus(TaskStatus.InProgress);
+        task.ChangeStatus(TaskStatus.InProgress, "tester");
 
         task.Status.Should().Be(TaskStatus.InProgress);
     }
@@ -44,21 +45,19 @@ public class TaskItemTests
     [Fact]
     public void ChangeStatus_ShouldAllowReopeningDoneTask()
     {
-        var task = new TaskItem("Title", "Description", null, "owner1");
-        task.ChangeStatus(TaskStatus.Done);
-        task.ChangeStatus(TaskStatus.Todo);
+        var task = new TaskItem(Guid.Empty, Guid.Empty, "Title",  "Description", TaskPriority.Medium,  null,  "owner1");
+        task.ChangeStatus(TaskStatus.Done, "tester");
+        task.ChangeStatus(TaskStatus.Todo, "tester");
 
         task.Status.Should().Be(TaskStatus.Todo);
     }
 
     [Fact]
-    public void SetFavorite_ShouldUpdateFlag()
+    public void Constructor_ShouldNotThrowException_WhenDescriptionIsNull()
     {
-        var task = new TaskItem("Title", "Description", null, "owner1");
+        var task = new TaskItem(Guid.Empty, Guid.Empty, "Title",  null, TaskPriority.Medium,  null,  "owner1");
 
-        task.SetFavorite(true);
-
-        task.IsFavorite.Should().BeTrue();
+        task.Description.Should().BeNull();
     }
 
     [Theory]
@@ -67,9 +66,9 @@ public class TaskItemTests
     [InlineData(null)]
     public void Update_ShouldThrowException_WhenTitleIsInvalid(string title)
     {
-        var task = new TaskItem("Title", "Description", null, "owner1");
+        var task = new TaskItem(Guid.Empty, Guid.Empty, "Title",  "Description", TaskPriority.Medium,  null,  "owner1");
 
-        var action = () => task.Update(title!, "Desc", null);
+        var action = () => task.Update(title!,  "Desc", TaskPriority.Medium,  null, "tester");
 
         action.Should().Throw<ArgumentException>().WithMessage("Title is required*");
     }

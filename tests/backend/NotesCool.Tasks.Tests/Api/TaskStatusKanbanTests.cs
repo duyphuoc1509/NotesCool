@@ -15,10 +15,11 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using NotesCool.Shared.Auth;
 using NotesCool.Tasks.Contracts;
-using NotesCool.Tasks.Domain;
+using NotesCool.Tasks.Domain.Entities;
+using NotesCool.Tasks.Domain.Enums;
 using NotesCool.Tasks.Infrastructure;
 using Xunit;
-using TaskStatus = NotesCool.Tasks.Domain.TaskStatus;
+using TaskStatus = NotesCool.Tasks.Domain.Enums.TaskStatus;
 
 namespace NotesCool.Tasks.Tests.Api;
 
@@ -76,7 +77,7 @@ public class TaskStatusKanbanTests : IClassFixture<WebApplicationFactory<Program
         using var scope = _factory.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<TasksDbContext>();
         
-        var legacyTask = new TaskItem("Legacy", null, null, "kanban-user");
+        var legacyTask = new TaskItem(Guid.Empty, Guid.Empty, "Legacy",  null, TaskPriority.Medium,  null,  "kanban-user");
         
         // Use reflection to force an invalid status to simulate old DB row
         typeof(TaskItem).GetProperty("Status")!.SetValue(legacyTask, (TaskStatus)99);
