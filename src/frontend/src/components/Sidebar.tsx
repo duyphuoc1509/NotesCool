@@ -1,4 +1,4 @@
-import { LogOut, LayoutDashboard, FileText, CheckSquare, Settings, Users, X, LayoutGrid } from 'lucide-react'
+import { LogOut, LayoutDashboard, FileText, CheckSquare, Settings, Users, X, Briefcase } from 'lucide-react'
 import { Link, useLocation } from 'react-router-dom'
 import { cn } from '../utils/cn'
 import { useAuth } from '../hooks/useAuth'
@@ -10,6 +10,7 @@ const navigation = [
   { name: 'nav.workspaces', icon: LayoutGrid, href: '/workspaces' },
   { name: 'nav.notes', icon: FileText, href: '/notes' },
   { name: 'nav.tasks', icon: CheckSquare, href: '/tasks' },
+  { name: 'nav.workspace', icon: Briefcase, href: '/workspace' },
   { name: 'nav.settings', icon: Settings, href: '/settings' },
 ]
 
