@@ -13,7 +13,23 @@ export interface AuthUser {
   fullName?: string
   displayName?: string
   status?: string
+  /** Present on password login / refresh. SSO session exchange uses {@link role} only. */
   roles?: string[]
+  /** Single role from SSO (`SsoUserResponse`). Prefer {@link roles} when both exist. */
+  role?: string
+}
+
+/** Maps API SSO profile (singular `role`) into `roles` so admin UI checks stay consistent. */
+export function normalizeAuthUser(user: AuthUser | undefined | null): AuthUser | undefined {
+  if (!user) return undefined
+  const existing = user.roles?.filter(Boolean) ?? []
+  if (existing.length > 0) {
+    return user
+  }
+  if (user.role) {
+    return { ...user, roles: [user.role] }
+  }
+  return { ...user, roles: [] }
 }
 
 export interface AuthResponse {
@@ -94,7 +110,11 @@ export function getStoredSession(): AuthSession | null {
   try {
     const raw = localStorage.getItem(AUTH_STORAGE_KEY)
     if (!raw) return null
-    return JSON.parse(raw) as AuthSession
+    const parsed = JSON.parse(raw) as AuthSession
+    if (parsed.user) {
+      parsed.user = normalizeAuthUser(parsed.user) ?? parsed.user
+    }
+    return parsed
   } catch {
     return null
   }

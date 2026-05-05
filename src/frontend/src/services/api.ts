@@ -85,11 +85,26 @@ api.interceptors.response.use(
           ? new Date(data.accessTokenExpiresAtUtc).getTime()
           : Date.now() + (data.accessTokenExpiresInSeconds || 0) * 1000
 
+        const mergedUser =
+          data.user != null
+            ? {
+                ...authData.user,
+                ...data.user,
+                roles:
+                  data.user.roles?.length > 0
+                    ? data.user.roles
+                    : data.user.role != null
+                      ? [data.user.role]
+                      : authData.user?.roles,
+              }
+            : authData.user
+
         const newAuthData = {
           ...authData,
           accessToken: data.accessToken,
           refreshToken: data.refreshToken,
           expiresAt,
+          user: mergedUser,
         }
 
         // Keep nested structure if it was present
