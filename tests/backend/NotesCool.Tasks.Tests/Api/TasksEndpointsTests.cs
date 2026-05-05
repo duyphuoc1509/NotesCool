@@ -11,11 +11,12 @@ using Microsoft.Extensions.DependencyInjection;
 using NotesCool.Shared.Auth;
 using NotesCool.Shared.Common;
 using NotesCool.Tasks.Contracts;
-using NotesCool.Tasks.Domain;
+using NotesCool.Tasks.Domain.Entities;
+using NotesCool.Tasks.Domain.Enums;
 using NotesCool.Tasks.Infrastructure;
 using Xunit;
 
-using TaskStatus = NotesCool.Tasks.Domain.TaskStatus;
+using TaskStatus = NotesCool.Tasks.Domain.Enums.TaskStatus;
 
 namespace NotesCool.Tasks.Tests.Api;
 
@@ -122,8 +123,8 @@ public class TasksEndpointsTests : IClassFixture<WebApplicationFactory<Program>>
         using var scope = _factory.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<TasksDbContext>();
 
-        var archivedTask = new TaskItem("Archived Task", "Desc", null, "test-user-id");
-        archivedTask.ChangeStatus(TaskStatus.Archived);
+        var archivedTask = new TaskItem(Guid.Empty, Guid.Empty, "Archived Task",  "Desc", TaskPriority.Medium,  null,  "test-user-id");
+        archivedTask.ChangeStatus(TaskStatus.Archived, "tester");
         archivedTask.Archive();
 
         dbContext.Tasks.Add(archivedTask);
