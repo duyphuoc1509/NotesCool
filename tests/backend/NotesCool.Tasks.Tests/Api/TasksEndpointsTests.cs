@@ -9,6 +9,9 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using NotesCool.Identity.Infrastructure;
+using NotesCool.Workspaces.Infrastructure;
 using NotesCool.Shared.Auth;
 using NotesCool.Shared.Common;
 using NotesCool.Tasks.Contracts;
@@ -39,13 +42,13 @@ public class TasksEndpointsTests : IClassFixture<WebApplicationFactory<Program>>
             builder.UseEnvironment("Testing");
             builder.ConfigureServices(services =>
             {
-                var descriptor = services.SingleOrDefault(d => d.ServiceType == typeof(DbContextOptions<TasksDbContext>));
-                if (descriptor != null)
-                {
-                    services.Remove(descriptor);
-                }
+                services.RemoveAll<DbContextOptions<TasksDbContext>>();
+                services.RemoveAll<DbContextOptions<WorkspacesDbContext>>();
+                services.RemoveAll<DbContextOptions<IdentityDbContext>>();
 
                 services.AddDbContext<TasksDbContext>(options => options.UseInMemoryDatabase(dbName));
+                services.AddDbContext<WorkspacesDbContext>(options => options.UseInMemoryDatabase($"{dbName}-workspaces"));
+                services.AddDbContext<IdentityDbContext>(options => options.UseInMemoryDatabase($"{dbName}-identity"));
                 services.AddAuthentication("Test")
                     .AddScheme<AuthenticationSchemeOptions, TestAuthHandler>("Test", _ => { });
                 services.AddScoped<ICurrentUser, TestCurrentUser>();

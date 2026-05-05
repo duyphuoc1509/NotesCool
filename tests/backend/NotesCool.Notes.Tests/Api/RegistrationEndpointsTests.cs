@@ -88,6 +88,7 @@ public class RegistrationEndpointsTests : IClassFixture<WebApplicationFactory<Pr
     {
         return _factory.WithWebHostBuilder(builder =>
         {
+            builder.UseEnvironment("Testing");
             builder.ConfigureTestServices(services =>
             {
                 var descriptor = services.SingleOrDefault(d => d.ServiceType == typeof(DbContextOptions<AuthDbContext>));

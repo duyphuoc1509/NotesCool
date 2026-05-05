@@ -1,9 +1,12 @@
 using System.Net;
 using System.Net.Http.Json;
 using FluentAssertions;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using NotesCool.Api.Configuration;
 using NotesCool.Api.Identity;
 using Xunit;
 
@@ -23,12 +26,23 @@ public class SsoAvailableProvidersTests : IClassFixture<WebApplicationFactory<Pr
     {
         var factory = _factory.WithWebHostBuilder(builder =>
         {
-            builder.ConfigureAppConfiguration((context, config) =>
+            builder.UseEnvironment("Testing");
+            builder.ConfigureTestServices(services =>
             {
-                config.AddInMemoryCollection(new Dictionary<string, string?>
+                services.PostConfigure<SsoOptions>(options =>
                 {
-                    {"AUTH_GOOGLE_ENABLED", "true"},
-                    {"AUTH_MICROSOFT_ENABLED", "false"}
+                    options.Providers.Clear();
+                    options.Providers.Add(new SsoProviderOptions
+                    {
+                        Name = "Google",
+                        Enabled = true,
+                        ClientId = "test-google-client",
+                        ClientSecret = "test-google-secret",
+                        Authority = "https://accounts.google.com",
+                        CallbackPath = "/signin-google",
+                        RedirectUri = "https://localhost:10001/auth/callback/google",
+                        RedirectUrls = ["https://localhost/auth/callback/google"]
+                    });
                 });
             });
         });

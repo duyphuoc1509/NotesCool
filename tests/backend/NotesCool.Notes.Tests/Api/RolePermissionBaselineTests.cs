@@ -1,10 +1,12 @@
 using System.Net;
 using System.Net.Http.Json;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using NotesCool.Api.Configuration;
 using NotesCool.Api.Identity;
 using NotesCool.Identity.Infrastructure;
 using NotesCool.Shared.Auth;
@@ -27,6 +29,7 @@ public class RolePermissionBaselineTests : IClassFixture<WebApplicationFactory<P
         // Arrange
         var client = _factory.WithWebHostBuilder(builder =>
         {
+            builder.UseEnvironment("Testing");
             builder.ConfigureTestServices(services =>
             {
                 services.AddAuthentication(RoleTestAuthHandler.AuthenticationScheme)
@@ -52,19 +55,38 @@ public class RolePermissionBaselineTests : IClassFixture<WebApplicationFactory<P
     public async Task SSO_Callback_ShouldIncludeRoleInToken()
     {
         // Arrange
-        var client = _factory.WithWebHostBuilder(builder =>
+        var factory = _factory.WithWebHostBuilder(builder =>
         {
+            builder.UseEnvironment("Testing");
             builder.ConfigureTestServices(services =>
             {
                 services.RemoveAll<DbContextOptions<IdentityDbContext>>();
                 services.AddDbContext<IdentityDbContext>(options =>
                     options.UseInMemoryDatabase("RoleBaselineTestDb"));
+                services.PostConfigure<SsoOptions>(options =>
+                {
+                    options.Providers.Clear();
+                    options.Providers.Add(new SsoProviderOptions
+                    {
+                        Name = "Google",
+                        Enabled = true,
+                        ClientId = "test-google-client",
+                        ClientSecret = "test-google-secret",
+                        Authority = "https://accounts.google.com",
+                        CallbackPath = "/signin-google",
+                        RedirectUri = "https://localhost:10001/auth/callback/google",
+                        RedirectUrls = ["https://localhost/auth/callback/google"]
+                    });
+                });
             });
-        }).CreateClient();
+        });
+        var client = factory.CreateClient();
+        var store = factory.Services.GetRequiredService<SsoStore>();
+        var state = store.CreateState("google", "https://localhost/auth/callback/google");
         var request = new SsoCallbackRequest(
             Provider: "google",
             Code: "test-code",
-            State: "sso_test_state",
+            State: state,
             Email: "test@example.com",
             ProviderUserId: "google-123",
             DisplayName: "Test User"

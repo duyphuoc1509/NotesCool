@@ -10,7 +10,7 @@ public class IdentityDataSeeder
     /// <summary>Canonical seeded admin (matches integration tests and docs).</summary>
     public const string SeededAdminEmail = "admin@notescool.com";
 
-    public const string SeededAdminPassword = "Admin@123";
+    public const string SeededAdminPassword = "P@ssword123!";
 
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly RoleManager<IdentityRole> _roleManager;

@@ -39,18 +39,18 @@ public static class SsoEndpoints
 
         group.MapPost("/callback", Results<Ok<SsoTokenResponse>, BadRequest<SsoErrorResponse>> (SsoCallbackRequest request, SsoStore store, IRefreshTokenStore refreshTokens, IOptions<SsoOptions> ssoOptions, IConfiguration config, ISecurityAuditService audit, HttpContext http) =>
         {
-            var providerOptions = ssoOptions.Value.Providers.FirstOrDefault(p => string.Equals(p.Name, request.Provider, StringComparison.OrdinalIgnoreCase));
-            if (providerOptions is null || !providerOptions.Enabled)
-            {
-                audit.LogAuthEvent(SecurityAuditEvents.SsoCallback, "unknown", request.Email, http.Connection.RemoteIpAddress?.ToString(), http.Request.Headers.UserAgent, new { status = "failed", provider = request.Provider, reason = "provider_disabled" });
-                return TypedResults.BadRequest(new SsoErrorResponse("provider_disabled", "The specified SSO provider is not enabled."));
-            }
-
             var providerUserId = request.ProviderUserId ?? request.Email;
             if (!store.IsValidCallback(request.Provider, request.Code, request.State, providerUserId ?? string.Empty))
             {
                 audit.LogAuthEvent(SecurityAuditEvents.SsoCallback, "unknown", request.Email, http.Connection.RemoteIpAddress?.ToString(), http.Request.Headers.UserAgent, new { status = "failed", provider = request.Provider, reason = "invalid_callback" });
                 return TypedResults.BadRequest(new SsoErrorResponse("invalid_sso_callback", "Invalid provider, state or authorization code."));
+            }
+
+            var providerOptions = ssoOptions.Value.Providers.FirstOrDefault(p => string.Equals(p.Name, request.Provider, StringComparison.OrdinalIgnoreCase));
+            if (providerOptions is null || !providerOptions.Enabled)
+            {
+                audit.LogAuthEvent(SecurityAuditEvents.SsoCallback, "unknown", request.Email, http.Connection.RemoteIpAddress?.ToString(), http.Request.Headers.UserAgent, new { status = "failed", provider = request.Provider, reason = "provider_disabled" });
+                return TypedResults.BadRequest(new SsoErrorResponse("provider_disabled", "The specified SSO provider is not enabled."));
             }
 
             var user = store.GetOrCreateUser(request.Provider, providerUserId!, request.Email, request.DisplayName);
