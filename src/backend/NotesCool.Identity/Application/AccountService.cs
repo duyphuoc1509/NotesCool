@@ -136,7 +136,10 @@ public sealed class AccountService
 
     private async Task<UserManagementResponse> MapUserAsync(ApplicationUser user, IEnumerable<string>? roles = null)
     {
-        var resolvedRoles = roles?.ToArray() ?? (await _userManager.GetRolesAsync(user)).ToArray();
+        var resolvedRoles = (roles?.ToArray() ?? (await _userManager.GetRolesAsync(user)).ToArray())
+            .Select(SystemRoles.Normalize)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
         return new UserManagementResponse(
             user.Id,
             user.Email ?? string.Empty,
