@@ -26,7 +26,7 @@ export function useTasks(initialFilter: TasksFilter = {}) {
     setIsLoading(true)
     setError(null)
     try {
-      const data = await tasksService.getTasks(filter.status, filter.page, filter.pageSize)
+      const data = await tasksService.getTasks(filter.status, filter.priority, filter.assigneeId, filter.keyword, filter.page, filter.pageSize)
       const itemsWithReminders = await Promise.all(
         data.items.map(async (task) => {
           if (!task.dueDate) {

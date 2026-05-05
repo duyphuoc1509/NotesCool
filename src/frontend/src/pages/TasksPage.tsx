@@ -7,15 +7,19 @@ import { cn } from '../utils/cn'
 import { TasksKanban } from '../components/tasks/TasksKanban'
 import { TasksList } from '../components/tasks/TasksList'
 import { useTranslation } from 'react-i18next'
+import { TaskTableView } from '../components/tasks/table/TaskTableView'
+import { TasksFilterBar } from '../components/tasks/filters/TasksFilterBar'
+import { TaskDetailDrawer } from '../components/tasks/details/TaskDetailDrawer'
 
 interface TaskFormState {
   title: string
   description: string
   dueDate: string
+  priority: string
   reminderOffsets: number[]
 }
 
-const emptyForm: TaskFormState = { title: '', description: '', dueDate: '', reminderOffsets: [] }
+const emptyForm: TaskFormState = { title: '', description: '', dueDate: '', priority: '', reminderOffsets: [] }
 
 function toDateInputValue(value?: string | null) {
   return value ? value.slice(0, 10) : ''
@@ -27,7 +31,7 @@ function toIsoDate(value: string) {
 
 export function TasksPage() {
   const { t } = useTranslation()
-  const [viewMode, setViewMode] = useState<'list' | 'kanban'>('kanban')
+  const [viewMode, setViewMode] = useState<'list' | 'kanban' | 'table'>('kanban')
 
   const statusOptions: Array<{ value: TaskStatus | 'all'; label: string }> = [
     { value: 'all', label: t('tasks.statusAll') },
@@ -37,15 +41,6 @@ export function TasksPage() {
     { value: 'Done', label: t('tasks.statusDone') },
     { value: 'Blocked', label: t('tasks.statusBlocked') },
   ]
-
-  const statusLabel: Record<string, string> = {
-    Todo: t('tasks.statusTodo'),
-    InProgress: t('tasks.statusInProgress'),
-    InReview: t('tasks.statusInReview'),
-    Done: t('tasks.statusDone'),
-    Blocked: t('tasks.statusBlocked'),
-    Archived: t('tasks.statusArchived'),
-  }
 
   const REMINDER_OPTIONS = [
     { value: 5, label: t('tasks.reminder5min') },
@@ -66,17 +61,27 @@ export function TasksPage() {
     changeTaskStatus,
     setTaskFavorite,
     deleteTask,
-  } = useTasks({ page: 1, pageSize: 100 }) // Increased pageSize for Kanban
+  } = useTasks({ page: 1, pageSize: 100 })
   const [form, setForm] = useState<TaskFormState>(emptyForm)
   const [editingTask, setEditingTask] = useState<TaskDto | null>(null)
+  const [selectedTask, setSelectedTask] = useState<TaskDto | null>(null)
+  const [drawerOpen, setDrawerOpen] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [actionTaskId, setActionTaskId] = useState<string | null>(null)
   const [formError, setFormError] = useState<string | null>(null)
 
   const pageTitle = useMemo(() => {
+    const statusLabel: Record<string, string> = {
+      Todo: t('tasks.statusTodo'),
+      InProgress: t('tasks.statusInProgress'),
+      InReview: t('tasks.statusInReview'),
+      Done: t('tasks.statusDone'),
+      Blocked: t('tasks.statusBlocked'),
+      Archived: t('tasks.statusArchived'),
+    }
     if (!filter.status) return t('tasks.pageTitleActive')
     return statusLabel[filter.status] || filter.status
-  }, [filter.status, t, statusLabel])
+  }, [filter.status, t])
 
   const favoriteCount = useMemo(() => tasks.filter((task) => task.isFavorite).length, [tasks])
 
@@ -86,9 +91,15 @@ export function TasksPage() {
       title: task.title,
       description: task.description ?? '',
       dueDate: toDateInputValue(task.dueDate),
+      priority: task.priority ?? '',
       reminderOffsets: task.reminders?.map((reminder) => reminder.offsetMinutes) ?? [],
     })
     setFormError(null)
+  }
+
+  const openDetails = (task: TaskDto) => {
+    setSelectedTask(task)
+    setDrawerOpen(true)
   }
 
   const resetForm = () => {
@@ -117,6 +128,7 @@ export function TasksPage() {
       const payload = {
         title,
         description: form.description.trim() || undefined,
+        priority: form.priority ? (form.priority as 'Low' | 'Medium' | 'High' | 'Urgent') : undefined,
         dueDate: toIsoDate(form.dueDate),
         reminders: form.reminderOffsets.map((offsetMinutes) => ({ offsetMinutes })),
       }
@@ -194,6 +206,15 @@ export function TasksPage() {
               >
                 <List className="h-4 w-4" /> {t('tasks.viewList')}
               </button>
+              <button
+                onClick={() => setViewMode('table')}
+                className={cn(
+                  'inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition',
+                  viewMode === 'table' ? 'bg-indigo-50 text-indigo-700' : 'text-gray-500 hover:bg-gray-50'
+                )}
+              >
+                <List className="h-4 w-4" /> Table
+              </button>
             </div>
             <button
               type="button"
@@ -222,11 +243,13 @@ export function TasksPage() {
             </button>
           ))}
         </div>
+
+        <TasksFilterBar filter={filter} onFilterChange={updateFilter} />
       </section>
 
       <section className={cn(
         "grid gap-4 pb-20 md:gap-6 md:pb-0",
-        viewMode === 'list' ? "lg:grid-cols-[360px_minmax(0,1fr)]" : "flex flex-col lg:flex-row gap-6"
+        (viewMode === 'list' || viewMode === 'table') ? "lg:grid-cols-[360px_minmax(0,1fr)]" : "flex flex-col lg:flex-row gap-6"
       )}>
         <form onSubmit={handleSubmit} className={cn(
           "h-fit rounded-2xl border border-gray-200 bg-white p-4 shadow-sm md:p-6",
@@ -262,6 +285,21 @@ export function TasksPage() {
                 className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100"
                 placeholder={t('tasks.fieldDescriptionPlaceholder')}
               />
+            </label>
+
+            <label className="block">
+              <span className="text-sm font-medium text-gray-700">Priority</span>
+              <select
+                value={form.priority}
+                onChange={(event) => setForm((current) => ({ ...current, priority: event.target.value }))}
+                className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100"
+              >
+                <option value="">None</option>
+                <option value="Low">Low</option>
+                <option value="Medium">Medium</option>
+                <option value="High">High</option>
+                <option value="Urgent">Urgent</option>
+              </select>
             </label>
 
             <label className="block">
@@ -342,7 +380,14 @@ export function TasksPage() {
               error={error}
               onStatusChange={handleStatusChange}
               onFavoriteToggle={handleFavoriteToggle}
-              onTaskClick={startEdit}
+              onTaskClick={openDetails}
+            />
+          ) : viewMode === 'table' ? (
+            <TaskTableView
+              tasks={tasks}
+              onStatusChange={handleStatusChange}
+              onTaskClick={openDetails}
+              onFavoriteToggle={handleFavoriteToggle}
             />
           ) : (
             <TasksList
@@ -360,6 +405,13 @@ export function TasksPage() {
           )}
         </div>
       </section>
+
+      <TaskDetailDrawer
+        isOpen={drawerOpen}
+        task={selectedTask}
+        onClose={() => setDrawerOpen(false)}
+        onUpdated={refresh}
+      />
     </div>
   )
 }
