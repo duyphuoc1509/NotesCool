@@ -1,5 +1,6 @@
 import api from './api'
 import type {
+  ActivityLogDto,
   ChangeTaskStatusRequest,
   CreateTaskRequest,
   SetTaskFavoriteRequest,
@@ -14,11 +15,14 @@ const TASKS_BASE_PATH = '/api/tasks'
 export const tasksService = {
   async getTasks(
     status?: TaskStatus,
+    priority?: string,
+    assigneeId?: string,
+    keyword?: string,
     page = 1,
     pageSize = 10,
   ): Promise<PagedResult<TaskDto>> {
     const { data } = await api.get<PagedResult<TaskDto>>(TASKS_BASE_PATH, {
-      params: { status, page, pageSize },
+      params: { status, priority, assigneeId, keyword, page, pageSize },
     })
     return data
   },
@@ -50,6 +54,11 @@ export const tasksService = {
 
   async deleteTask(id: string): Promise<void> {
     await api.delete(`${TASKS_BASE_PATH}/${id}`)
+  },
+
+  async getActivityLog(id: string): Promise<ActivityLogDto[]> {
+    const { data } = await api.get<ActivityLogDto[]>(`${TASKS_BASE_PATH}/${id}/activity`)
+    return data
   },
 }
 
