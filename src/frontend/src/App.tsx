@@ -173,6 +173,9 @@ function DashboardPage() {
 }
 
 
+import { WorkspacesPage } from './pages/WorkspacesPage'
+import { WorkspaceDetailPage } from './pages/WorkspaceDetailPage'
+
 function AppRoutes() {
   return (
     <Routes>
@@ -181,6 +184,26 @@ function AppRoutes() {
       <Route path="/auth/sso/callback" element={<SsoCallbackPage />} />
       <Route path="/auth/sso/:provider/callback" element={<SsoCallbackPage />} />
       <Route path="/auth/callback/:provider" element={<SsoCallbackPage />} />
+      <Route
+        path="/workspaces"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <WorkspacesPage />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/workspaces/:id"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <WorkspaceDetailPage />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
       <Route
         path="/notes"
         element={
