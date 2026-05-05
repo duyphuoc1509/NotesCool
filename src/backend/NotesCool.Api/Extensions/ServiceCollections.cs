@@ -16,6 +16,8 @@ using NotesCool.Tasks.Infrastructure;
 using NotesCool.Shared.Configuration;
 using NotesCool.Reminders.Application;
 using NotesCool.Reminders.Infrastructure;
+using NotesCool.Workspaces.Application;
+using NotesCool.Workspaces.Infrastructure;
 
 namespace NotesCool.Api.Extensions;
 
@@ -125,6 +127,15 @@ public static class ServiceCollections
 
         services.AddDbContext<RemindersDbContext>(o => o.UseNpgsql(defaultConnectionString));
         services.AddScoped<ReminderService>();
+        return services;
+    }
+
+    public static IServiceCollection AddWorkspacesModule(this IServiceCollection services, IConfiguration config)
+    {
+        var defaultConnectionString = config.GetDefaultConnectionString();
+
+        services.AddDbContext<WorkspacesDbContext>(o => o.UseNpgsql(defaultConnectionString));
+        services.AddScoped<WorkspacesService>();
         return services;
     }
 }
