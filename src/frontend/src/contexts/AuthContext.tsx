@@ -6,6 +6,7 @@ import {
   getStoredSession,
   storeSession,
   clearStoredSession,
+  normalizeAuthUser,
   type AuthTokens,
   type AuthUser,
   type LoginPayload,
@@ -17,7 +18,9 @@ import {
 const ADMIN_ROLE = 'Admin'
 
 function isAdminUser(user: AuthUser | null | undefined): boolean {
-  return user?.roles?.some((role) => role.toLowerCase() === ADMIN_ROLE.toLowerCase()) ?? false
+  if (!user) return false
+  const roles = user.roles ?? (user.role ? [user.role] : [])
+  return roles.some((role) => role.toLowerCase() === ADMIN_ROLE.toLowerCase())
 }
 
 export interface AuthState {
@@ -68,7 +71,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const session: AuthSession = {
         accessToken: response.accessToken,
         refreshToken: response.refreshToken || '',
-        user: response.user ?? { email: payload.email },
+        user: normalizeAuthUser(response.user ?? { email: payload.email }),
       }
       storeSession(session)
       setState({
@@ -90,7 +93,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const session: AuthSession = {
         accessToken: response.accessToken,
         refreshToken: response.refreshToken || '',
-        user: response.user ?? { email: payload.email, fullName: payload.fullName },
+        user: normalizeAuthUser(response.user ?? { email: payload.email, fullName: payload.fullName }),
       }
       storeSession(session)
       setState({
@@ -109,7 +112,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const session: AuthSession = {
       accessToken: response.accessToken,
       refreshToken: response.refreshToken || '',
-      user: response.user,
+      user: normalizeAuthUser(response.user),
     }
     storeSession(session)
     setState({

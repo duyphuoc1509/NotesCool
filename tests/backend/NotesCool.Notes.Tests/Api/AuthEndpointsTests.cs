@@ -6,11 +6,11 @@ using Xunit;
 
 namespace NotesCool.Notes.Tests.Api;
 
-public class AuthEndpointsTests : IClassFixture<WebApplicationFactory<Program>>
+public class AuthEndpointsTests : IClassFixture<AuthEndpointsWebApplicationFactory>
 {
     private readonly HttpClient _client;
 
-    public AuthEndpointsTests(WebApplicationFactory<Program> factory)
+    public AuthEndpointsTests(AuthEndpointsWebApplicationFactory factory)
     {
         _client = factory.CreateClient();
     }
@@ -18,7 +18,7 @@ public class AuthEndpointsTests : IClassFixture<WebApplicationFactory<Program>>
     [Fact]
     public async Task Logout_InvalidatesCurrentRefreshToken_AndSubsequentRefreshFails()
     {
-        var loginResponse = await _client.PostAsJsonAsync("/api/auth/login", new LoginRequest("logout@example.com", "password"));
+        var loginResponse = await _client.PostAsJsonAsync("/api/auth/login", new LoginRequest("logout@example.com", AuthEndpointsWebApplicationFactory.TestPassword));
         loginResponse.StatusCode.Should().Be(HttpStatusCode.OK);
 
         var tokens = await loginResponse.Content.ReadFromJsonAsync<AuthResponse>();
@@ -39,7 +39,7 @@ public class AuthEndpointsTests : IClassFixture<WebApplicationFactory<Program>>
     [Fact]
     public async Task Refresh_WithActiveRefreshToken_ReturnsNewTokens()
     {
-        var loginResponse = await _client.PostAsJsonAsync("/api/auth/login", new LoginRequest("refresh@example.com", "password"));
+        var loginResponse = await _client.PostAsJsonAsync("/api/auth/login", new LoginRequest("refresh@example.com", AuthEndpointsWebApplicationFactory.TestPassword));
         loginResponse.StatusCode.Should().Be(HttpStatusCode.OK);
 
         var tokens = await loginResponse.Content.ReadFromJsonAsync<AuthResponse>();
