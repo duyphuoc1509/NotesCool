@@ -1,3 +1,5 @@
+using System.Linq;
+using System.Security.Claims;
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
@@ -65,6 +67,49 @@ public static class IdentityServiceCollectionExtensions
                     ValidIssuer = jwtOptions.Issuer,
                     ValidAudience = jwtOptions.Audience,
                     IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtOptions.SigningKey))
+                };
+
+                // .NET 8 validates JWTs with JsonWebTokenHandler; role claims may appear as "role" or as
+                // ClaimTypes.Role depending on mapping. RequireRole("Admin") uses ClaimsPrincipal.IsInRole,
+                // which only honors ClaimTypes.Role — normalize so admin endpoints accept tokens from all login paths.
+                options.Events = new JwtBearerEvents
+                {
+                    OnTokenValidated = context =>
+                    {
+                        if (context.Principal?.Identity is not ClaimsIdentity identity)
+                        {
+                            return Task.CompletedTask;
+                        }
+
+                        static bool IsRoleClaimType(string claimType)
+                        {
+                            if (string.Equals(claimType, ClaimTypes.Role, StringComparison.OrdinalIgnoreCase))
+                            {
+                                return true;
+                            }
+
+                            if (string.Equals(claimType, "role", StringComparison.OrdinalIgnoreCase))
+                            {
+                                return true;
+                            }
+
+                            return claimType.EndsWith("/role", StringComparison.OrdinalIgnoreCase);
+                        }
+
+                        var already = new HashSet<string>(
+                            identity.Claims.Where(c => c.Type == ClaimTypes.Role).Select(c => c.Value),
+                            StringComparer.OrdinalIgnoreCase);
+
+                        foreach (var claim in context.Principal.Claims.Where(c => IsRoleClaimType(c.Type)))
+                        {
+                            if (already.Add(claim.Value))
+                            {
+                                identity.AddClaim(new Claim(ClaimTypes.Role, claim.Value));
+                            }
+                        }
+
+                        return Task.CompletedTask;
+                    }
                 };
             });
 
