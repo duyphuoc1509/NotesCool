@@ -11,7 +11,6 @@ import { SsoCallbackPage } from './pages/SsoCallbackPage'
 import { NotesPage } from './pages/NotesPage'
 import { TasksPage } from './pages/TasksPage'
 import { AdminUsersPage } from './pages/AdminUsersPage'
-import { WorkspacePage } from './pages/WorkspacePage'
 import { ProjectDetailPage } from './pages/ProjectDetailPage'
 import { useState, useEffect, type ReactNode } from 'react'
 import { useAuth } from './hooks/useAuth'
@@ -241,7 +240,7 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <Layout>
-              <WorkspacePage />
+              <WorkspacesPage />
             </Layout>
           </ProtectedRoute>
         }

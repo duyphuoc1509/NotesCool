@@ -2,6 +2,7 @@ using System.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage;
+using Npgsql;
 using NotesCool.Api.Auth;
 using NotesCool.Notes.Infrastructure;
 using NotesCool.Tasks.Infrastructure;
@@ -26,11 +27,12 @@ public static class DatabaseInitializer
         var logger = sp.GetRequiredService<ILoggerFactory>().CreateLogger("DatabaseInitializer");
 
         // Order matters: identity tables must exist before IdentityDataSeeder runs.
-        await EnsureContextSchemaAsync<AppIdentityDbContext>(sp, "AspNetUsers", logger, ct);
+        await EnsureContextSchemaAsync<AppIdentityDbContext>(sp, "AspNetUsers", logger, ct, applyMigrationsIfAvailable: false);
         await EnsureContextSchemaAsync<AuthDbContext>(sp, "user_accounts", logger, ct);
         await EnsureContextSchemaAsync<NotesDbContext>(sp, "notes", logger, ct);
         await EnsureContextColumnAsync<NotesDbContext>(sp, "notes", "IsFavorite", "boolean NOT NULL DEFAULT FALSE", logger, ct);
         await EnsureContextSchemaAsync<TasksDbContext>(sp, "Tasks", logger, ct);
+        await EnsureTasksLegacyTablesAsync(sp, logger, ct);
         await EnsureContextColumnAsync<TasksDbContext>(sp, "Tasks", "IsFavorite", "boolean NOT NULL DEFAULT FALSE", logger, ct);
         await EnsureContextSchemaAsync<RemindersDbContext>(sp, "ReminderItems", logger, ct);
         await EnsureContextSchemaAsync<WorkspacesDbContext>(sp, "workspaces", logger, ct);
@@ -40,7 +42,8 @@ public static class DatabaseInitializer
         IServiceProvider sp,
         string markerTable,
         ILogger logger,
-        CancellationToken ct) where TContext : DbContext
+        CancellationToken ct,
+        bool applyMigrationsIfAvailable = true) where TContext : DbContext
     {
         var ctx = sp.GetRequiredService<TContext>();
         var providerName = ctx.Database.ProviderName ?? string.Empty;
@@ -53,6 +56,51 @@ public static class DatabaseInitializer
 
         try
         {
+            // Prefer migrations when present so incremental schema changes
+            // (new tables/columns) are applied on existing databases.
+            var hasMigrations = ctx.Database.GetMigrations().Any();
+
+            if (applyMigrationsIfAvailable && hasMigrations)
+            {
+                var pendingMigrations = await ctx.Database.GetPendingMigrationsAsync(ct);
+                if (pendingMigrations.Any())
+                {
+                    var appliedMigrations = await ctx.Database.GetAppliedMigrationsAsync(ct);
+                    var markerExists = await TableExistsAsync(ctx, markerTable, ct);
+
+                    // Legacy bootstrap case: tables already exist but EF migration history
+                    // is empty. Running initial migrations would try to recreate tables.
+                    if (!appliedMigrations.Any() && markerExists)
+                    {
+                        logger.LogWarning(
+                            "Skipped migration apply for {Context}: marker table '{Marker}' exists but no applied migrations were found.",
+                            typeof(TContext).Name,
+                            markerTable);
+                        return;
+                    }
+
+                    try
+                    {
+                        await ctx.Database.MigrateAsync(ct);
+                        logger.LogInformation(
+                            "Applied pending migrations for {Context}.",
+                            typeof(TContext).Name);
+                    }
+                    catch (PostgresException ex) when (ex.SqlState == "42P07")
+                    {
+                        // Legacy databases can have pre-existing tables without
+                        // migration history; don't fail startup in that case.
+                        logger.LogWarning(
+                            ex,
+                            "Skipped migration apply for {Context} because a relation already exists ({SqlState}).",
+                            typeof(TContext).Name,
+                            ex.SqlState);
+                    }
+                }
+
+                return;
+            }
+
             var creator = (RelationalDatabaseCreator)ctx.Database.GetService<IDatabaseCreator>();
 
             if (!await creator.ExistsAsync(ct))
@@ -104,6 +152,64 @@ public static class DatabaseInitializer
         catch (Exception ex)
         {
             logger.LogError(ex, "Failed to ensure column {Column} on table {Table} for {Context}.", columnName, tableName, typeof(TContext).Name);
+        }
+    }
+
+    private static async Task EnsureTasksLegacyTablesAsync(
+        IServiceProvider sp,
+        ILogger logger,
+        CancellationToken ct)
+    {
+        var ctx = sp.GetRequiredService<TasksDbContext>();
+        var providerName = ctx.Database.ProviderName ?? string.Empty;
+        if (!providerName.Contains("Npgsql", StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        try
+        {
+            await ctx.Database.ExecuteSqlRawAsync(
+                """
+                CREATE TABLE IF NOT EXISTS "Projects" (
+                    "Id" uuid NOT NULL,
+                    "WorkspaceId" uuid NOT NULL,
+                    "Name" character varying(150) NOT NULL,
+                    "Description" text NULL,
+                    "OwnerId" character varying(100) NOT NULL,
+                    "CreatedAt" timestamp with time zone NOT NULL,
+                    "UpdatedAt" timestamp with time zone NULL,
+                    "ArchivedAt" timestamp with time zone NULL,
+                    CONSTRAINT "PK_Projects" PRIMARY KEY ("Id")
+                );
+                CREATE INDEX IF NOT EXISTS "IX_Projects_WorkspaceId" ON "Projects" ("WorkspaceId");
+                """,
+                ct);
+
+            await ctx.Database.ExecuteSqlRawAsync(
+                """
+                CREATE TABLE IF NOT EXISTS "ProjectMembers" (
+                    "Id" uuid NOT NULL,
+                    "ProjectId" uuid NOT NULL,
+                    "UserId" text NOT NULL,
+                    "Role" integer NOT NULL,
+                    "AddedBy" text NULL,
+                    "IsActive" boolean NOT NULL,
+                    "OwnerId" text NOT NULL,
+                    "CreatedAt" timestamp with time zone NOT NULL,
+                    "UpdatedAt" timestamp with time zone NULL,
+                    "ArchivedAt" timestamp with time zone NULL,
+                    CONSTRAINT "PK_ProjectMembers" PRIMARY KEY ("Id")
+                );
+                CREATE UNIQUE INDEX IF NOT EXISTS "IX_ProjectMembers_ProjectId_UserId" ON "ProjectMembers" ("ProjectId", "UserId");
+                """,
+                ct);
+
+            logger.LogInformation("Ensured legacy Tasks project tables exist (Projects, ProjectMembers).");
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Failed to ensure legacy Tasks project tables.");
         }
     }
 

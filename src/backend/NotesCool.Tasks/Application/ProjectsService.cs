@@ -4,10 +4,11 @@ using NotesCool.Tasks.Contracts;
 using NotesCool.Tasks.Domain.Entities;
 using NotesCool.Tasks.Domain.Enums;
 using NotesCool.Tasks.Infrastructure;
+using NotesCool.Workspaces.Infrastructure;
 
 namespace NotesCool.Tasks.Application;
 
-public sealed class ProjectsService(TasksDbContext db)
+public sealed class ProjectsService(TasksDbContext db, WorkspacesDbContext workspacesDb)
 {
     public async Task<List<ProjectDto>> GetProjectsAsync(Guid workspaceId, string userId, CancellationToken ct)
     {
@@ -39,15 +40,10 @@ public sealed class ProjectsService(TasksDbContext db)
     public async Task<ProjectDto> CreateProjectAsync(Guid workspaceId, CreateProjectRequest request, string userId, CancellationToken ct)
     {
         // BA rule: Workspace Owner/Admin/Member can create project; Viewer cannot.
-        var workspaceMember = await db.WorkspaceMembers
+        var workspaceMember = await workspacesDb.WorkspaceMembers
             .AsNoTracking()
-            .FirstOrDefaultAsync(m => m.WorkspaceId == workspaceId && m.UserId == userId && m.IsActive, ct)
+            .FirstOrDefaultAsync(m => m.WorkspaceId == workspaceId && m.UserId == userId, ct)
             ?? throw new ApiException("access_denied", "You are not a member of this workspace.");
-
-        if (workspaceMember.Role == WorkspaceRole.Viewer)
-        {
-            throw new ApiException("access_denied", "Workspace Viewer cannot create projects.");
-        }
 
         var project = new Project(workspaceId, request.Name, request.Description, userId);
         db.Projects.Add(project);
@@ -135,11 +131,11 @@ public sealed class ProjectsService(TasksDbContext db)
         }
 
         // Rule: Project member must already belong to workspace
-        var workspaceMember = await db.WorkspaceMembers
+        var workspaceMember = await workspacesDb.WorkspaceMembers
             .AsNoTracking()
             .FirstOrDefaultAsync(m => m.WorkspaceId == project.WorkspaceId && m.UserId == request.UserId, ct);
 
-        if (workspaceMember == null || !workspaceMember.IsActive)
+        if (workspaceMember == null)
         {
             throw new ApiException("user_not_in_workspace", "User must be a member of the workspace before being added to a project.");
         }
@@ -202,9 +198,9 @@ public sealed class ProjectsService(TasksDbContext db)
 
     private async Task EnsureWorkspaceMemberAsync(Guid workspaceId, string userId, CancellationToken ct)
     {
-        var exists = await db.WorkspaceMembers
+        var exists = await workspacesDb.WorkspaceMembers
             .AsNoTracking()
-            .AnyAsync(m => m.WorkspaceId == workspaceId && m.UserId == userId && m.IsActive, ct);
+            .AnyAsync(m => m.WorkspaceId == workspaceId && m.UserId == userId, ct);
 
         if (!exists) throw new ApiException("access_denied", "You are not a member of this workspace.");
     }

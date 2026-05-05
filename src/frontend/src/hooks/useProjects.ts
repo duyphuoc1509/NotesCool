@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect } from 'react'
 import { projectService } from '../services/projectService'
+import { workspacesService } from '../services/workspacesService'
 import type { ProjectSummary, CreateProjectPayload } from '../types/project'
 
 function extractErrorMessage(err: unknown): string {
@@ -9,6 +10,7 @@ function extractErrorMessage(err: unknown): string {
 
 export function useProjects() {
   const [projects, setProjects] = useState<ProjectSummary[]>([])
+  const [workspaceId, setWorkspaceId] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -16,9 +18,18 @@ export function useProjects() {
     setIsLoading(true)
     setError(null)
     try {
-      const result = await projectService.listProjects()
-      // Backend might wrap in items or just return array. We'll handle both.
-      setProjects(result.items ?? (Array.isArray(result) ? result : []))
+      const workspaces = await workspacesService.getWorkspaces()
+      const activeWorkspaceId = workspaces[0]?.id
+
+      if (!activeWorkspaceId) {
+        setWorkspaceId(null)
+        setProjects([])
+        return
+      }
+
+      setWorkspaceId(activeWorkspaceId)
+      const result = await projectService.listProjects(activeWorkspaceId)
+      setProjects(Array.isArray(result) ? result : [])
     } catch (err: unknown) {
       setError(extractErrorMessage(err))
     } finally {
@@ -29,14 +40,17 @@ export function useProjects() {
   const createProject = useCallback(async (payload: CreateProjectPayload) => {
     setError(null)
     try {
-      await projectService.createProject(payload)
+      if (!workspaceId) {
+        throw new Error('No workspace found to create project in')
+      }
+      await projectService.createProject(workspaceId, payload)
       await fetchProjects()
     } catch (err: unknown) {
       const message = extractErrorMessage(err)
       setError(message)
       throw err
     }
-  }, [fetchProjects])
+  }, [fetchProjects, workspaceId])
 
   useEffect(() => {
     void fetchProjects()

@@ -15,5 +15,12 @@ export default defineConfig({
     port: 10001,
     strictPort: true,
     https: {},
+    proxy: {
+      '/api': {
+        target: process.env.VITE_DEV_API_PROXY_TARGET || 'https://localhost:10002',
+        changeOrigin: true,
+        secure: false,
+      },
+    },
   },
 })

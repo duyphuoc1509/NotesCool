@@ -27,15 +27,15 @@ export function WorkspaceDetailPage() {
     reload();
   };
 
-  const handleRoleChange = async (memberId: string, role: string) => {
+  const handleRoleChange = async (userId: string, role: string) => {
     if (!id) return;
-    await workspacesService.updateMemberRole(id, memberId, role);
+    await workspacesService.updateMemberRole(id, userId, role);
     reload();
   };
 
-  const handleRemoveMember = async (memberId: string) => {
+  const handleRemoveMember = async (userId: string) => {
     if (!id) return;
-    await workspacesService.removeMember(id, memberId);
+    await workspacesService.removeMember(id, userId);
     reload();
   };
 
@@ -146,7 +146,7 @@ export function WorkspaceDetailPage() {
                         {isAdmin && m.userId !== user?.id ? (
                           <select
                             value={m.role}
-                            onChange={(e) => handleRoleChange(m.id, e.target.value)}
+                            onChange={(e) => handleRoleChange(m.userId, e.target.value)}
                             className="rounded border border-gray-300 text-sm p-1"
                           >
                             <option value="member">Member</option>
@@ -159,7 +159,7 @@ export function WorkspaceDetailPage() {
                       {isAdmin && (
                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                           {m.userId !== user?.id && (
-                            <button onClick={() => handleRemoveMember(m.id)} className="text-red-600 hover:text-red-900">
+                            <button onClick={() => handleRemoveMember(m.userId)} className="text-red-600 hover:text-red-900">
                               Remove
                             </button>
                           )}

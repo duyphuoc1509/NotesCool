@@ -22,35 +22,35 @@ export interface Project {
 
 export const workspacesService = {
   getWorkspaces: async (): Promise<Workspace[]> => {
-    const { data } = await api.get<Workspace[]>('/workspaces');
+    const { data } = await api.get<Workspace[]>('/api/workspaces');
     return data;
   },
   createWorkspace: async (payload: { name: string; description: string }): Promise<Workspace> => {
-    const { data } = await api.post<Workspace>('/workspaces', payload);
+    const { data } = await api.post<Workspace>('/api/workspaces', payload);
     return data;
   },
   getWorkspace: async (id: string): Promise<Workspace> => {
-    const { data } = await api.get<Workspace>(`/workspaces/${id}`);
+    const { data } = await api.get<Workspace>(`/api/workspaces/${id}`);
     return data;
   },
   getMembers: async (id: string): Promise<WorkspaceMember[]> => {
-    const { data } = await api.get<WorkspaceMember[]>(`/workspaces/${id}/members`);
+    const { data } = await api.get<WorkspaceMember[]>(`/api/workspaces/${id}/members`);
     return data;
   },
   addMember: async (id: string, payload: { email: string; role: string }): Promise<void> => {
-    await api.post(`/workspaces/${id}/members`, payload);
+    await api.post(`/api/workspaces/${id}/members`, payload);
   },
-  updateMemberRole: async (workspaceId: string, memberId: string, role: string): Promise<void> => {
-    await api.put(`/workspaces/${workspaceId}/members/${memberId}`, { role });
+  updateMemberRole: async (workspaceId: string, userId: string, role: string): Promise<void> => {
+    await api.put(`/api/workspaces/${workspaceId}/members/${userId}`, { role });
   },
-  removeMember: async (workspaceId: string, memberId: string): Promise<void> => {
-    await api.delete(`/workspaces/${workspaceId}/members/${memberId}`);
+  removeMember: async (workspaceId: string, userId: string): Promise<void> => {
+    await api.delete(`/api/workspaces/${workspaceId}/members/${userId}`);
   },
   getProjects: async (id: string): Promise<Project[]> => {
-    const { data } = await api.get<Project[]>(`/workspaces/${id}/projects`);
+    const { data } = await api.get<Project[]>(`/api/workspaces/${id}/projects`);
     return data;
   },
   archiveWorkspace: async (id: string): Promise<void> => {
-    await api.delete(`/workspaces/${id}`);
+    await api.delete(`/api/workspaces/${id}`);
   }
 };

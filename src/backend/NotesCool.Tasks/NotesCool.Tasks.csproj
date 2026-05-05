@@ -2,6 +2,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\NotesCool.Shared\NotesCool.Shared.csproj" />
+    <ProjectReference Include="..\NotesCool.Workspaces\NotesCool.Workspaces.csproj" />
   </ItemGroup>
 
   <ItemGroup>

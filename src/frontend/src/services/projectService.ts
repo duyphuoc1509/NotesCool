@@ -7,11 +7,10 @@ import type {
   AddProjectMemberPayload,
   ProjectMember,
 } from '../types/project'
-import type { PagedResult } from '../types/common'
 
 export const projectService = {
-  async listProjects(params?: { page?: number; pageSize?: number; query?: string }): Promise<PagedResult<ProjectSummary>> {
-    const { data } = await api.get<PagedResult<ProjectSummary>>('/api/projects', { params })
+  async listProjects(workspaceId: string): Promise<ProjectSummary[]> {
+    const { data } = await api.get<ProjectSummary[]>(`/api/workspaces/${workspaceId}/projects`)
     return data
   },
 
@@ -20,8 +19,11 @@ export const projectService = {
     return data
   },
 
-  async createProject(payload: CreateProjectPayload): Promise<ProjectSummary> {
-    const { data } = await api.post<ProjectSummary>('/api/projects', payload)
+  async createProject(workspaceId: string, payload: CreateProjectPayload): Promise<ProjectSummary> {
+    const { data } = await api.post<ProjectSummary>(`/api/workspaces/${workspaceId}/projects`, {
+      name: payload.name,
+      description: payload.description,
+    })
     return data
   },
 
@@ -31,7 +33,7 @@ export const projectService = {
   },
 
   async deleteProject(id: string): Promise<void> {
-    await api.delete(`/api/projects/${id}`)
+    await api.delete(`/api/projects/${id}/archive`)
   },
 
   async getProjectMembers(projectId: string): Promise<ProjectMember[]> {
