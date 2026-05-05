@@ -43,7 +43,7 @@ public sealed class Workspace : Entity
             throw new ApiException("member_already_exists", "User is already a member of this workspace.");
         }
 
-        _members.Add(new WorkspaceMember(Id.ToString(), userId, role));
+        _members.Add(new WorkspaceMember(Id, userId, role));
         Touch();
     }
 

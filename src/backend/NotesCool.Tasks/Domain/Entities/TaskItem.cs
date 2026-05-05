@@ -25,32 +25,40 @@ public class TaskItem : Entity
     public bool IsDeleted => DeletedAt.HasValue;
     public string? UpdatedBy { get; private set; }
 
-    // Navigation
     public ICollection<TaskAssignee> Assignees { get; private set; } = new List<TaskAssignee>();
     public ICollection<TaskActivityLog> ActivityLogs { get; private set; } = new List<TaskActivityLog>();
 
     protected TaskItem() { }
 
-    public TaskItem(Guid workspaceId, Guid projectId, string title, string? description,
-        TaskPriority priority, DateTimeOffset? dueDate, string ownerId, Guid? parentTaskId = null)
+    public TaskItem(
+        Guid workspaceId,
+        Guid projectId,
+        string title,
+        string? description,
+        TaskPriority priority,
+        DateTimeOffset? dueDate,
+        string ownerId,
+        Guid? parentTaskId = null,
+        int sortOrder = 0)
     {
-        if (string.IsNullOrWhiteSpace(title)) throw new ArgumentException("Title required", nameof(title));
-        if (title.Length > 250) throw new ArgumentException("Title too long", nameof(title));
+        ValidateTitle(title);
+
         WorkspaceId = workspaceId;
         ProjectId = projectId;
         ParentTaskId = parentTaskId;
-        Title = title;
+        Title = title.Trim();
         Description = description;
         Priority = priority;
         DueDate = dueDate;
         OwnerId = ownerId;
+        SortOrder = sortOrder;
     }
 
     public void Update(string title, string? description, TaskPriority priority, DateTimeOffset? dueDate, string updatedBy)
     {
-        if (string.IsNullOrWhiteSpace(title)) throw new ArgumentException("Title required", nameof(title));
-        if (title.Length > 250) throw new ArgumentException("Title too long", nameof(title));
-        Title = title;
+        ValidateTitle(title);
+
+        Title = title.Trim();
         Description = description;
         Priority = priority;
         DueDate = dueDate;
@@ -65,10 +73,36 @@ public class TaskItem : Entity
         Touch();
     }
 
+    public void ChangePriority(TaskPriority priority, string updatedBy)
+    {
+        Priority = priority;
+        UpdatedBy = updatedBy;
+        Touch();
+    }
+
     public void SoftDelete(string deletedBy)
     {
+        if (DeletedAt.HasValue)
+        {
+            return;
+        }
+
         DeletedAt = DateTimeOffset.UtcNow;
         DeletedBy = deletedBy;
+        UpdatedBy = deletedBy;
         Touch();
+    }
+
+    private static void ValidateTitle(string title)
+    {
+        if (string.IsNullOrWhiteSpace(title))
+        {
+            throw new ArgumentException("Title is required", nameof(title));
+        }
+
+        if (title.Length > 250)
+        {
+            throw new ArgumentException("Title must not exceed 250 characters", nameof(title));
+        }
     }
 }
