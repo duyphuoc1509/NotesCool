@@ -1,18 +1,15 @@
 using System.Collections.Concurrent;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
 using System.Security.Cryptography;
-using System.Text;
-using Microsoft.IdentityModel.Tokens;
+using Microsoft.AspNetCore.Identity;
 using NotesCool.Identity.Application;
+using NotesCool.Identity.Application.Abstractions;
+using NotesCool.Identity.Infrastructure;
 using NotesCool.Shared.Security;
 
 namespace NotesCool.Api.Contracts;
 
 public static class AuthEndpoints
 {
-    private const int AccessTokenExpiresInSeconds = 900;
-
     public static IEndpointRouteBuilder MapAuthEndpoints(this IEndpointRouteBuilder app)
     {
         var group = app.MapGroup("/api/auth").WithTags("Auth");
@@ -60,7 +57,7 @@ public static class AuthEndpoints
             }
         });
 
-        group.MapPost("/refresh", (RefreshTokenRequest request, IRefreshTokenStore refreshTokens, IConfiguration configuration, ISecurityAuditService audit, HttpContext http) =>
+        group.MapPost("/refresh", async (RefreshTokenRequest request, IRefreshTokenStore refreshTokens, UserManager<ApplicationUser> userManager, IJwtTokenGenerator tokenGenerator, ISecurityAuditService audit, HttpContext http) =>
         {
             if (!refreshTokens.TryRevoke(request.RefreshToken, out var session))
             {
@@ -68,11 +65,36 @@ public static class AuthEndpoints
                 return Results.Unauthorized();
             }
 
-            var response = CreateTokenResponse(session.UserId, session.Email, refreshTokens, configuration);
-            
+            var appUser = await userManager.FindByIdAsync(session.UserId);
+            if (appUser is null)
+            {
+                audit.LogAuthEvent(SecurityAuditEvents.RefreshToken, session.UserId, session.Email, http.Connection.RemoteIpAddress?.ToString(), http.Request.Headers.UserAgent, new { status = "failed", reason = "user_not_found" });
+                return Results.Unauthorized();
+            }
+
+            if (appUser.Status != AccountStatus.Active)
+            {
+                audit.LogAuthEvent(SecurityAuditEvents.RefreshToken, session.UserId, session.Email, http.Connection.RemoteIpAddress?.ToString(), http.Request.Headers.UserAgent, new { status = "failed", reason = "account_inactive" });
+                return Results.Json(new { message = "Account is not active." }, statusCode: 403);
+            }
+
+            var roles = await userManager.GetRolesAsync(appUser);
+            var identityResponse = tokenGenerator.CreateToken(appUser, roles);
+            var refreshToken = refreshTokens.Issue(session.UserId, session.Email ?? string.Empty);
+
+            var expiresAt = new DateTimeOffset(DateTime.SpecifyKind(identityResponse.ExpiresAtUtc, DateTimeKind.Utc));
+            var expiresInSeconds = (int)Math.Max(0, (expiresAt - DateTimeOffset.UtcNow).TotalSeconds);
+
+            var user = new AuthUserResponse(
+                identityResponse.User.Id,
+                identityResponse.User.Email,
+                identityResponse.User.DisplayName,
+                identityResponse.User.Status,
+                identityResponse.User.Roles.ToArray());
+
             audit.LogAuthEvent(SecurityAuditEvents.RefreshToken, session.UserId, session.Email, http.Connection.RemoteIpAddress?.ToString(), http.Request.Headers.UserAgent, new { status = "success" });
-            
-            return Results.Ok(response);
+
+            return Results.Ok(new AuthResponse(identityResponse.AccessToken, refreshToken, "Bearer", expiresInSeconds, expiresAt, user));
         });
 
         group.MapPost("/logout", (RefreshTokenRequest request, IRefreshTokenStore refreshTokens, ISecurityAuditService audit, HttpContext http) =>
@@ -87,32 +109,6 @@ public static class AuthEndpoints
 
         return app;
     }
-
-    private static AuthResponse CreateTokenResponse(string userId, string email, IRefreshTokenStore refreshTokens, IConfiguration configuration)
-    {
-        var expiresAt = DateTimeOffset.UtcNow.AddSeconds(AccessTokenExpiresInSeconds);
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(GetSigningKey(configuration)));
-        var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-        var token = new JwtSecurityToken(
-            issuer: configuration["Jwt:Issuer"] ?? "NotesCool",
-            audience: configuration["Jwt:Audience"] ?? "NotesCool",
-            claims:
-            [
-                new Claim(ClaimTypes.NameIdentifier, userId),
-                new Claim(ClaimTypes.Email, email),
-                new Claim(ClaimTypes.Role, "User")
-            ],
-            expires: expiresAt.UtcDateTime,
-            signingCredentials: credentials);
-
-        var accessToken = new JwtSecurityTokenHandler().WriteToken(token);
-        var refreshToken = refreshTokens.Issue(userId, email);
-
-        return new AuthResponse(accessToken, refreshToken, "Bearer", AccessTokenExpiresInSeconds, expiresAt);
-    }
-
-    private static string GetSigningKey(IConfiguration configuration) =>
-        configuration["Jwt:SigningKey"] ?? "NotesCool development signing key with at least 32 chars";
 }
 
 public sealed record LoginRequest(string Email, string Password);
@@ -120,7 +116,7 @@ public sealed record RefreshTokenRequest(string RefreshToken);
 
 /// <summary>
 /// Access tokens are bearer JWTs that remain valid until AccessTokenExpiresAtUtc
-/// (AccessTokenExpiresInSeconds seconds after issuance). Logout revokes only the
+/// (see <see cref="AuthResponse.AccessTokenExpiresInSeconds" />). Logout revokes only the
 /// current refresh token/session, so clients should discard the access token locally.
 /// </summary>
 public sealed record AuthResponse(
